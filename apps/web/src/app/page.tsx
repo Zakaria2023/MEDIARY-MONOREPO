@@ -17,7 +17,7 @@ const HomePage = async () => {
 
   return (
     <>
-      <SiteHeader />
+      <SiteHeader user={user} />
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center gap-6 px-5 py-20 text-center sm:px-8">
         {user ? (
           <>
