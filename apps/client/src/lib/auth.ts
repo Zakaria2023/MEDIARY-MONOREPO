@@ -1,8 +1,12 @@
-import { buildClerkUserSync } from "@/lib/clerk-user";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { cache } from "react";
-import { AuthUser, getUserByClerkId, syncClerkUser } from "services";
+import {
+  AuthUser,
+  buildClerkUserSync,
+  getUserByClerkId,
+  syncClerkUser,
+} from "services";
 
 /**
  * Resolves the signed-in user, or null when there is no valid session. Clerk

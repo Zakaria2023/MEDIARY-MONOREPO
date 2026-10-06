@@ -1,7 +1,6 @@
-import { buildClerkUserSync } from "@/lib/clerk-user";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { deleteClerkUser, syncClerkUser } from "services";
+import { buildClerkUserSync, deleteClerkUser, syncClerkUser } from "services";
 import { Webhook } from "svix";
 
 // Clerk is the source of truth for identity; this webhook mirrors its users

@@ -1,4 +1,4 @@
-import { ClerkUserSync } from "services";
+import { ClerkUserSync } from "./auth";
 
 type ClerkEmail = {
   id: string;
