@@ -101,18 +101,23 @@ export const IMAGE_TYPE_LABELS: Record<ImageType, string> = {
   screenshot: "Screenshot",
 };
 
+/**
+ * What a screen calls a catalog source. DESCRIPTIVE, NEVER THE VENDOR'S NAME:
+ * no third-party service is named anywhere in Mediary's interface (CLAUDE.md,
+ * "No vendor on screen"). The vendor is in the code and the docs only.
+ */
 export const PROVIDER_LABELS: Record<Provider, string> = {
-  tmdb: "TMDB",
-  igdb: "IGDB",
-  mal: "MyAnimeList",
-  anilist: "AniList",
-  kitsu: "Kitsu",
-  anidb: "AniDB",
-  imdb: "IMDb",
-  tvdb: "TheTVDB",
-  steam: "Steam",
-  openlibrary: "Open Library",
-  musicbrainz: "MusicBrainz",
+  tmdb: "Movie and TV database",
+  igdb: "Game database",
+  mal: "Anime list",
+  anilist: "Anime import",
+  kitsu: "Anime catalog",
+  anidb: "Anime index",
+  imdb: "Film reference",
+  tvdb: "TV reference",
+  steam: "Game store",
+  openlibrary: "Book catalog",
+  musicbrainz: "Music catalog",
 };
 
 /**

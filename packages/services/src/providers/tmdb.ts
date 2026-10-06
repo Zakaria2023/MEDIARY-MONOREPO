@@ -19,6 +19,9 @@ type TmdbListItem = z.infer<typeof listItemSchema>;
 
 const API = "https://api.themoviedb.org/3";
 
+/** How this source is named in any message a person may read. Never the vendor's name. */
+const SOURCE_LABEL = "The movie and TV database";
+
 /**
  * Images are stored as full URLs at one reference size per kind; the image
  * loader swaps the size segment for the width a slot needs. TMDB serves every
@@ -138,7 +141,7 @@ const kindOf = (mediaType: MediaType): TmdbKind => {
   if (mediaType === "movie" || mediaType === "tv") {
     return mediaType;
   }
-  throw new Error(`TMDB does not supply ${mediaType}`);
+  throw new Error(`${SOURCE_LABEL} does not supply ${mediaType} titles`);
 };
 
 /** "movie:550" for movie 550; TMDB numbers movies and shows separately. */
@@ -150,7 +153,7 @@ export const parseTmdbExternalId = (kind: TmdbKind, externalId: string): number 
   const [prefix, raw] = externalId.split(":");
   const id = Number(raw);
   if (prefix !== kind || !Number.isInteger(id) || id <= 0) {
-    throw new Error(`Not a TMDB ${kind} id: ${externalId}`);
+    throw new Error(`Not a valid ${kind} id: ${externalId}`);
   }
   return id;
 };
@@ -172,7 +175,7 @@ const tmdbFetch = async (path: string, params: Record<string, string> = {}) => {
         Accept: "application/json",
       },
     },
-    { throttle, label: "TMDB" },
+    { throttle, label: SOURCE_LABEL },
   );
 };
 
@@ -352,7 +355,7 @@ export const tmdbProvider: MediaProvider = {
     name: "TMDB",
     text: "This product uses the TMDB API but is not endorsed or certified by TMDB.",
     url: "https://www.themoviedb.org/",
-    logoPath: "/providers/tmdb.svg",
+    logoPath: null,
   },
   isConfigured: () => Boolean(process.env.TMDB_READ_ACCESS_TOKEN),
   search: async (mediaType, query, page = 1) => {

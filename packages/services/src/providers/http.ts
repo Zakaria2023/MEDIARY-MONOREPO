@@ -7,7 +7,7 @@ type ThrottleOptions = {
 
 type ProviderFetchOptions = {
   throttle: Throttle;
-  /** Name used in error messages: "TMDB", "IGDB". */
+  /** How the source is named in error messages: descriptive, never the vendor. */
   label: string;
   /** How many times a 429 or a 5xx is retried before giving up. */
   retries?: number;

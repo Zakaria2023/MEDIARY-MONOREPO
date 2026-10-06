@@ -26,6 +26,9 @@ type IgdbListItem = z.infer<typeof listItemSchema>;
 type IgdbGame = z.infer<typeof gameSchema>;
 
 const API = "https://api.igdb.com/v4";
+
+/** How this source is named in any message a person may read. Never the vendor's name. */
+const SOURCE_LABEL = "The game database";
 const TOKEN_URL = "https://id.twitch.tv/oauth2/token";
 
 /**
@@ -151,7 +154,7 @@ const accessToken = async (): Promise<string> => {
     await providerFetch(
       `${TOKEN_URL}?${params.toString()}`,
       { method: "POST" },
-      { throttle, label: "Twitch" },
+      { throttle, label: `${SOURCE_LABEL} sign-in` },
     ),
   );
   cachedToken = {
@@ -176,7 +179,7 @@ const igdbQuery = async (endpoint: string, body: string): Promise<unknown> => {
         },
         body,
       },
-      { throttle, label: "IGDB" },
+      { throttle, label: SOURCE_LABEL },
     );
   } catch (error) {
     if (error instanceof ProviderError && error.status === 401) {
@@ -188,7 +191,7 @@ const igdbQuery = async (endpoint: string, body: string): Promise<unknown> => {
 
 const assertGame = (mediaType: MediaType) => {
   if (mediaType !== "game") {
-    throw new Error(`IGDB does not supply ${mediaType}`);
+    throw new Error(`${SOURCE_LABEL} does not supply ${mediaType} titles`);
   }
 };
 
@@ -196,7 +199,7 @@ const assertGame = (mediaType: MediaType) => {
 const parseIgdbId = (externalId: string): number => {
   const id = Number(externalId);
   if (!Number.isInteger(id) || id <= 0) {
-    throw new Error(`Not an IGDB id: ${externalId}`);
+    throw new Error(`Not a valid game id: ${externalId}`);
   }
   return id;
 };
@@ -372,7 +375,7 @@ export const igdbProvider: MediaProvider = {
         ),
       );
     if (!game) {
-      throw new Error(`IGDB has no game ${externalId}`);
+      throw new Error(`${SOURCE_LABEL} has no game ${externalId}`);
     }
     return normalizeIgdbGame(game);
   },
