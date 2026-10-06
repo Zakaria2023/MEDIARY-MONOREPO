@@ -19,7 +19,7 @@ const SiteLayout = async ({ children }: Props) => {
     <>
       <SiteHeader user={user} />
       <div className="flex flex-1 flex-col">{children}</div>
-      <SiteFooter />
+      <SiteFooter user={user} />
     </>
   );
 };

@@ -44,11 +44,13 @@ export const useWelcomeForm = (defaults: WelcomeInput) => {
     setChecked({ username: value, available });
   }, 350);
 
+  // Not while saving: a check answered after the save would find the handle
+  // on the person's own row and say "taken" under a form that succeeded.
   useEffect(() => {
-    if (isValid) {
+    if (isValid && !isPending) {
       check(username);
     }
-  }, [username, isValid, check]);
+  }, [username, isValid, isPending, check]);
 
   const availability: Availability = !isValid
     ? "unknown"
