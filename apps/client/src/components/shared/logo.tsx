@@ -1,24 +1,36 @@
-import { Play } from "lucide-react";
+import Image from "next/image";
 
 type LogoProps = {
   /** The wordmark beside the mark. Off on the tightest layouts. */
   wordmark?: boolean;
+  /** Rendered height in pixels; the width follows the file's proportions. */
+  height?: number;
 };
 
+/** The brand file's proportions, so the width never has to be guessed. */
+const LOCKUP_RATIO = 1985 / 464;
+
 /**
- * THE MARK, as code until the real SVG from the brand file is dropped in: a
- * rounded tile on the brand gradient with the play glyph, beside the
- * wordmark. The gradient is one of its four permitted uses.
+ * THE LOGO, from the brand file in public/brand: the stacked-panels play
+ * mark with the gradient wordmark. The PNG carries the spectrum itself, so
+ * the component paints nothing; the gradient utilities stay for the four
+ * surfaces that are allowed them.
  */
-export const Logo = ({ wordmark = true }: LogoProps) => (
-  <span className="inline-flex items-center gap-2">
-    <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-brand-gradient text-white">
-      <Play size={14} className="ms-0.5 fill-current" />
-    </span>
-    {wordmark && (
-      <span className="font-display text-lg font-semibold tracking-tight text-ink">
-        Mediary
-      </span>
-    )}
-  </span>
-);
+export const Logo = ({ wordmark = true, height = 28 }: LogoProps) =>
+  wordmark ? (
+    <Image
+      src="/brand/mediary-logo.png"
+      alt="Mediary"
+      width={Math.round(height * LOCKUP_RATIO)}
+      height={height}
+      priority
+    />
+  ) : (
+    <Image
+      src="/brand/mediary-mark.png"
+      alt="Mediary"
+      width={height}
+      height={height}
+      priority
+    />
+  );

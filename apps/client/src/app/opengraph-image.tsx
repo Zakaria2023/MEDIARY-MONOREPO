@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE } from "@/lib/seo";
 
@@ -6,12 +8,19 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 /**
- * The site-wide share image, drawn at request time: the mark, the name, the
- * tagline, on the canvas with the brand gradient as one accent. A share card
- * is one of the gradient's four permitted uses.
+ * The site-wide share image, drawn at request time: the brand mark from the
+ * logo file, the name, the tagline, on the canvas. A share card is one of
+ * the gradient's four permitted uses, and the mark carries it.
+ *
+ * The mark is read from public/brand and inlined as a data URL, because the
+ * renderer has no origin to fetch a relative path from. It is painted as a
+ * background image rather than an <img>, which the renderer accepts equally.
  */
-const OpenGraphImage = () =>
-  new ImageResponse(
+const OpenGraphImage = async () => {
+  const mark = await readFile(join(process.cwd(), "public/brand/mediary-mark.png"));
+  const markUrl = `data:image/png;base64,${mark.toString("base64")}`;
+
+  return new ImageResponse(
     (
       <div
         style={{
@@ -29,27 +38,13 @@ const OpenGraphImage = () =>
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
           <div
             style={{
-              width: 64,
-              height: 64,
-              borderRadius: 18,
-              background:
-                "linear-gradient(135deg, #1697ff 0%, #4057ff 35%, #7b2cff 70%, #d815ff 100%)",
+              width: 88,
+              height: 88,
               display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              backgroundImage: `url(${markUrl})`,
+              backgroundSize: "88px 88px",
             }}
-          >
-            <div
-              style={{
-                width: 0,
-                height: 0,
-                marginLeft: 6,
-                borderTop: "14px solid transparent",
-                borderBottom: "14px solid transparent",
-                borderLeft: "24px solid white",
-              }}
-            />
-          </div>
+          />
           <div style={{ fontSize: 44, fontWeight: 600 }}>{SITE_NAME}</div>
         </div>
 
@@ -82,5 +77,6 @@ const OpenGraphImage = () =>
     ),
     size,
   );
+};
 
 export default OpenGraphImage;
