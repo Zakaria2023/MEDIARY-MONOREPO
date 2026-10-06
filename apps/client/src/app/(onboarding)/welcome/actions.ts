@@ -33,10 +33,12 @@ export const finishWelcome = async (
 
 /** Live availability for the username field, as the person types. */
 export const checkUsername = async (username: string): Promise<boolean> => {
-  await requireUser();
+  const user = await requireUser();
   const parsed = welcomeSchema.shape.username.safeParse(username);
   if (!parsed.success) {
     return false;
   }
-  return isUsernameAvailable(parsed.data);
+  // A check that lands after the save finds the handle on this person's
+  // own row; that is theirs, not taken.
+  return isUsernameAvailable(parsed.data, user.uuid);
 };

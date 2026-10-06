@@ -1,5 +1,5 @@
 import { UserMenu } from "auth";
-import { Settings } from "lucide-react";
+import { BookMarked, Settings } from "lucide-react";
 import Link from "next/link";
 import { AuthUser } from "services";
 import { SearchPalette } from "@/components/search/search-palette";
@@ -13,8 +13,8 @@ type SiteHeaderProps = {
 /**
  * The header: the mark, Explore, search everywhere, and either the sign-in
  * links or the account menu. The viewer is passed in because the header is
- * a server component and knows who is looking from the request. Library and
- * the Add button join it with the tracking step.
+ * a server component and knows who is looking from the request. A member
+ * also sees Library; adding happens on a title's own page.
  */
 export const SiteHeader = ({ user }: SiteHeaderProps) => (
   <header className="sticky top-0 z-40 border-b border-hairline bg-page/80 backdrop-blur-md">
@@ -34,6 +34,14 @@ export const SiteHeader = ({ user }: SiteHeaderProps) => (
         >
           Explore
         </Link>
+        {user && (
+          <Link
+            href="/library"
+            className="flex h-9 items-center rounded-control px-3 text-sm font-medium text-muted transition-colors hover:bg-hover hover:text-ink"
+          >
+            Library
+          </Link>
+        )}
       </nav>
       <div className="ms-auto flex items-center gap-2">
         <SearchPalette />
@@ -43,7 +51,10 @@ export const SiteHeader = ({ user }: SiteHeaderProps) => (
             detail={user.username ? `@${user.username}` : user.email}
             imageUrl={user.imageUrl}
             signOutRedirect="/"
-            links={[{ label: "Settings", href: "/settings/profile", icon: <Settings size={16} /> }]}
+            links={[
+              { label: "Library", href: "/library", icon: <BookMarked size={16} /> },
+              { label: "Settings", href: "/settings/profile", icon: <Settings size={16} /> },
+            ]}
           />
         ) : (
           <>

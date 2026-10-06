@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @source "../../../../packages/ui/src";
+@source "../../../../packages/auth/src";
 
 /* Light is an override of the dark defaults, applied when <html> carries
    .light. Dark is the product; see the theme block below. */
@@ -148,6 +149,24 @@
     #b315e0 78%,
     #d61a7a 100%
   );
+  /* The same sweep laid out three times over, mirrored, so a window one
+     third wide always shows the whole of it and the loop has no seam. */
+  --gradient-action-loop: linear-gradient(
+    90deg,
+    #1f6bff 0%,
+    #3d3bff 9%,
+    #6a28f5 17%,
+    #b315e0 26%,
+    #d61a7a 33.33%,
+    #b315e0 41%,
+    #6a28f5 50%,
+    #3d3bff 58%,
+    #1f6bff 66.67%,
+    #3d3bff 75%,
+    #6a28f5 83%,
+    #b315e0 92%,
+    #d61a7a 100%
+  );
   --gradient-brand-soft: linear-gradient(
     135deg,
     rgba(22, 151, 255, 0.22) 0%,
@@ -171,12 +190,29 @@
    one class, and transitions only the background position, which stays well
    under the 250ms motion budget and is cut by the reduced-motion rule. */
 @utility bg-action-gradient {
-  background-image: var(--gradient-action);
-  background-size: 150% 100%;
-  background-position: 0% 50%;
-  transition: background-position 200ms ease-out, filter 150ms ease-out;
+  /* THE PRIMARY BUTTON'S FILL, ALIVE ON ITS OWN. The gradient is painted on
+     a layer three times the button's width and slid across by a transform,
+     so the color keeps flowing without a pointer near it. A transform runs
+     on the compositor: no layout, no repaint, no work on the main thread,
+     and the browser pauses it in a background tab. Reduced motion stops it
+     on the first frame, which is the logo sweep at rest. */
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  transition: filter 150ms ease-out;
+  &::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 300%;
+    z-index: -1;
+    background-image: var(--gradient-action-loop);
+    animation: action-flow 7s linear infinite;
+    will-change: transform;
+  }
   &:hover {
-    background-position: 100% 50%;
+    filter: brightness(1.08);
   }
   &:active {
     filter: brightness(0.92);
@@ -341,6 +377,17 @@
   }
   to {
     background-position: -200% 0;
+  }
+}
+
+/* The primary button's gradient, sliding one full repeat to the start,
+   which is where it began: a seamless loop. */
+@keyframes action-flow {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-66.67%);
   }
 }
 

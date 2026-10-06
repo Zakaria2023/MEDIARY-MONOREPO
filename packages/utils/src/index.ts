@@ -116,13 +116,23 @@ export const paginate = async <T>(
 };
 
 /**
+ * The errors whose message was written for a person to read: a service's
+ * ValidationError and NotFoundError, and a catalog source's ProviderError,
+ * which names the source descriptively. Matched by `name` because this
+ * package cannot import the classes from services.
+ */
+const READABLE_ERRORS = new Set(["ValidationError", "NotFoundError", "ProviderError"]);
+
+/**
  * The message a Server Action shows when something threw: what the service
- * said if it said anything, otherwise the fallback the action wrote. Returns
- * the object rather than the string so it drops straight into any result
- * shape.
+ * said, when the service wrote it for a person, otherwise the fallback the
+ * action wrote. ANY OTHER ERROR'S MESSAGE IS DROPPED: a database error, a
+ * driver's stack or the identity service's own sentence never reaches the
+ * screen. Returns the object rather than the string so it drops straight
+ * into any result shape.
  */
 export const fail = (error: unknown, fallback: string): { error: string } => ({
-  error: error instanceof Error ? error.message : fallback,
+  error: error instanceof Error && READABLE_ERRORS.has(error.name) ? error.message : fallback,
 });
 
 /** "attack-on-titan" from "Attack on Titan!". Diacritics are stripped first. */

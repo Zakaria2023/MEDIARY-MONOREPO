@@ -421,6 +421,13 @@ SEO is a core of the product, with the design. Every public route pays for its p
 - Store only what the provider's terms permit. Image URLs are stored for providers that allow hotlinking under attribution, and rendered through `CatalogImage`/`Poster` from `ui`, whose loader asks the provider's CDN for the size the slot needs instead of re-encoding through Next's optimizer. Attribution is data on the adapter and is currently rendered nowhere (see No Vendor On Screen).
 - Before any provider goes to production, re-check its terms, attribution rules, image rights and rate limits. They change.
 
+## Tracking
+
+- `saveEntry` and `tickEntryProgress` in `packages/services/src/tracking.ts` are the only writers of `UserMedia`. Each locks the entry row (`for update`), applies the rules, and writes the `ProgressEvents` row in the same transaction; a first save that loses an insert race retries against the row it lost to. Nothing else inserts a progress event.
+- The rules (auto-start, auto-complete at the total, clamped progress, what counts as history) live in `tracking-rules.ts`, pure and re-exported from `services/pure`, so the sheet settles its draft with the same code the server runs. That file's `db/enum` import is `import type` on purpose: the pure guard allows nothing else.
+- The total progress counts up to is a property of the medium (episodes, 100 for a film's percent, nothing for a game's hours) and is computed in the service as `progressTotal`; the sheet never guesses it.
+- The sheet, the tick and the entry a screen holds are `src/lib/use-entry-sheet.ts` and `src/lib/use-tracked-entry.ts`, in `lib/` because they open from a title page, a library row and a home card alike. Their actions are `app/(app)/library/actions.ts`. Every change shows at once and reverts only on a refusal.
+
 ## Design Tokens
 
 The brand palette from the blueprint, as `globals.css` tokens. The app is dark-mode-first; a light theme is added once the dark system is complete, as a `.light` override of the same tokens.

@@ -8,11 +8,11 @@ type Props = {
 };
 
 /**
- * THE PUBLIC SITE'S FRAME: the landing page, explore, search and every
- * title page. Open to everyone; the header only changes what it offers once
- * it knows who is looking. No page in here redirects to sign-in.
+ * The library's frame: the same header and footer as the public site, so
+ * moving between a title page and the library never changes the chrome.
+ * Already gated by the (app) layout; the user lookup is the cached one.
  */
-const SiteLayout = async ({ children }: Props) => {
+const LibraryLayout = async ({ children }: Props) => {
   const user = await getCurrentUser();
 
   return (
@@ -24,4 +24,4 @@ const SiteLayout = async ({ children }: Props) => {
   );
 };
 
-export default SiteLayout;
+export default LibraryLayout;

@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { catalogFacts } from "services";
+import { catalogFacts, getTitleTracking } from "services";
 import { AsyncSection, Badge } from "ui";
 import { parseLaunchMediaType } from "validators";
 import { MEDIA_TYPE_LABELS } from "@/db/label";
@@ -55,6 +55,7 @@ const TitlePage = async ({ params }: Props) => {
   if (!title) {
     notFound();
   }
+  const tracking = viewer ? await getTitleTracking(viewer.uuid, title.uuid) : null;
   const facts = catalogFacts(title);
   const launchType = parseLaunchMediaType(title.mediaType);
   const section = launchType ? EXPLORE_COPY[launchType].heading : MEDIA_TYPE_LABELS[title.mediaType];
@@ -70,7 +71,7 @@ const TitlePage = async ({ params }: Props) => {
           ]),
         )}
       />
-      <TitleHero title={title} viewer={viewer} />
+      <TitleHero title={title} viewer={viewer} tracking={tracking} />
 
       <div className="mx-auto grid w-full max-w-7xl gap-10 px-5 py-8 sm:px-8">
         <div className="flex flex-col gap-10">

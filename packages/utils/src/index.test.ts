@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   clampScore,
+  fail,
   isValidUsername,
   paginate,
   resolvePagination,
@@ -91,5 +92,22 @@ describe("usernames", () => {
     expect(suggestUsername("Zoë")).toBe("zoe");
     expect(isValidUsername(suggestUsername("ab"))).toBe(true);
     expect(isValidUsername(suggestUsername("A very long display name that goes on"))).toBe(true);
+  });
+});
+
+describe("fail", () => {
+  it("shows a message written for a person", () => {
+    const readable = new Error("Pick one of the platforms this game is on");
+    readable.name = "ValidationError";
+    expect(fail(readable, "Could not save")).toEqual({
+      error: "Pick one of the platforms this game is on",
+    });
+  });
+
+  it("hides any other error behind the fallback", () => {
+    expect(fail(new Error('relation "UserMedia" does not exist'), "Could not save")).toEqual({
+      error: "Could not save",
+    });
+    expect(fail("thrown string", "Could not save")).toEqual({ error: "Could not save" });
   });
 });

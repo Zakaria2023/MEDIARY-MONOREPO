@@ -127,10 +127,17 @@ export const deleteClerkUser = async (clerkUserId: string): Promise<void> => {
   await db.delete(Users).where(eq(Users.clerkUserId, clerkUserId));
 };
 
-/** Whether a handle is free. Case-insensitive, like the index that enforces it. */
-export const isUsernameAvailable = async (username: string): Promise<boolean> => {
+/**
+ * Whether a handle is free. Case-insensitive, like the index that enforces
+ * it. A handle held by `exceptUserUuid` counts as free: the person asking
+ * already has it, and their own row must never tell them it is taken.
+ */
+export const isUsernameAvailable = async (
+  username: string,
+  exceptUserUuid?: string,
+): Promise<boolean> => {
   const taken = await getUserByUsername(username);
-  return taken === null;
+  return taken === null || taken.uuid === exceptUserUuid;
 };
 
 /**

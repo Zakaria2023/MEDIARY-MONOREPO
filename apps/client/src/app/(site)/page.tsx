@@ -3,13 +3,14 @@ import { redirect } from "next/navigation";
 import { AsyncSection } from "ui";
 import { HomeTrending } from "@/components/catalog/home-trending";
 import { TitleRailSkeleton } from "@/components/catalog/title-rail-skeleton";
+import { ContinueRail } from "@/components/home/continue-rail";
+import { ContinueRailSkeleton } from "@/components/home/continue-rail-skeleton";
 import { getCurrentUser } from "@/lib/auth";
 
 /**
- * The root: marketing when signed out, home when signed in. The hero is
- * still the foundation's; the landing page and the real home arrive with
- * the library they show. Under it, what is trending, so the first screen
- * already shows the catalog.
+ * The root: marketing when signed out, home when signed in. A member gets
+ * a greeting, what they are in the middle of, then what is trending; a
+ * visitor gets the promise and the catalog under it.
  */
 const HomePage = async () => {
   const user = await getCurrentUser();
@@ -26,22 +27,21 @@ const HomePage = async () => {
               Welcome back, {user.displayName}
             </h1>
             <p className="max-w-md text-base text-muted">
-              Your profile lives at{" "}
-              <span className="font-mono text-secondary">/@{user.username}</span>.
-              Tracking arrives with the next step; the catalog is open now.
+              Log an episode, a session or a film in one tap, and everything
+              you finish adds up to your story.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2">
               <Link
-                href="/explore"
+                href="/library"
                 className="inline-flex h-10 items-center rounded-control bg-action-gradient px-4 text-sm font-medium text-white"
               >
-                Explore the catalog
+                Open your library
               </Link>
               <Link
-                href="/settings/profile"
+                href="/explore"
                 className="inline-flex h-10 items-center rounded-control border border-hairline-strong px-4 text-sm font-medium text-ink transition-colors hover:bg-hover"
               >
-                Set up your profile
+                Find something new
               </Link>
             </div>
           </>
@@ -71,6 +71,13 @@ const HomePage = async () => {
           </>
         )}
       </div>
+      {user && (
+        <div className="mx-auto w-full max-w-7xl">
+          <AsyncSection reloadKey={`continue-${user.uuid}`} skeleton={<ContinueRailSkeleton />}>
+            <ContinueRail userUuid={user.uuid} />
+          </AsyncSection>
+        </div>
+      )}
       <div className="mx-auto w-full max-w-7xl">
         <AsyncSection reloadKey="home-trending" skeleton={<TitleRailSkeleton />}>
           <HomeTrending />

@@ -1,7 +1,15 @@
 import { z } from "zod";
+import { progressUnits, TrackingStatus, trackingStatuses, visibilities } from "../../../db/enum";
 
 export type UpsertEntryInput = z.infer<typeof upsertEntrySchema>;
 export type ProgressTickInput = z.infer<typeof progressTickSchema>;
+export type RemoveEntryInput = z.infer<typeof removeEntrySchema>;
+
+/** How the library is ordered; the same names the tracking service takes. */
+export type LibrarySortParam = (typeof librarySorts)[number];
+
+/** How the library is laid out. */
+export type LibraryViewParam = (typeof libraryViews)[number];
 
 const isoDay = z
   .string()
@@ -17,35 +25,64 @@ const isoDay = z
  * service's own clamp holds when the next caller (an importer) forgets to
  * validate.
  */
-export const upsertEntrySchema = z.object({
-  mediaUuid: z.string().uuid(),
-  status: z.enum(["in_progress", "completed", "paused", "dropped", "planned"]),
-  score: z.number().min(0).max(10).nullable(),
-  progressValue: z.number().min(0).max(1_000_000),
-  progressUnit: z.enum([
-    "episodes",
-    "seasons",
-    "hours",
-    "percent",
-    "chapters",
-    "volumes",
-    "pages",
-    "plays",
-  ]),
-  currentSeason: z.number().int().min(1).max(500).nullable(),
-  repeatCount: z.number().int().min(0).max(1000),
-  favorite: z.boolean(),
-  platformId: z.number().int().positive().nullable(),
-  startedAt: isoDay.nullable(),
-  completedAt: isoDay.nullable(),
-  notes: z.string().trim().max(2000, "Keep notes under 2000 characters"),
-  visibility: z.enum(["public", "followers", "private"]).nullable(),
-});
+export const upsertEntrySchema = z
+  .object({
+    mediaUuid: z.uuid(),
+    status: z.enum(trackingStatuses),
+    score: z.number().min(0).max(10).nullable(),
+    progressValue: z
+      .number({ error: "Progress is a number" })
+      .min(0, "Progress cannot be below zero")
+      .max(1_000_000),
+    progressUnit: z.enum(progressUnits),
+    currentSeason: z.number().int().min(1).max(500).nullable(),
+    repeatCount: z.number().int().min(0).max(1000),
+    favorite: z.boolean(),
+    platformId: z.number().int().positive().nullable(),
+    startedAt: isoDay.nullable(),
+    completedAt: isoDay.nullable(),
+    notes: z.string().trim().max(2000, "Keep notes under 2000 characters"),
+    visibility: z.enum(visibilities).nullable(),
+  })
+  .refine(
+    (entry) =>
+      entry.startedAt === null || entry.completedAt === null || entry.completedAt >= entry.startedAt,
+    { message: "The finish date is before the start date", path: ["completedAt"] },
+  );
 
-/** The inline "+1 episode" / "+2h" control on a library row or the home rail. */
+/** The inline "+1 episode" / "+1h" control on a library row or the home rail. */
 export const progressTickSchema = z.object({
-  entryUuid: z.string().uuid(),
+  entryUuid: z.uuid(),
   delta: z.number().min(-1_000_000).max(1_000_000),
   note: z.string().trim().max(500).optional(),
-  eventAt: z.string().datetime().optional(),
+  eventAt: z.iso.datetime().optional(),
 });
+
+/** Taking a title out of the library, history and all. */
+export const removeEntrySchema = z.object({
+  entryUuid: z.uuid(),
+});
+
+/** The library's orders, first one the default. */
+export const librarySorts = ["updated", "added", "title", "score"] as const;
+
+/** Rows for scanning, a poster grid for browsing. */
+export const libraryViews = ["rows", "grid"] as const;
+
+/** A status tab from the URL, or undefined for "All". */
+export const parseTrackingStatus = (value: unknown): TrackingStatus | undefined => {
+  const parsed = z.enum(trackingStatuses).safeParse(value);
+  return parsed.success ? parsed.data : undefined;
+};
+
+/** A library sort from the URL, falling back to the most recently updated. */
+export const parseLibrarySort = (value: unknown): LibrarySortParam => {
+  const parsed = z.enum(librarySorts).safeParse(value);
+  return parsed.success ? parsed.data : "updated";
+};
+
+/** A library layout from the URL, falling back to rows. */
+export const parseLibraryView = (value: unknown): LibraryViewParam => {
+  const parsed = z.enum(libraryViews).safeParse(value);
+  return parsed.success ? parsed.data : "rows";
+};
