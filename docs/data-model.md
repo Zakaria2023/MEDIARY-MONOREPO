@@ -45,12 +45,22 @@ Expansion media add `BookDetails` and `MusicDetails` the same way; `Media.mediaT
 | `ProgressEvents` | id, uuid, userMediaUuid, userUuid, delta, value, unit, status, score, note, eventAt, createdAt                                                            | THE SOURCE OF THE DIARY, STATS AND RECAP. Written in the same transaction as the UserMedia change. `eventAt` can be backdated. |
 | `Favorites`      | userUuid, kind (media, genre), mediaUuid, genreId, category, position                                                                                     | The ranked handful on a profile's front, distinct from `UserMedia.favorite`.                            |
 
+## Social
+
+| Table             | Columns                                                                                   | Notes                                                                                     |
+| ----------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `Reviews`         | id, uuid, userUuid, mediaUuid, headline, body, score, containsSpoilers, visibility        | UNIQUE (userUuid, mediaUuid). `score` is the library score when written. Null visibility means the author's activity default. |
+| `CustomLists`     | id, uuid, userUuid, slug, name, description, visibility                                   | `slug` is UNIQUE across the site: the address is `/lists/[slug]`.                         |
+| `CustomListItems` | id, listUuid, mediaUuid, position, note                                                   | UNIQUE (listUuid, mediaUuid); `position` is the owner's order.                            |
+| `Follows`         | id, followerUuid, followingUuid                                                           | Directed; UNIQUE on the pair makes following idempotent.                                  |
+| `Activities`      | id, uuid, userUuid, kind, mediaUuid, reviewUuid, listUuid, targetUserUuid, score         | THE FEED'S SOURCE, written in the acting service's transaction when the actor's prefs allow the kind. One subject column per kind. |
+
 ## Later groups, shaped now
 
 | Group           | Tables                                                                                     |
 | --------------- | ------------------------------------------------------------------------------------------ |
-| Reviews         | `Reviews`, `ReviewReactions`, `ReviewComments`, `ReviewReports`                            |
-| Lists and social| `CustomLists`, `CustomListItems`, `Follows`, `Activities`, `ActivityReactions`, `ActivityComments` |
+| Reviews         | `ReviewReactions`, `ReviewComments`, `ReviewReports`                                       |
+| Social          | `ActivityReactions`, `ActivityComments`                                                    |
 | Taste           | `TasteProfiles`, `TasteSimilarity`, `Recommendations`, `RecommendationFeedback`            |
 | Operations      | `Imports`, `ImportItems`, `Notifications`, `ProviderSyncJobs`, `AuditLog`, `ModerationCases` |
 

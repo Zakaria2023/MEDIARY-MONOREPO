@@ -1,12 +1,14 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { catalogFacts, getTitleTracking } from "services";
+import { catalogFacts, getTitleTracking, listChoicesForTitle } from "services";
 import { AsyncSection, Badge } from "ui";
 import { parseLaunchMediaType } from "validators";
 import { MEDIA_TYPE_LABELS } from "@/db/label";
 import { RelatedTitles } from "@/components/catalog/related-titles";
 import { TitleHero } from "@/components/catalog/title-hero";
 import { TitleRailSkeleton } from "@/components/catalog/title-rail-skeleton";
+import { TitleReviews } from "@/components/reviews/title-reviews";
+import { TitleReviewsSkeleton } from "@/components/reviews/title-reviews-skeleton";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getCurrentUser } from "@/lib/auth";
 import { EXPLORE_COPY } from "@/lib/explore-copy";
@@ -55,7 +57,9 @@ const TitlePage = async ({ params }: Props) => {
   if (!title) {
     notFound();
   }
-  const tracking = viewer ? await getTitleTracking(viewer.uuid, title.uuid) : null;
+  const [tracking, listChoices] = viewer
+    ? await Promise.all([getTitleTracking(viewer.uuid, title.uuid), listChoicesForTitle(viewer.uuid, title.uuid)])
+    : [null, []];
   const facts = catalogFacts(title);
   const launchType = parseLaunchMediaType(title.mediaType);
   const section = launchType ? EXPLORE_COPY[launchType].heading : MEDIA_TYPE_LABELS[title.mediaType];
@@ -71,7 +75,7 @@ const TitlePage = async ({ params }: Props) => {
           ]),
         )}
       />
-      <TitleHero title={title} viewer={viewer} tracking={tracking} />
+      <TitleHero title={title} viewer={viewer} tracking={tracking} listChoices={listChoices} />
 
       <div className="mx-auto grid w-full max-w-7xl gap-10 px-5 py-8 sm:px-8">
         <div className="flex flex-col gap-10">
@@ -106,8 +110,11 @@ const TitlePage = async ({ params }: Props) => {
               </div>
             </section>
           )}
-        </div>
 
+          <AsyncSection reloadKey={`reviews-${title.uuid}-${viewer?.uuid ?? "guest"}`} skeleton={<TitleReviewsSkeleton />}>
+            <TitleReviews title={title} viewer={viewer} />
+          </AsyncSection>
+        </div>
       </div>
 
       <div className="mx-auto w-full max-w-7xl pb-8">

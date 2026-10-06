@@ -207,3 +207,24 @@ export const favoriteKinds = [
 ] as const satisfies readonly string[];
 
 export type FavoriteKind = (typeof favoriteKinds)[number];
+
+// ---------------------------------------------------------------------------
+// Social
+// ---------------------------------------------------------------------------
+
+/**
+ * What an activity line says someone did. The feed and a profile's activity
+ * are built from these; the person's ActivityPrefs decide which kinds are
+ * written at all.
+ */
+export const activityKinds = [
+  "started",
+  "completed",
+  "rated",
+  "reviewed",
+  "favorited",
+  "listed",
+  "followed",
+] as const satisfies readonly string[];
+
+export type ActivityKind = (typeof activityKinds)[number];

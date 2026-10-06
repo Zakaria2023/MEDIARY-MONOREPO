@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ReactNode } from "react";
 import { AuthUser, PublicProfile } from "services";
 import { formatDate } from "utils";
+import { FollowButton } from "@/components/profile/follow-button";
 import { UserAvatar } from "@/components/profile/user-avatar";
 
 type ProfileHeaderProps = {
@@ -15,8 +16,8 @@ type ProfileHeaderProps = {
 /**
  * The identity area: a flat band with the avatar over its edge, the name as
  * the page's h1, the handle, the bio, the facts and the counts. The owner
- * gets a way to their settings; Follow and Compare Taste arrive with the
- * steps that build them.
+ * gets a way to their settings; a signed-in visitor gets Follow. Compare
+ * Taste arrives with the step that builds it.
  */
 export const ProfileHeader = ({ profile, viewer, children }: ProfileHeaderProps) => {
   const isOwner = viewer?.uuid === profile.uuid;
@@ -27,7 +28,7 @@ export const ProfileHeader = ({ profile, viewer, children }: ProfileHeaderProps)
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 sm:px-8">
         <div className="-mt-12 flex items-end justify-between gap-4">
           <UserAvatar name={profile.displayName} imageUrl={profile.imageUrl} size="xl" />
-          {isOwner && (
+          {isOwner ? (
             <Link
               href="/settings/profile"
               className="inline-flex h-10 items-center gap-2 rounded-control border border-hairline-strong px-4 text-sm font-medium text-ink transition-colors hover:bg-hover"
@@ -35,6 +36,10 @@ export const ProfileHeader = ({ profile, viewer, children }: ProfileHeaderProps)
               <Settings size={16} />
               Edit profile
             </Link>
+          ) : (
+            viewer && (
+              <FollowButton userUuid={profile.uuid} initialFollowing={profile.relation === "follower"} />
+            )
           )}
         </div>
 

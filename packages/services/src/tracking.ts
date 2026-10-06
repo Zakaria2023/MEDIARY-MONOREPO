@@ -10,6 +10,8 @@ import { GamePlatforms, Platforms, SelectPlatforms } from "../../../db/schema/pl
 import { ProgressEvents } from "../../../db/schema/progress-events";
 import { SelectUserMedia, UserMedia } from "../../../db/schema/user-media";
 import { UserSettings } from "../../../db/schema/user-settings";
+import { ActivityPrefs } from "../../../db/types";
+import { recordActivity } from "./activities";
 import { isUniqueViolation } from "./db-result";
 import { NotFoundError, ValidationError } from "./errors";
 import {
@@ -185,13 +187,46 @@ const stateOf = (entry: Pick<TrackedEntry, keyof EntryState>): EntryState => ({
   completedAt: entry.completedAt,
 });
 
-/** Today where the user is, so "finished today" is their today. */
-const todayFor = async (tx: Tx, userUuid: string): Promise<string> => {
+/** What a write needs from the user's settings: their today, and which feed lines they allow. */
+type WriterSettings = {
+  today: string;
+  activityPrefs: ActivityPrefs | null;
+};
+
+/** Today where the user is, so "finished today" is their today, and their activity switches. */
+const settingsFor = async (tx: Tx, userUuid: string): Promise<WriterSettings> => {
   const [settings] = await tx
-    .select({ timezone: UserSettings.timezone })
+    .select({ timezone: UserSettings.timezone, activityPrefs: UserSettings.activityPrefs })
     .from(UserSettings)
     .where(eq(UserSettings.userUuid, userUuid));
-  return todayIn(settings?.timezone ?? "UTC");
+  return { today: todayIn(settings?.timezone ?? "UTC"), activityPrefs: settings?.activityPrefs ?? null };
+};
+
+/**
+ * The feed lines a change produces: started, finished, rated. Written in
+ * the same transaction as the entry, after the history row, and only for
+ * what actually changed; the person's preferences are applied inside.
+ */
+const announceChange = async (
+  tx: Tx,
+  userUuid: string,
+  mediaUuid: string,
+  previous: EntryState | null,
+  next: EntryState,
+  prefs: ActivityPrefs | null,
+): Promise<void> => {
+  const change = entryChange(previous, next);
+  if (!change) {
+    return;
+  }
+  if (change.status === "in_progress") {
+    await recordActivity(tx, { userUuid, kind: "started", mediaUuid }, prefs);
+  } else if (change.status === "completed") {
+    await recordActivity(tx, { userUuid, kind: "completed", mediaUuid, score: next.score }, prefs);
+  }
+  if (change.score !== null && change.status !== "completed") {
+    await recordActivity(tx, { userUuid, kind: "rated", mediaUuid, score: change.score }, prefs);
+  }
 };
 
 /** The platform a game entry names, checked against the game's own list. */
@@ -264,7 +299,7 @@ const writeEntry = async (
     .where(and(eq(UserMedia.userUuid, userUuid), eq(UserMedia.mediaUuid, target.uuid)))
     .for("update");
 
-  const today = await todayFor(tx, userUuid);
+  const { today, activityPrefs } = await settingsFor(tx, userUuid);
   const next = settleEntry(
     {
       status: input.status,
@@ -304,7 +339,12 @@ const writeEntry = async (
     throw new Error("The entry was not written");
   }
 
-  await recordChange(tx, userUuid, saved.uuid, existing ? stateOf(existing) : null, next, today);
+  const previous = existing ? stateOf(existing) : null;
+  await recordChange(tx, userUuid, saved.uuid, previous, next, today);
+  await announceChange(tx, userUuid, target.uuid, previous, next, activityPrefs);
+  if (input.favorite && !existing?.favorite) {
+    await recordActivity(tx, { userUuid, kind: "favorited", mediaUuid: target.uuid }, activityPrefs);
+  }
   return saved;
 };
 
@@ -342,7 +382,12 @@ export const tickEntryProgress = async (
 ): Promise<TrackedEntry> =>
   db.transaction(async (tx) => {
     const [row] = await tx
-      .select({ ...ENTRY_COLUMNS, mediaType: Media.mediaType, progressTotal: PROGRESS_TOTAL })
+      .select({
+        ...ENTRY_COLUMNS,
+        mediaType: Media.mediaType,
+        mediaUuid: Media.uuid,
+        progressTotal: PROGRESS_TOTAL,
+      })
       .from(UserMedia)
       .innerJoin(Media, eq(Media.uuid, UserMedia.mediaUuid))
       .where(and(eq(UserMedia.uuid, input.entryUuid), eq(UserMedia.userUuid, userUuid)))
@@ -350,9 +395,9 @@ export const tickEntryProgress = async (
     if (!row) {
       throw new NotFoundError("That title is not in your library");
     }
-    const { mediaType, progressTotal, ...entry } = row;
+    const { mediaType, progressTotal, mediaUuid, ...entry } = row;
 
-    const today = await todayFor(tx, userUuid);
+    const { today, activityPrefs } = await settingsFor(tx, userUuid);
     const target = {
       progressUnit: DEFAULT_PROGRESS_UNIT[mediaType],
       progressTotal: knownTotal(progressTotal),
@@ -380,6 +425,7 @@ export const tickEntryProgress = async (
       note: input.note,
       eventAt: input.eventAt ? new Date(input.eventAt) : undefined,
     });
+    await announceChange(tx, userUuid, mediaUuid, previous, next, activityPrefs);
     return saved;
   });
 

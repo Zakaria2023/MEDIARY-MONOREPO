@@ -1,4 +1,4 @@
-import { CatalogCard, CatalogTitle, ProfileCounts, PublicProfile } from "services";
+import { CatalogCard, CatalogTitle, ProfileCounts, PublicProfile, RatingSummary, TitleReview } from "services";
 import { catalogImageUrl } from "utils";
 import { absoluteUrl, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { profilePath } from "@/lib/profile-path";
@@ -213,4 +213,44 @@ export const profileNodes = (profile: PublicProfile, counts: ProfileCounts): Jso
       ],
     },
   ];
+};
+
+/**
+ * Mediary's own rating and reviews of a title, attached to its node by
+ * @id. An aggregate rating needs at least one score; a review needs a
+ * body, which every review has. Only public reviews are handed over.
+ */
+export const communityNodes = (
+  title: CatalogTitle,
+  summary: RatingSummary,
+  reviews: TitleReview[],
+): JsonLdNode[] => {
+  const titleId = `${absoluteUrl(titlePath(title))}#title`;
+  const nodes: JsonLdNode[] = [];
+  if (summary.average !== null && summary.count > 0) {
+    nodes.push({
+      "@type": "AggregateRating",
+      "@id": `${titleId}-rating`,
+      itemReviewed: { "@id": titleId },
+      ratingValue: summary.average,
+      bestRating: 10,
+      worstRating: 0,
+      ratingCount: summary.count,
+    });
+  }
+  for (const review of reviews.slice(0, 5)) {
+    nodes.push({
+      "@type": "Review",
+      "@id": `${absoluteUrl(titlePath(title))}#review-${review.uuid}`,
+      itemReviewed: { "@id": titleId },
+      author: { "@type": "Person", name: review.author.displayName },
+      datePublished: review.createdAt.toISOString(),
+      ...(review.headline && { name: review.headline }),
+      reviewBody: review.body,
+      ...(review.score !== null && {
+        reviewRating: { "@type": "Rating", ratingValue: review.score, bestRating: 10, worstRating: 0 },
+      }),
+    });
+  }
+  return nodes;
 };

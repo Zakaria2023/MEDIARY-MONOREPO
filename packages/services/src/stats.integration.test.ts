@@ -105,7 +105,7 @@ describe("stats, diary and profile counts", () => {
     expect(stats.mediaSplit.map((row) => row.mediaType)).toEqual(["anime", "movie"]);
 
     const counts = await getProfileCounts(fixture.userUuid);
-    expect(counts).toEqual({ titles: 2, completed: 1, hours: 5 });
+    expect(counts).toEqual({ titles: 2, completed: 1, hours: 5, followers: 0, following: 0 });
 
     const favorites = await listProfileFavorites(fixture.userUuid);
     expect(favorites.map((row) => [row.canonicalTitle, row.score])).toEqual([["Frieren", 8]]);

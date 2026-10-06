@@ -1,3 +1,4 @@
+export * from "./activities";
 export * from "./admin";
 export * from "./auth";
 export * from "./catalog";
@@ -9,9 +10,13 @@ export * from "./diary";
 export * from "./diary-rules";
 export * from "./db-result";
 export * from "./errors";
+export * from "./follows";
+export * from "./lists";
 export * from "./profiles";
 export * from "./providers/registry";
 export * from "./public-profile";
+export * from "./reviews";
+export * from "./social-user";
 export type {
   NormalizedMedia,
   ProviderAttribution,

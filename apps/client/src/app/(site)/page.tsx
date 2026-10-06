@@ -5,6 +5,8 @@ import { HomeTrending } from "@/components/catalog/home-trending";
 import { TitleRailSkeleton } from "@/components/catalog/title-rail-skeleton";
 import { ContinueRail } from "@/components/home/continue-rail";
 import { ContinueRailSkeleton } from "@/components/home/continue-rail-skeleton";
+import { FeedSkeleton } from "@/components/feed/feed-skeleton";
+import { FriendsPanel } from "@/components/home/friends-panel";
 import { getCurrentUser } from "@/lib/auth";
 
 /**
@@ -83,6 +85,11 @@ const HomePage = async () => {
           <HomeTrending />
         </AsyncSection>
       </div>
+      {user && (
+        <AsyncSection reloadKey={`friends-${user.uuid}`} skeleton={<div className="mx-auto w-full max-w-7xl px-5 sm:px-8"><FeedSkeleton rows={3} /></div>}>
+          <FriendsPanel userUuid={user.uuid} />
+        </AsyncSection>
+      )}
     </main>
   );
 };

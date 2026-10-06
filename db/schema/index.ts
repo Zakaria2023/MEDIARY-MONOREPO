@@ -16,3 +16,7 @@ export * from "./media-details";
 export * from "./user-media";
 export * from "./progress-events";
 export * from "./favorites";
+export * from "./reviews";
+export * from "./custom-lists";
+export * from "./follows";
+export * from "./activities";

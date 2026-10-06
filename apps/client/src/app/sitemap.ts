@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { listSitemapProfiles, listSitemapTitles } from "services";
+import { listSitemapLists, listSitemapProfiles, listSitemapTitles } from "services";
 import { launchMediaTypes } from "@/db/enum";
 import { absoluteUrl } from "@/lib/seo";
 import { profilePath } from "@/lib/profile-path";
@@ -17,7 +17,11 @@ export const dynamic = "force-dynamic";
  * step that makes them.
  */
 const sitemap = async (): Promise<MetadataRoute.Sitemap> => {
-  const [titles, profiles] = await Promise.all([listSitemapTitles(), listSitemapProfiles()]);
+  const [titles, profiles, lists] = await Promise.all([
+    listSitemapTitles(),
+    listSitemapProfiles(),
+    listSitemapLists(),
+  ]);
 
   return [
     { url: absoluteUrl("/"), changeFrequency: "daily", priority: 1 },
@@ -36,6 +40,12 @@ const sitemap = async (): Promise<MetadataRoute.Sitemap> => {
     ...profiles.map((profile) => ({
       url: absoluteUrl(profilePath(profile.username)),
       lastModified: profile.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.5,
+    })),
+    ...lists.map((list) => ({
+      url: absoluteUrl(`/lists/${list.slug}`),
+      lastModified: list.updatedAt,
       changeFrequency: "weekly" as const,
       priority: 0.5,
     })),

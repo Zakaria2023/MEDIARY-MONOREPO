@@ -14,6 +14,8 @@ export const ProfileCounts = async ({ profile }: ProfileCountsProps) => {
     ["Titles", formatCount(counts.titles)],
     ["Completed", formatCount(counts.completed)],
     ["Hours", formatCount(counts.hours)],
+    ["Followers", formatCount(counts.followers)],
+    ["Following", formatCount(counts.following)],
   ];
 
   return (
