@@ -2,6 +2,9 @@ import {
   ActivityKind,
   AnimeFormat,
   ImageType,
+  ImportOutcome,
+  ImportSource,
+  ImportStatus,
   MediaStatus,
   MediaType,
   ProgressUnit,
@@ -237,4 +240,28 @@ export const ACTIVITY_VERBS: Record<ActivityKind, string> = {
   favorited: "added to favorites",
   listed: "added to a list",
   followed: "followed",
+};
+
+/**
+ * What a screen calls an import source. The two named services are the
+ * person's own accounts elsewhere, named by them, like "Continue with
+ * Google": not services Mediary uses.
+ */
+export const IMPORT_SOURCE_LABELS: Record<ImportSource, string> = {
+  mal: "MyAnimeList export (XML)",
+  letterboxd: "Letterboxd export (CSV)",
+  csv: "Mediary CSV",
+};
+
+export const IMPORT_STATUS_LABELS: Record<ImportStatus, string> = {
+  previewed: "Ready to import",
+  applied: "Imported",
+  failed: "Failed",
+};
+
+export const IMPORT_OUTCOME_LABELS: Record<ImportOutcome, string> = {
+  matched: "Found in the catalog",
+  unmatched: "Not in the catalog yet",
+  created: "Added to your library",
+  skipped: "Already in your library",
 };

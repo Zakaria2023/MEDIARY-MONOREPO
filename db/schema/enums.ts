@@ -4,6 +4,9 @@ import {
   animeFormats,
   favoriteKinds,
   imageTypes,
+  importOutcomes,
+  importSources,
+  importStatuses,
   mediaStatuses,
   mediaTypes,
   progressUnits,
@@ -51,3 +54,7 @@ export const progressUnitEnum = pgEnum("progress_unit", progressUnits);
 export const favoriteKindEnum = pgEnum("favorite_kind", favoriteKinds);
 
 export const activityKindEnum = pgEnum("activity_kind", activityKinds);
+
+export const importSourceEnum = pgEnum("import_source", importSources);
+export const importStatusEnum = pgEnum("import_status", importStatuses);
+export const importOutcomeEnum = pgEnum("import_outcome", importOutcomes);
