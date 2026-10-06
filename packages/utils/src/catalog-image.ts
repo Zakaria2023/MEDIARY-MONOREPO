@@ -30,6 +30,10 @@ const IGDB_WIDE_STEPS: readonly SizeStep[] = [
   [1920, "1080p"],
 ];
 
+// Cover Art Archive serves three sizes by release group: 250, 500 and 1200.
+const COVER_ART_PREFIX = "https://coverartarchive.org/release-group/";
+const COVER_ART_WIDTHS = [250, 500, 1200] as const;
+
 const pick = (steps: readonly SizeStep[], width: number): string => {
   const step = steps.find(([maxWidth]) => maxWidth >= width) ?? steps[steps.length - 1];
   return step ? step[1] : "original";
@@ -45,6 +49,14 @@ export const catalogImageUrl = (src: string, width: number): string => {
     const path = rest.slice(rest.indexOf("/"));
     const size = TMDB_WIDTHS.find((candidate) => candidate >= width);
     return `${TMDB_PREFIX}${size ? `w${size}` : "original"}${path}`;
+  }
+  if (src.startsWith(COVER_ART_PREFIX)) {
+    const match = src.match(/^(.*\/front)-\d+$/);
+    if (match) {
+      const size = COVER_ART_WIDTHS.find((candidate) => candidate >= width) ?? 1200;
+      return `${match[1]}-${size}`;
+    }
+    return src;
   }
   if (src.startsWith(IGDB_PREFIX)) {
     const rest = src.slice(IGDB_PREFIX.length);

@@ -1,22 +1,10 @@
 import { MediaSplit } from "services";
 import { formatTrackedTime } from "utils";
-import { MediaType } from "@/db/enum";
 import { MEDIA_TYPE_PLURAL_LABELS } from "@/db/label";
+import { MEDIA_COLOR_CLASSES } from "@/lib/media-colors";
 
 type MediaSplitBarsProps = {
   split: MediaSplit[];
-};
-
-/** One color per medium, the same on every chart. */
-export const MEDIA_COLOR_CLASSES: Record<MediaType, string> = {
-  anime: "bg-accent",
-  game: "bg-violet",
-  movie: "bg-magenta",
-  tv: "bg-pink",
-  manga: "bg-success",
-  book: "bg-warning",
-  music: "bg-primary",
-  podcast: "bg-status-planned",
 };
 
 /** A stacked bar of each medium's share of tracked time, with the legend under it. */

@@ -11,6 +11,7 @@ import {
   mediaTypes,
   progressUnits,
   providers,
+  releaseTypes,
   reportReasons,
   reportStatuses,
   seasons,
@@ -49,6 +50,7 @@ export const imageTypeEnum = pgEnum("image_type", imageTypes);
 export const providerEnum = pgEnum("provider", providers);
 export const animeFormatEnum = pgEnum("anime_format", animeFormats);
 export const seasonEnum = pgEnum("season", seasons);
+export const releaseTypeEnum = pgEnum("release_type", releaseTypes);
 export const tagCategoryEnum = pgEnum("tag_category", tagCategories);
 
 export const trackingStatusEnum = pgEnum("tracking_status", trackingStatuses);

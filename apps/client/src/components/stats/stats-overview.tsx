@@ -74,6 +74,7 @@ export const StatsOverview = async ({ userUuid }: StatsOverviewProps) => {
             game: entry.byType.game ?? 0,
             movie: entry.byType.movie ?? 0,
             tv: entry.byType.tv ?? 0,
+            music: entry.byType.music ?? 0,
           }))}
         />
       </section>

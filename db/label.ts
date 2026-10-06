@@ -9,6 +9,7 @@ import {
   MediaType,
   ProgressUnit,
   Provider,
+  ReleaseType,
   ReportReason,
   ReportStatus,
   Season,
@@ -279,4 +280,14 @@ export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
   open: "Open",
   dismissed: "Dismissed",
   actioned: "Review removed",
+};
+
+export const RELEASE_TYPE_LABELS: Record<ReleaseType, string> = {
+  album: "Album",
+  ep: "EP",
+  single: "Single",
+  compilation: "Compilation",
+  live: "Live",
+  soundtrack: "Soundtrack",
+  other: "Release",
 };

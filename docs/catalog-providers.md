@@ -12,6 +12,15 @@ where the check is recorded.
 | TMDB     | Built: movies and TV | Live against the API; imports, refresh and search tested end to end. |
 | IGDB     | Built: games | Unit-tested against the documented v4 shape only. Not yet called live: the Twitch credentials are not configured. Run one import as soon as they are. |
 | Anime    | Not built | Waiting on the owner's choice of source; see below. |
+| MusicBrainz + Cover Art Archive | Built: music (albums, EPs, singles as release groups) | Unit-tested against the documented JSON shape. Live calls need no key; the adapter sends the required User-Agent and keeps to one request a second. |
+
+## MusicBrainz, checked 2026-10-07
+
+- **Data:** the core data is CC0; the supplementary data (tags, ratings, annotations) is CC BY-NC-SA 3.0. Mediary stores genres derived from tags, which is supplementary data; a commercial Mediary must either take a MusicBrainz commercial data license or drop the genre tags. Recorded here for the owner.
+- **Rate limit:** one request per second per client, enforced with 503s; a meaningful `User-Agent` with a contact is required. The adapter sends `Mediary/0.1 (https://mediary.com)` and gates at 1.1 seconds, one in flight.
+- **Images:** the Cover Art Archive serves covers by release group at 250, 500 and 1200 pixels, hotlinking allowed; the images themselves belong to their owners and are shown under the archive's terms. A release group with no cover answers 404; the page shows the placeholder.
+- **Charts:** the catalog has no popularity or chart data. "Trending" and "popular" are recent official albums (90 and 365 days); "coming soon" is albums dated ahead. A real chart needs a second source and is not planned.
+- **Attribution:** kept as data on the adapter, rendered nowhere (No Vendor On Screen); MusicBrainz asks for a credit where its data is used, so it joins the TMDB credit on the Credits page when that is built.
 
 ## Launch blocker: TMDB attribution
 

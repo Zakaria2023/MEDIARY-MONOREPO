@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { LaunchMediaType, launchMediaTypes } from "@/db/enum";
 import { MEDIA_TYPE_PLURAL_LABELS } from "@/db/label";
+import { hubPath } from "@/lib/hub-path";
 
 type TypeTabsProps = {
   /** The medium on screen; undefined is the All view. */
@@ -19,7 +20,7 @@ export const TypeTabs = ({ current }: TypeTabsProps) => (
       return (
         <Link
           key={type ?? "all"}
-          href={type ? `/explore/${type}` : "/explore"}
+          href={type ? hubPath(type) : "/explore"}
           aria-current={active ? "page" : undefined}
           className={`flex h-9 shrink-0 items-center rounded-full px-4 text-sm font-medium transition-colors ${
             active

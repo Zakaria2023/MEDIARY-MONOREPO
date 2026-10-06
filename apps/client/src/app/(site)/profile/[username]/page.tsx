@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { AsyncSection } from "ui";
 import { PrivateProfile } from "@/components/profile/private-profile";
 import { ProfileActivity } from "@/components/profile/profile-activity";
+import { ProfileBreakdown } from "@/components/profile/profile-breakdown";
 import { ProfileCounts } from "@/components/profile/profile-counts";
 import { ProfileCountsSkeleton } from "@/components/profile/profile-counts-skeleton";
 import { ProfileCurrent } from "@/components/profile/profile-current";
@@ -69,6 +70,9 @@ const ProfilePage = async ({ params }: Props) => {
           <>
             <AsyncSection reloadKey={`favorites-${profile.uuid}`} skeleton={<ProfileSectionSkeleton posters={6} />}>
               <ProfileFavorites profile={profile} />
+            </AsyncSection>
+            <AsyncSection reloadKey={`breakdown-${profile.uuid}`} skeleton={<ProfileSectionSkeleton posters={0} />}>
+              <ProfileBreakdown profile={profile} />
             </AsyncSection>
             <AsyncSection reloadKey={`current-${profile.uuid}`} skeleton={<ProfileSectionSkeleton posters={4} />}>
               <ProfileCurrent profile={profile} />

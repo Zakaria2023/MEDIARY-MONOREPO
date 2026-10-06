@@ -1,5 +1,5 @@
 import { formatDate, formatRuntime } from "utils";
-import { ANIME_FORMAT_LABELS, MEDIA_STATUS_LABELS, SEASON_LABELS } from "../../../db/label";
+import { ANIME_FORMAT_LABELS, MEDIA_STATUS_LABELS, RELEASE_TYPE_LABELS, SEASON_LABELS } from "../../../db/label";
 import { CatalogTitle } from "./catalog";
 
 /** One labelled fact on a title page. */
@@ -63,6 +63,14 @@ export const catalogFacts = (title: CatalogTitle): CatalogFact[] => {
       },
       { label: "Studio", value: details.studio },
       { label: "Source", value: details.sourceMaterial },
+    );
+  } else if (details?.kind === "music") {
+    facts.push(
+      { label: "Artist", value: details.artist },
+      { label: "Type", value: RELEASE_TYPE_LABELS[details.releaseType] },
+      { label: "Tracks", value: count(details.trackCount) },
+      { label: "Length", value: formatRuntime(details.durationMinutes) },
+      { label: "Label", value: details.label },
     );
   }
 

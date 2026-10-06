@@ -42,3 +42,12 @@ describe("formatRuntime", () => {
     expect(formatRuntime(0)).toBeNull();
   });
 });
+
+describe("catalogImageUrl for cover art", () => {
+  it("picks the archive's size at or above the width", () => {
+    const cover = "https://coverartarchive.org/release-group/abc/front-500";
+    expect(catalogImageUrl(cover, 200)).toBe("https://coverartarchive.org/release-group/abc/front-250");
+    expect(catalogImageUrl(cover, 640)).toBe("https://coverartarchive.org/release-group/abc/front-1200");
+    expect(catalogImageUrl(cover, 4000)).toBe("https://coverartarchive.org/release-group/abc/front-1200");
+  });
+});

@@ -5,6 +5,7 @@ import { TitleGrid } from "@/components/catalog/title-grid";
 import { TitleRail } from "@/components/catalog/title-rail";
 import { JsonLd } from "@/components/seo/json-ld";
 import { EXPLORE_COPY } from "@/lib/explore-copy";
+import { hubPath } from "@/lib/hub-path";
 import { graph, itemListNode } from "@/lib/structured-data";
 
 const RAIL_SIZE = 16;
@@ -30,7 +31,7 @@ export const ExploreRails = async () => {
       <div className="px-5 sm:px-8">
         <CatalogEmptyState
           heading="The catalog is being filled"
-          body="Movies, shows, games and anime arrive here as they are imported. Check back soon."
+          body="Movies, shows, games, anime and music arrive here as they are imported. Check back soon."
         />
       </div>
     );
@@ -49,7 +50,7 @@ export const ExploreRails = async () => {
         <TitleRail
           key={mediaType}
           heading={`Trending ${EXPLORE_COPY[mediaType].noun}`}
-          href={`/explore/${mediaType}`}
+          href={hubPath(mediaType)}
           titles={byType[index]?.items ?? []}
         />
       ))}

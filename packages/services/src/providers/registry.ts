@@ -1,6 +1,7 @@
 import { MediaType, Provider } from "../../../../db/enum";
 import { PROVIDER_LABELS } from "../../../../db/label";
 import { igdbProvider } from "./igdb";
+import { musicbrainzProvider } from "./musicbrainz";
 import { tmdbProvider } from "./tmdb";
 import { MediaProvider } from "./types";
 
@@ -18,7 +19,7 @@ export type ProviderStatus = {
  * is ruled out by its terms and the replacement is the owner's decision
  * (docs/catalog-providers.md). Adding it is one adapter and one line here.
  */
-const ADAPTERS: MediaProvider[] = [tmdbProvider, igdbProvider];
+const ADAPTERS: MediaProvider[] = [tmdbProvider, igdbProvider, musicbrainzProvider];
 
 /** The adapter for a provider, or an error naming what is missing. */
 export const getProvider = (provider: Provider): MediaProvider => {
