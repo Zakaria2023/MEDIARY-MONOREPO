@@ -1,0 +1,17 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# EVERY dependency with an install script has to be named here, `false` included.
+# pnpm 11 does not quietly skip an undeclared one; it FAILS the install with
+# ERR_PNPM_IGNORED_BUILDS, and because a Vercel build starts with `pnpm install`
+# at the workspace root, one unlisted package takes down the deployment.
+#
+# `false` is the default answer. An install script runs arbitrary code from a
+# transitive dependency at install time, and the only ones worth `true` are the
+# ones something genuinely cannot run without.
+allowBuilds:
+  "@clerk/shared": false
+  esbuild: true
+  sharp: false
+  unrs-resolver: false

@@ -1,0 +1,33 @@
+{
+  "name": "mediary-monorepo",
+  "private": true,
+  "packageManager": "pnpm@11.5.2",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "dev:web": "pnpm --filter web dev",
+    "build": "pnpm test && pnpm -r --workspace-concurrency=1 build",
+    "lint": "pnpm -r lint",
+    "type-check": "pnpm -r type-check",
+    "test": "vitest run",
+    "test:db:setup": "dotenv -e .env.local -- tsx scripts/setup-test-db.ts",
+    "test:integration": "dotenv -e .env.local -- vitest run --config vitest.integration.config.ts",
+    "db:push": "dotenv -e .env.local -- drizzle-kit push",
+    "db:studio": "dotenv -e .env.local -- drizzle-kit studio"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.5",
+    "dotenv-cli": "^11.0.0",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.23.1",
+    "turbo": "^2.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "pg": "^8.16.3"
+  }
+}
