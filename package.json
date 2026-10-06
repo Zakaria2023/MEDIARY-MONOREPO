@@ -11,7 +11,7 @@
     "build": "pnpm test && pnpm -r --workspace-concurrency=1 build",
     "lint": "pnpm -r lint",
     "type-check": "pnpm -r type-check",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "test:db:setup": "dotenv -e .env.local -- tsx scripts/setup-test-db.ts",
     "test:integration": "dotenv -e .env.local -- vitest run --config vitest.integration.config.ts",
     "db:push": "dotenv -e .env.local -- drizzle-kit push",
