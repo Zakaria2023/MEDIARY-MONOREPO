@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { listSitemapLists, listSitemapProfiles, listSitemapTitles } from "services";
 import { launchMediaTypes } from "@/db/enum";
 import { absoluteUrl } from "@/lib/seo";
+import { hubPath } from "@/lib/hub-path";
 import { profilePath } from "@/lib/profile-path";
 import { titlePath } from "@/lib/title-path";
 
@@ -27,7 +28,7 @@ const sitemap = async (): Promise<MetadataRoute.Sitemap> => {
     { url: absoluteUrl("/"), changeFrequency: "daily", priority: 1 },
     { url: absoluteUrl("/explore"), changeFrequency: "daily", priority: 0.9 },
     ...launchMediaTypes.map((type) => ({
-      url: absoluteUrl(`/explore/${type}`),
+      url: absoluteUrl(hubPath(type)),
       changeFrequency: "daily" as const,
       priority: 0.8,
     })),

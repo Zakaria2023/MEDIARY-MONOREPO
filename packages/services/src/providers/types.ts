@@ -4,6 +4,7 @@ import {
   MediaStatus,
   MediaType,
   Provider,
+  ReleaseType,
   Season,
   TitleType,
 } from "../../../../db/enum";
@@ -82,11 +83,22 @@ export type NormalizedAnimeDetails = {
   studio: string | null;
 };
 
+export type NormalizedMusicDetails = {
+  kind: "music";
+  artist: string;
+  artistMbid: string | null;
+  releaseType: ReleaseType;
+  trackCount: number | null;
+  durationMinutes: number | null;
+  label: string | null;
+};
+
 export type NormalizedDetails =
   | NormalizedMovieDetails
   | NormalizedTvDetails
   | NormalizedGameDetails
-  | NormalizedAnimeDetails;
+  | NormalizedAnimeDetails
+  | NormalizedMusicDetails;
 
 /**
  * A provider record in MEDIARY'S SHAPE. Every adapter returns this and

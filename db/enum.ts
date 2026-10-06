@@ -66,12 +66,13 @@ export const mediaTypes = [
 
 export type MediaType = (typeof mediaTypes)[number];
 
-/** The four media the first release ships with. */
+/** The five media the first release ships with. */
 export const launchMediaTypes = [
   "anime",
   "game",
   "movie",
   "tv",
+  "music",
 ] as const satisfies readonly MediaType[];
 
 export type LaunchMediaType = (typeof launchMediaTypes)[number];
@@ -145,6 +146,19 @@ export const animeFormats = [
 ] as const satisfies readonly string[];
 
 export type AnimeFormat = (typeof animeFormats)[number];
+
+/** What kind of record a music release is. */
+export const releaseTypes = [
+  "album",
+  "ep",
+  "single",
+  "compilation",
+  "live",
+  "soundtrack",
+  "other",
+] as const satisfies readonly string[];
+
+export type ReleaseType = (typeof releaseTypes)[number];
 
 export const seasons = [
   "winter",

@@ -46,6 +46,13 @@ export const EXPLORE_COPY: Record<LaunchMediaType, ExploreCopy> = {
       "Discover trending, top rated and upcoming TV shows. Track every season and episode you watch on Mediary.",
     noun: "shows",
   },
+  music: {
+    heading: "Music",
+    intro: "New records, the ones everyone keeps playing, and what is coming.",
+    description:
+      "Discover new albums and EPs, keep a listening diary, rate records and build a collection on Mediary.",
+    noun: "records",
+  },
 };
 
 /** The sort tabs, in order, with what each one shows. */

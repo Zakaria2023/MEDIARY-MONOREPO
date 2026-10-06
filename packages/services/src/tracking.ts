@@ -94,6 +94,8 @@ export type LibraryCounts = {
   byType: Partial<Record<MediaType, number>>;
   /** Within the medium the library is filtered to, or all of them. */
   byStatus: Record<TrackingStatus, number>;
+  /** Every medium's own status counts, for a breakdown. */
+  byTypeStatus: Partial<Record<MediaType, Record<TrackingStatus, number>>>;
 };
 
 /** A target as the query returns it, before the unit is filled in. */
@@ -527,6 +529,7 @@ export const getLibraryCounts = async (
     all: 0,
     byType: {},
     byStatus: { in_progress: 0, completed: 0, paused: 0, dropped: 0, planned: 0 },
+    byTypeStatus: {},
   };
   for (const row of rows) {
     counts.all += row.entries;
@@ -534,6 +537,15 @@ export const getLibraryCounts = async (
     if (!mediaType || row.mediaType === mediaType) {
       counts.byStatus[row.status] += row.entries;
     }
+    const medium = counts.byTypeStatus[row.mediaType] ?? {
+      in_progress: 0,
+      completed: 0,
+      paused: 0,
+      dropped: 0,
+      planned: 0,
+    };
+    medium[row.status] += row.entries;
+    counts.byTypeStatus[row.mediaType] = medium;
   }
   return counts;
 };

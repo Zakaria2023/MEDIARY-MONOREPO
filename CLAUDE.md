@@ -463,6 +463,12 @@ SEO is a core of the product, with the design. Every public route pays for its p
 - The admin's `/members` lists every member; a role change or a suspension needs `requireAdmin`, and an admin can never change their own role or status: the last admin must not lock everyone out.
 - The Step 0 design prototypes (`/design`, `lib/design/mock.ts`, the mock components) were removed in beta hardening; the real components they were drawn for are the product.
 
+## Medium Hubs And Music
+
+- **Every launch medium has a hub** at its plural address, served by `app/(site)/[type]/page.tsx` through `parseHubSlug`; a singular address (`/movie`) redirects to the hub, because the singular is a title's address space (`/movie/inception`). The hub is where a medium's own design lives: `HUB_COPY` in `src/lib/hub-copy.ts` names its two rails and its facet; everything else is shared.
+- **A facet is a medium's own filter beside genres** (`HubFacetKind` in `catalog.ts`: a game's platform, a film's decade, an anime's season, a show's airing status, a record's kind). `listHubFacetOptions` offers only values with public titles. Statuses inside a hub are filters on the member's own section, never pages.
+- **Music is albums, EPs and singles** from the music catalog (`providers/musicbrainz.ts`), one request a second with a named User-Agent, covers from the Cover Art Archive at 250, 500 and 1200 (`catalogImageUrl`). `MusicDetails` carries the artist line, the kind of record, tracks, length and label; progress is counted in plays, time as plays by length. The catalog has no charts, so "trending" is recent releases (`docs/catalog-providers.md`).
+
 ## Design Tokens
 
 The brand palette from the blueprint, as `globals.css` tokens. The app is dark-mode-first; a light theme is added once the dark system is complete, as a `.light` override of the same tokens.
@@ -491,7 +497,8 @@ One or two accents per screen. The spectrum belongs to the logo and the five gra
 | ----------------------- | ------------------------------------------- |
 | `/`                     | Marketing when signed out, home when signed in |
 | `/explore`              | Cross-media discovery hub                   |
-| `/explore/[type]`       | One medium's discovery page                 |
+| `/anime`, `/games`, `/movies`, `/tv`, `/music` | One medium's hub: its own design, rails, facet filter and the member's own titles with statuses as filters (`app/(site)/[type]/page.tsx`, slugs in `src/lib/hub-path.ts`) |
+| `/explore/[type]`       | Permanent redirect to the medium's hub      |
 | `/search?q=`            | Universal search with type filters (noindex) |
 | `/[type]/[slug]`        | Canonical media detail page                 |
 | `/library`              | The signed-in user's library                |

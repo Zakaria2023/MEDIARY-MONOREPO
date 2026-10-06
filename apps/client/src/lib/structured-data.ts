@@ -63,6 +63,9 @@ const schemaType = (title: CatalogTitle): string => {
   if (title.mediaType === "game") {
     return "VideoGame";
   }
+  if (title.mediaType === "music") {
+    return "MusicAlbum";
+  }
   if (title.details?.kind === "anime" && title.details.format === "movie") {
     return "Movie";
   }
@@ -98,6 +101,14 @@ const mediumFields = (title: CatalogTitle): Record<string, unknown> => {
       ...(details.multiplayer !== null && {
         playMode: details.multiplayer ? "MultiPlayer" : "SinglePlayer",
       }),
+    };
+  }
+  if (details?.kind === "music") {
+    return {
+      byArtist: { "@type": "MusicGroup", name: details.artist },
+      ...(details.trackCount && { numTracks: details.trackCount }),
+      ...(details.durationMinutes && { duration: `PT${details.durationMinutes}M` }),
+      ...(details.label && { recordLabel: { "@type": "Organization", name: details.label } }),
     };
   }
   if (details?.kind === "anime") {

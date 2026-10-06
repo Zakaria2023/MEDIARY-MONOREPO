@@ -12,6 +12,7 @@ import { TitleReviewsSkeleton } from "@/components/reviews/title-reviews-skeleto
 import { JsonLd } from "@/components/seo/json-ld";
 import { getCurrentUser } from "@/lib/auth";
 import { EXPLORE_COPY } from "@/lib/explore-copy";
+import { hubPath } from "@/lib/hub-path";
 import { loadTitle } from "@/lib/load-title";
 import { pageMetadata } from "@/lib/seo";
 import { graph, titleNodes } from "@/lib/structured-data";
@@ -70,7 +71,7 @@ const TitlePage = async ({ params }: Props) => {
         data={graph(
           titleNodes(title, [
             { name: "Explore", path: "/explore" },
-            { name: section, path: `/explore/${title.mediaType}` },
+            { name: section, path: launchType ? hubPath(launchType) : "/explore" },
             { name: title.canonicalTitle, path: titlePath(title) },
           ]),
         )}

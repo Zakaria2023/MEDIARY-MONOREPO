@@ -5,6 +5,7 @@ import {
   desc,
   eq,
   gt,
+  gte,
   ilike,
   inArray,
   lte,
@@ -15,15 +16,18 @@ import {
 } from "drizzle-orm";
 import { buildPaginatedResult, PaginatedResult, resolvePagination } from "utils";
 import { db } from "../../../db";
-import { MediaType, Provider } from "../../../db/enum";
+import { MediaStatus, MediaType, Provider, Season } from "../../../db/enum";
+import { ANIME_FORMAT_LABELS, MEDIA_STATUS_LABELS, RELEASE_TYPE_LABELS, SEASON_LABELS } from "../../../db/label";
 import { Genres, MediaGenres, SelectGenres } from "../../../db/schema/genres";
 import {
   AnimeDetails,
   GameDetails,
   MovieDetails,
+  MusicDetails,
   SelectAnimeDetails,
   SelectGameDetails,
   SelectMovieDetails,
+  SelectMusicDetails,
   SelectTvDetails,
   TvDetails,
 } from "../../../db/schema/media-details";
@@ -69,7 +73,8 @@ export type CatalogDetails =
   | ({ kind: "movie" } & Omit<SelectMovieDetails, "id" | "mediaUuid">)
   | ({ kind: "tv" } & Omit<SelectTvDetails, "id" | "mediaUuid">)
   | ({ kind: "game" } & Omit<SelectGameDetails, "id" | "mediaUuid">)
-  | ({ kind: "anime" } & Omit<SelectAnimeDetails, "id" | "mediaUuid">);
+  | ({ kind: "anime" } & Omit<SelectAnimeDetails, "id" | "mediaUuid">)
+  | ({ kind: "music" } & Omit<SelectMusicDetails, "id" | "mediaUuid">);
 
 /** Everything a title's public page renders. */
 export type CatalogTitle = CatalogCard &
@@ -96,10 +101,30 @@ export type CatalogTitle = CatalogCard &
 /** How a discovery grid is ordered. */
 export type CatalogSort = "trending" | "top" | "new" | "upcoming";
 
+/**
+ * A MEDIUM'S OWN FILTER, beside genres: a game's platform, a film's
+ * decade, an anime's season, a show's airing status, a record's kind. One
+ * per medium, chosen by the hub; the value is what the option carries.
+ */
+export type HubFacetKind = "platform" | "decade" | "season" | "status" | "releaseType";
+
+export type HubFacet = {
+  kind: HubFacetKind;
+  value: string;
+};
+
+/** One choice a facet offers, with how many public titles it has. */
+export type HubFacetOption = {
+  value: string;
+  label: string;
+  titleCount: number;
+};
+
 export type ListCatalogParams = {
   mediaType?: MediaType;
   sort: CatalogSort;
   genre?: string;
+  facet?: HubFacet;
   page?: number | string;
   pageSize?: number;
 };
@@ -185,14 +210,62 @@ const inGenre = (genreSlug: string): SQL =>
       .where(eq(Genres.slug, genreSlug)),
   );
 
+/** A facet value as a condition on Media, or undefined for a value nothing matches. */
+const facetCondition = (facet: HubFacet): SQL | undefined => {
+  switch (facet.kind) {
+    case "platform":
+      return inArray(
+        Media.uuid,
+        db
+          .select({ uuid: GamePlatforms.mediaUuid })
+          .from(GamePlatforms)
+          .innerJoin(Platforms, eq(Platforms.id, GamePlatforms.platformId))
+          .where(eq(Platforms.slug, facet.value)),
+      );
+    case "decade": {
+      const start = Number(facet.value.replace(/s$/, ""));
+      if (!Number.isInteger(start)) {
+        return sql`false`;
+      }
+      return and(gte(Media.releaseYear, start), lte(Media.releaseYear, start + 9));
+    }
+    case "season": {
+      const [season, year] = facet.value.split("-");
+      const seasonYear = Number(year);
+      if (!season || !Number.isInteger(seasonYear)) {
+        return sql`false`;
+      }
+      return inArray(
+        Media.uuid,
+        db
+          .select({ uuid: AnimeDetails.mediaUuid })
+          .from(AnimeDetails)
+          .where(and(eq(AnimeDetails.season, season as Season), eq(AnimeDetails.seasonYear, seasonYear))),
+      );
+    }
+    case "status":
+      return eq(Media.status, facet.value as MediaStatus);
+    case "releaseType":
+      return inArray(
+        Media.uuid,
+        db
+          .select({ uuid: MusicDetails.mediaUuid })
+          .from(MusicDetails)
+          .where(sql`${MusicDetails.releaseType} = ${facet.value}`),
+      );
+  }
+};
+
 /**
  * A discovery grid: one medium or all of them, ordered for a rail or a page
- * of explore, optionally narrowed to a genre. Public titles only.
+ * of explore, optionally narrowed to a genre and the medium's own facet.
+ * Public titles only.
  */
 export const listCatalog = async ({
   mediaType,
   sort,
   genre,
+  facet,
   page,
   pageSize,
 }: ListCatalogParams): Promise<PaginatedResult<CatalogCard>> => {
@@ -201,6 +274,7 @@ export const listCatalog = async ({
     isPublic,
     mediaType ? eq(Media.mediaType, mediaType) : undefined,
     genre ? inGenre(genre) : undefined,
+    facet ? facetCondition(facet) : undefined,
     SORTS[sort].where(),
   );
   const [items, [total]] = await Promise.all([
@@ -293,6 +367,86 @@ export const searchCatalog = async ({
 export const quickSearchCatalog = async (query: string, limit = 8): Promise<CatalogCard[]> =>
   (await searchCatalog({ query, pageSize: limit })).items;
 
+/**
+ * The choices a medium's facet offers, each with its public title count,
+ * so no chip leads to an empty grid. The ordering is the medium's: newest
+ * season first, most titles first for a platform, newest decade first.
+ */
+export const listHubFacetOptions = async (
+  mediaType: MediaType,
+  kind: HubFacetKind,
+): Promise<HubFacetOption[]> => {
+  const titleCount = count(Media.uuid);
+  const base = and(isPublic, eq(Media.mediaType, mediaType));
+  switch (kind) {
+    case "platform": {
+      const rows = await db
+        .select({ value: Platforms.slug, label: Platforms.name, titleCount })
+        .from(GamePlatforms)
+        .innerJoin(Platforms, eq(Platforms.id, GamePlatforms.platformId))
+        .innerJoin(Media, eq(Media.uuid, GamePlatforms.mediaUuid))
+        .where(base)
+        .groupBy(Platforms.id)
+        .orderBy(desc(titleCount), asc(Platforms.position))
+        .limit(12);
+      return rows;
+    }
+    case "decade": {
+      const decade = sql<number>`(${Media.releaseYear} / 10) * 10`;
+      const rows = await db
+        .select({ decade, titleCount })
+        .from(Media)
+        .where(and(base, sql`${Media.releaseYear} is not null`))
+        .groupBy(decade)
+        .orderBy(desc(decade));
+      return rows.map((row) => ({ value: `${row.decade}s`, label: `${row.decade}s`, titleCount: row.titleCount }));
+    }
+    case "season": {
+      const rows = await db
+        .select({ season: AnimeDetails.season, seasonYear: AnimeDetails.seasonYear, titleCount })
+        .from(AnimeDetails)
+        .innerJoin(Media, eq(Media.uuid, AnimeDetails.mediaUuid))
+        .where(and(base, sql`${AnimeDetails.season} is not null`, sql`${AnimeDetails.seasonYear} is not null`))
+        .groupBy(AnimeDetails.season, AnimeDetails.seasonYear)
+        .orderBy(desc(AnimeDetails.seasonYear))
+        .limit(12);
+      const order: Season[] = ["winter", "spring", "summer", "fall"];
+      return rows
+        .flatMap((row) =>
+          row.season && row.seasonYear
+            ? [{ value: `${row.season}-${row.seasonYear}`, label: `${SEASON_LABELS[row.season]} ${row.seasonYear}`, titleCount: row.titleCount, rank: row.seasonYear * 10 + order.indexOf(row.season) }]
+            : [],
+        )
+        .sort((a, b) => b.rank - a.rank)
+        .map(({ rank: _rank, ...option }) => option);
+    }
+    case "status": {
+      const rows = await db
+        .select({ status: Media.status, titleCount })
+        .from(Media)
+        .where(base)
+        .groupBy(Media.status)
+        .orderBy(desc(titleCount));
+      return rows
+        .filter((row) => row.status !== "unknown")
+        .map((row) => ({ value: row.status, label: MEDIA_STATUS_LABELS[row.status], titleCount: row.titleCount }));
+    }
+    case "releaseType": {
+      const rows = await db
+        .select({ releaseType: MusicDetails.releaseType, titleCount })
+        .from(MusicDetails)
+        .innerJoin(Media, eq(Media.uuid, MusicDetails.mediaUuid))
+        .where(base)
+        .groupBy(MusicDetails.releaseType)
+        .orderBy(desc(titleCount));
+      return rows.map((row) => ({ value: row.releaseType, label: RELEASE_TYPE_LABELS[row.releaseType], titleCount: row.titleCount }));
+    }
+  }
+};
+
+/** The anime formats, for a label the hub may need. Kept beside the facets so the import stays used. */
+export const animeFormatLabel = (format: keyof typeof ANIME_FORMAT_LABELS): string => ANIME_FORMAT_LABELS[format];
+
 /** Genres that have at least one public title, most used first. */
 export const listCatalogGenres = async (mediaType?: MediaType): Promise<CatalogGenreCount[]> => {
   const titleCount = count(MediaGenres.mediaUuid);
@@ -341,6 +495,14 @@ const detailsFor = async (
     }
     const { id: _id, mediaUuid: _mediaUuid, ...values } = row;
     return { kind: "anime", ...values };
+  }
+  if (mediaType === "music") {
+    const [row] = await db.select().from(MusicDetails).where(eq(MusicDetails.mediaUuid, mediaUuid));
+    if (!row) {
+      return null;
+    }
+    const { id: _id, mediaUuid: _mediaUuid, ...values } = row;
+    return { kind: "music", ...values };
   }
   return null;
 };

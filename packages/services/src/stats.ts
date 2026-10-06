@@ -2,7 +2,7 @@ import { and, count, desc, eq, gte, sql } from "drizzle-orm";
 import { db } from "../../../db";
 import { MediaType, TrackingStatus } from "../../../db/enum";
 import { Genres, MediaGenres } from "../../../db/schema/genres";
-import { AnimeDetails, MovieDetails, TvDetails } from "../../../db/schema/media-details";
+import { AnimeDetails, MovieDetails, MusicDetails, TvDetails } from "../../../db/schema/media-details";
 import { Media } from "../../../db/schema/media";
 import { ProgressEvents } from "../../../db/schema/progress-events";
 import { UserMedia } from "../../../db/schema/user-media";
@@ -56,6 +56,7 @@ const TOP_GENRES_LIMIT = 6;
  */
 const FALLBACK_EPISODE_MINUTES = { anime: 24, tv: 45 } as const;
 const FALLBACK_RUNTIME_MINUTES = 110;
+const FALLBACK_RECORD_MINUTES = 45;
 
 /**
  * A constant written into the SQL rather than bound as a parameter: inside
@@ -79,6 +80,7 @@ const ENTRY_MINUTES = sql<number>`case ${UserMedia.progressUnit}
     case ${Media.mediaType} when 'anime' then ${literal(FALLBACK_EPISODE_MINUTES.anime)} else ${literal(FALLBACK_EPISODE_MINUTES.tv)} end
   )
   when 'percent' then ${UserMedia.progressValue} / 100.0 * coalesce(${MovieDetails.runtime}, ${literal(FALLBACK_RUNTIME_MINUTES)})
+  when 'plays' then ${UserMedia.progressValue} * coalesce(${MusicDetails.durationMinutes}, ${literal(FALLBACK_RECORD_MINUTES)})
   else 0 end`;
 
 /** The entries with every duration source joined, for the time estimate. */
@@ -94,6 +96,7 @@ const entriesWithDurations = (userUuid: string) =>
     .leftJoin(AnimeDetails, eq(AnimeDetails.mediaUuid, Media.uuid))
     .leftJoin(TvDetails, eq(TvDetails.mediaUuid, Media.uuid))
     .leftJoin(MovieDetails, eq(MovieDetails.mediaUuid, Media.uuid))
+    .leftJoin(MusicDetails, eq(MusicDetails.mediaUuid, Media.uuid))
     .where(eq(UserMedia.userUuid, userUuid))
     .groupBy(Media.mediaType);
 

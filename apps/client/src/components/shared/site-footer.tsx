@@ -4,6 +4,7 @@ import { AuthUser } from "services";
 import { launchMediaTypes } from "@/db/enum";
 import { MEDIA_TYPE_PLURAL_LABELS } from "@/db/label";
 import { Logo } from "@/components/shared/logo";
+import { hubPath } from "@/lib/hub-path";
 
 type SiteFooterProps = {
   /** The viewer, so the second column offers what is theirs. */
@@ -26,7 +27,7 @@ const EXPLORE_COLUMN: FooterColumn = {
     { label: "Everything", href: "/explore" },
     ...launchMediaTypes.map((type) => ({
       label: MEDIA_TYPE_PLURAL_LABELS[type],
-      href: `/explore/${type}`,
+      href: hubPath(type),
     })),
   ],
 };

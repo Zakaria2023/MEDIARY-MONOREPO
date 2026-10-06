@@ -7,6 +7,7 @@ import {
   AnimeDetails,
   GameDetails,
   MovieDetails,
+  MusicDetails,
   TvDetails,
 } from "../../../db/schema/media-details";
 import { MediaExternalRefs } from "../../../db/schema/media-external-refs";
@@ -299,6 +300,12 @@ const writeDetails = async (tx: Tx, mediaUuid: string, record: NormalizedMedia) 
       .insert(TvDetails)
       .values({ mediaUuid, ...values })
       .onConflictDoUpdate({ target: TvDetails.mediaUuid, set: values });
+  } else if (details.kind === "music") {
+    const { kind: _kind, ...values } = details;
+    await tx
+      .insert(MusicDetails)
+      .values({ mediaUuid, ...values })
+      .onConflictDoUpdate({ target: MusicDetails.mediaUuid, set: values });
   } else if (details.kind === "game") {
     const { kind: _kind, ...values } = details;
     await tx

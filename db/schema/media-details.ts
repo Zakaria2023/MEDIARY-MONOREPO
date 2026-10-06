@@ -8,7 +8,7 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
-import { animeFormatEnum, seasonEnum } from "./enums";
+import { animeFormatEnum, releaseTypeEnum, seasonEnum } from "./enums";
 import { Media } from "./media";
 
 // THE FIELDS ONLY ONE MEDIUM HAS, one table per medium, each keyed one-to-one
@@ -83,6 +83,23 @@ export const TvDetails = pgTable("TvDetails", {
   inProduction: boolean("in_production"),
 });
 
+export const MusicDetails = pgTable("MusicDetails", {
+  id: serial("id").primaryKey(),
+  mediaUuid: uuid("media_uuid")
+    .notNull()
+    .unique()
+    .references(() => Media.uuid, { onDelete: "cascade" }),
+  // The credit line as it reads: "Daft Punk", "Jay-Z & Kanye West".
+  artist: varchar("artist", { length: 200 }).notNull(),
+  // The catalog's id for the first credited artist, for an artist page later.
+  artistMbid: varchar("artist_mbid", { length: 40 }),
+  releaseType: releaseTypeEnum("release_type").default("album").notNull(),
+  trackCount: integer("track_count"),
+  // Minutes, the whole record.
+  durationMinutes: integer("duration_minutes"),
+  label: varchar("label", { length: 160 }),
+});
+
 export type SelectAnimeDetails = InferSelectModel<typeof AnimeDetails>;
 export type InsertAnimeDetails = InferInsertModel<typeof AnimeDetails>;
 export type SelectGameDetails = InferSelectModel<typeof GameDetails>;
@@ -91,3 +108,5 @@ export type SelectMovieDetails = InferSelectModel<typeof MovieDetails>;
 export type InsertMovieDetails = InferInsertModel<typeof MovieDetails>;
 export type SelectTvDetails = InferSelectModel<typeof TvDetails>;
 export type InsertTvDetails = InferInsertModel<typeof TvDetails>;
+export type SelectMusicDetails = InferSelectModel<typeof MusicDetails>;
+export type InsertMusicDetails = InferInsertModel<typeof MusicDetails>;

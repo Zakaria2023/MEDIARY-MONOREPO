@@ -7,9 +7,9 @@ import { SectionHeading } from "@/components/shared/section-heading";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Explore movies, TV shows, games and anime",
+  title: "Explore movies, TV shows, games, anime and music",
   description:
-    "See what is trending across movies, TV shows, video games and anime, what is coming soon and the highest rated of all time. Track it all on Mediary.",
+    "See what is trending across movies, TV shows, video games, anime and music, what is coming soon and the highest rated of all time. Track it all on Mediary.",
   path: "/explore",
   keywords: ["trending movies", "trending tv shows", "upcoming games", "top rated anime"],
 });
