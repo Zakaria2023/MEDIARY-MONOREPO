@@ -22,6 +22,8 @@ const PRIVATE_PATHS = [
   "/feed",
   "/design",
   "/sso-callback",
+  // The internal address of a profile; the public one is /@username.
+  "/profile/",
 ];
 
 const robots = async (): Promise<MetadataRoute.Robots> => {

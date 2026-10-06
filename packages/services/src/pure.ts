@@ -27,3 +27,9 @@ export {
   todayIn,
 } from "./tracking-rules";
 export type { EntryChange, EntryState } from "./tracking-rules";
+
+export { canView } from "./visibility";
+export type { ViewerRelation } from "./visibility";
+
+export { diaryKind } from "./diary-rules";
+export type { DiaryKind, DiaryEventFields } from "./diary-rules";

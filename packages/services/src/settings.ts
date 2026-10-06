@@ -47,3 +47,12 @@ export const updatePrivacySettings = async (
     .set(input)
     .where(eq(UserSettings.userUuid, userUuid));
 };
+
+/** The zone a user's days are drawn in: the diary's day boundaries, "today". */
+export const getUserTimezone = async (userUuid: string): Promise<string> => {
+  const [row] = await db
+    .select({ timezone: UserSettings.timezone })
+    .from(UserSettings)
+    .where(eq(UserSettings.userUuid, userUuid));
+  return row?.timezone ?? "UTC";
+};

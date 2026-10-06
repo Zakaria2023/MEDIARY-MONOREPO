@@ -190,6 +190,17 @@ export const clampScore = (value: number | null | undefined): number | null => {
   return Math.round(Math.min(10, Math.max(0, value)) * 10) / 10;
 };
 
+/** A count with thousands separators, the same on the server and in the browser. */
+export const formatCount = (value: number): string => value.toLocaleString("en-US");
+
+/**
+ * Minutes as a total reads on a stat tile: "45 min" under an hour, then
+ * whole hours, "1,204h". A total is a size, not a runtime, so it never
+ * says "2h 28m".
+ */
+export const formatTrackedTime = (minutes: number): string =>
+  minutes < 60 ? `${Math.round(minutes)} min` : formatHours(minutes / 60);
+
 /** Minutes as a runtime reads: "45 min", "2h 28m". Null for an unknown one. */
 export const formatRuntime = (minutes: number | null | undefined): string | null => {
   if (!minutes || minutes <= 0) {

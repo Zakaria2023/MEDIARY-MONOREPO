@@ -428,6 +428,14 @@ SEO is a core of the product, with the design. Every public route pays for its p
 - The total progress counts up to is a property of the medium (episodes, 100 for a film's percent, nothing for a game's hours) and is computed in the service as `progressTotal`; the sheet never guesses it.
 - The sheet, the tick and the entry a screen holds are `src/lib/use-entry-sheet.ts` and `src/lib/use-tracked-entry.ts`, in `lib/` because they open from a title page, a library row and a home card alike. Their actions are `app/(app)/library/actions.ts`. Every change shows at once and reverts only on a refusal.
 
+## Profiles, Diary And Stats
+
+- **The profile URL is `/@username` and nothing else.** A folder beginning with `@` is a parallel-route slot to the App Router, so the page lives at `app/(site)/profile/[username]` and `next.config.ts` rewrites `/@:username` onto it and redirects `/profile/:username` back out. `profilePath` in `src/lib/profile-path.ts` is the only place the address is built; `/profile/` is in `PRIVATE_PATHS`.
+- **Visibility is decided in the query.** `getPublicProfile` returns the viewer's `relation` (owner or stranger until follows exist) and an `access` object from the owner's settings through `canView` (`packages/services/src/visibility.ts`, pure). A section the viewer may not see is not fetched; the page never hides something it already loaded. A private profile renders `PrivateProfile`, noindex.
+- The diary is read from `ProgressEvents` only (`services/diary.ts`); `diaryKind` names a line from its fields and is pure. Days are drawn in the owner's `UserSettings.timezone`, never the server's.
+- The stats page is one `getUserStats` call. Time tracked is an estimate from progress and the title's own durations, with the fallbacks in `stats.ts`; a constant inside a SQL `CASE` is written with `literal()`, because Postgres cannot type a bare parameter there.
+- The `(app)` layout owns the header and footer for every private screen; a private section's own layout adds only its inner frame.
+
 ## Design Tokens
 
 The brand palette from the blueprint, as `globals.css` tokens. The app is dark-mode-first; a light theme is added once the dark system is complete, as a `.light` override of the same tokens.
@@ -466,7 +474,7 @@ One or two accents per screen. The spectrum belongs to the logo and the five gra
 | `/feed`                 | Following activity                          |
 | `/lists`, `/lists/[slug]` | Custom lists                              |
 | `/compare/[username]`   | Taste Match                                 |
-| `/@[username]`          | Public profile                              |
+| `/@[username]`          | Public profile (page lives at `/profile/[username]`, rewritten) |
 | `/settings/*`           | Account, profile, privacy, imports, appearance |
 
 `[type]` is always one of `mediaTypes` in `db/enum.ts`; a slug is unique per type, not globally.

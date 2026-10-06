@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   clampScore,
   fail,
+  formatTrackedTime,
   isValidUsername,
   paginate,
   resolvePagination,
@@ -109,5 +110,13 @@ describe("fail", () => {
       error: "Could not save",
     });
     expect(fail("thrown string", "Could not save")).toEqual({ error: "Could not save" });
+  });
+});
+
+describe("formatTrackedTime", () => {
+  it("says minutes under an hour and whole hours after", () => {
+    expect(formatTrackedTime(45)).toBe("45 min");
+    expect(formatTrackedTime(90)).toBe("2h");
+    expect(formatTrackedTime(72_240)).toBe("1,204h");
   });
 });
