@@ -164,6 +164,17 @@
   color: transparent;
 }
 
+/* THE FADE UNDER A BACKDROP. Not a brand moment: a transparent-to-page run
+   that makes a title legible over artwork, used on the detail hero and the
+   profile banner. It is the one gradient that is about reading, not looking. */
+@utility bg-backdrop-fade {
+  background-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    var(--color-page) 100%
+  );
+}
+
 /* A hairline ring on a selected poster, in the accent, drawn outside the box
    so the artwork keeps its full size. */
 @utility ring-selected {
