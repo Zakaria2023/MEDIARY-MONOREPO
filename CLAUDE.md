@@ -10,7 +10,10 @@ This is a pnpm + Turborepo monorepo built on Next.js 16.
 
 **Apps**
 
-- `apps/client` — the one Next.js app: the public site, the signed-in product and the admin screens, all behind Clerk. There is no separate admin app and no `apps/api` yet; add `apps/api` (Route Handlers only, versioned under `/api/v1`) when a mobile client exists, and not before.
+- `apps/client` — the member-facing Next.js app on `mediary.com`: the public site (landing, explore, title pages, public profiles), the signed-in product (library, diary, stats, settings), sign-in and sign-up, and the Clerk webhook. Everything SEO lives here. Port 3000 locally.
+- `apps/admin` — the staff Next.js app (`admin.mediary.com` in production, port 3001 locally): catalog imports from the providers, sync runs and their logs, title corrections and merges, genre and tag curation, members and roles, reports and moderation. It is behind Clerk with the same instance as the client, so one account signs in to both; the role on Mediary's `Users` row decides who enters. It has no sign-up and is `noindex` on every host, production included.
+- There is no `apps/api` yet; add it (Route Handlers only, versioned under `/api/v1`) when a mobile client exists, and not before.
+- A feature that both apps need is a `packages/services` function the two call, never code copied between apps. Each app runs its own `db` pool of 3, so two apps on two instances each stay well under Aiven's 20 connections.
 
 **Packages**
 
@@ -34,6 +37,7 @@ The schema and connection live in the repo-root `db/` folder, not in a package �
 - Clerk is the identity provider. Do not reintroduce a custom password/JWT/session system.
 - The `Users` table is **not** an identity store — it is a profile store. Clerk owns credentials, verification and sessions. Each `Users` row is linked to Clerk by `clerkUserId` and is kept in sync by the Clerk webhook. Username, display name, bio, avatar and every setting live on Mediary's rows, not in Clerk.
 - `clerkMiddleware` runs in `proxy.ts`; `<ClerkProvider nonce={nonce}>` wraps the root layout. `getCurrentUser` resolves the cookie session via Clerk's `auth()` then maps `userId → getUserByClerkId`, syncing the row on demand if the webhook has not landed. Pages decide what to show a signed-out visitor; they never redirect to sign-in for public content.
+- **Staff access is a role, not a separate account.** `apps/admin` gates every screen in its `(dashboard)` layout with `requireStaff` (role `admin` or `moderator`, status `active`) and sends a signed-in member without one to `/no-access`, never back to `/sign-in`. Imports, role changes and deletions call `requireAdmin`. Every admin Server Action calls the guard again itself; the layout gate is not enough on its own. The role lives on Mediary's `Users` row, never in Clerk metadata. `STAFF_ROLES` and `isStaffRole` live in `packages/services/src/roles.ts`.
 - A new account has no username until the welcome screen (`/welcome`, the `(onboarding)` group) collects one. The `(app)` group's layout calls `requireOnboardedUser`, which sends a signed-in user without a handle there; nothing private renders before it. The handle is unique case-insensitively, by index.
 - Production is `mediary.com`. `SITE_URL` in `apps/client/src/lib/seo.ts` and `INDEXABLE_HOSTS` in `packages/security-headers` both name it and must move together.
 
@@ -349,7 +353,7 @@ SEO is a core of the product, with the design. Every public route pays for its p
 ## Helpers
 
 - Reusable helper functions (formatters, parsers, URL builders) are never defined inline at the top of a component file. Import them.
-- Framework-agnostic helpers shared across the repo live in `packages/utils` and are imported from `"utils"`. Only helpers tied to the request/runtime (anything importing `next/headers` or `next/server`) stay in `apps/client/src/lib/server/`.
+- Framework-agnostic helpers shared across the repo live in `packages/utils` and are imported from `"utils"`. Only helpers tied to the request/runtime (anything importing `next/headers` or `next/server`) stay in that app's own `src/lib/server/`.
 
 ## File Naming
 
@@ -439,9 +443,16 @@ One or two accents per screen. The spectrum belongs to the logo and the four gra
 | `/compare/[username]`   | Taste Match                                 |
 | `/@[username]`          | Public profile                              |
 | `/settings/*`           | Account, profile, privacy, imports, appearance |
-| `/admin/*`              | Moderation and data corrections             |
 
 `[type]` is always one of `mediaTypes` in `db/enum.ts`; a slug is unique per type, not globally.
+
+The table above is `apps/client`. `apps/admin` has its own routes, added with the screen each step builds and listed in `components/layout/nav-items.ts`, which never links to a screen that does not exist yet:
+
+| Route         | Purpose                                                    |
+| ------------- | ---------------------------------------------------------- |
+| `/`           | Overview: members, staff, catalog size                     |
+| `/sign-in`    | Staff sign-in (Clerk, no sign-up)                          |
+| `/no-access`  | Where a signed-in account without a staff role lands       |
 
 ## Roadmap
 
