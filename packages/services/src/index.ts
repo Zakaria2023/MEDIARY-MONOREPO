@@ -1,6 +1,7 @@
 export * from "./admin";
 export * from "./auth";
 export * from "./catalog";
+export * from "./catalog-facts";
 export * from "./catalog-import";
 export * from "./catalog-ingest";
 export * from "./clerk-sync";

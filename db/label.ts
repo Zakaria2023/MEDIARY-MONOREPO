@@ -1,9 +1,12 @@
 import {
+  AnimeFormat,
   ImageType,
   MediaStatus,
   MediaType,
   ProgressUnit,
   Provider,
+  Season,
+  TitleType,
   TrackingStatus,
   UserRole,
   UserStatus,
@@ -64,6 +67,31 @@ export const MEDIA_STATUS_LABELS: Record<MediaStatus, string> = {
   cancelled: "Cancelled",
   hiatus: "On hiatus",
   unknown: "Unknown",
+};
+
+export const ANIME_FORMAT_LABELS: Record<AnimeFormat, string> = {
+  tv: "TV",
+  tv_short: "TV short",
+  movie: "Movie",
+  ova: "OVA",
+  ona: "ONA",
+  special: "Special",
+  music: "Music video",
+};
+
+export const SEASON_LABELS: Record<Season, string> = {
+  winter: "Winter",
+  spring: "Spring",
+  summer: "Summer",
+  fall: "Fall",
+};
+
+export const TITLE_TYPE_LABELS: Record<TitleType, string> = {
+  canonical: "Main title",
+  english: "English",
+  native: "Original",
+  romaji: "Romaji",
+  alias: "Also known as",
 };
 
 export const IMAGE_TYPE_LABELS: Record<ImageType, string> = {

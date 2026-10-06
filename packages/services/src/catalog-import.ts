@@ -6,7 +6,7 @@ import { MediaExternalRefs } from "../../../db/schema/media-external-refs";
 import { Media, SelectMedia } from "../../../db/schema/media";
 import { IngestResult, ingestNormalizedMedia } from "./catalog-ingest";
 import { NotFoundError, ValidationError } from "./errors";
-import { getProvider, providerForType } from "./providers/registry";
+import { getProvider, listProviderStatuses, providerForType } from "./providers/registry";
 import { MediaProvider, ProviderCandidate, ProviderListKind } from "./providers/types";
 
 /** A provider hit, with the catalog title it already is, if any. */
@@ -250,4 +250,41 @@ export const refreshStaleCatalog = async ({
     }
   }
   return summary;
+};
+
+/** Merges one tally into another. */
+const addSummary = (total: ImportSummary, part: ImportSummary): ImportSummary => ({
+  created: total.created + part.created,
+  updated: total.updated + part.updated,
+  skipped: total.skipped + part.skipped,
+  failed: [...total.failed, ...part.failed],
+});
+
+/**
+ * THE DAILY CATALOG JOB. For every configured source, the first page of
+ * what is trending (so explore's rails stay current), then the stalest
+ * titles across the catalog. One source failing is recorded and the rest
+ * carry on. Sized to finish well inside a five-minute function.
+ */
+export const runCatalogSync = async (): Promise<ImportSummary> => {
+  let summary: ImportSummary = { created: 0, updated: 0, skipped: 0, failed: [] };
+  for (const status of listProviderStatuses()) {
+    if (!status.configured) {
+      continue;
+    }
+    for (const mediaType of status.mediaTypes) {
+      try {
+        summary = addSummary(
+          summary,
+          await importProviderList(status.provider, mediaType, "trending", 1),
+        );
+      } catch (error) {
+        summary.failed.push({
+          title: `${status.name} ${mediaType} trending`,
+          error: errorMessage(error),
+        });
+      }
+    }
+  }
+  return addSummary(summary, await refreshStaleCatalog({ olderThanDays: 30, limit: 60 }));
 };

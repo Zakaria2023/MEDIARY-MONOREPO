@@ -74,6 +74,8 @@ export const launchMediaTypes = [
   "tv",
 ] as const satisfies readonly MediaType[];
 
+export type LaunchMediaType = (typeof launchMediaTypes)[number];
+
 /** Where a title is in its own life: not yet out, out, finished, gone. */
 export const mediaStatuses = [
   "announced",
