@@ -1,0 +1,40 @@
+{
+  "name": "auth",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@clerk/nextjs": "*",
+    "lucide-react": "*",
+    "next": "*",
+    "react": "*",
+    "react-dom": "*",
+    "react-hook-form": "*"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.4.0",
+    "ui": "workspace:*",
+    "validators": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@clerk/nextjs": "^7.5.10",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "lucide-react": "^1.22.0",
+    "next": "16.2.11",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-hook-form": "^7.80.0",
+    "typescript": "^5.9.3"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./errors": "./src/errors.ts"
+  }
+}
