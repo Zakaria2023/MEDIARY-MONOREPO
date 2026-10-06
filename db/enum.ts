@@ -228,3 +228,35 @@ export const activityKinds = [
 ] as const satisfies readonly string[];
 
 export type ActivityKind = (typeof activityKinds)[number];
+
+// ---------------------------------------------------------------------------
+// Imports
+// ---------------------------------------------------------------------------
+
+/** Where a member's existing list can be brought in from. */
+export const importSources = [
+  "mal",
+  "letterboxd",
+  "csv",
+] as const satisfies readonly string[];
+
+export type ImportSource = (typeof importSources)[number];
+
+/** An import's life: parsed and shown, then applied, or failed on the way. */
+export const importStatuses = [
+  "previewed",
+  "applied",
+  "failed",
+] as const satisfies readonly string[];
+
+export type ImportStatus = (typeof importStatuses)[number];
+
+/** What became of one line of an import file. */
+export const importOutcomes = [
+  "matched",
+  "unmatched",
+  "created",
+  "skipped",
+] as const satisfies readonly string[];
+
+export type ImportOutcome = (typeof importOutcomes)[number];

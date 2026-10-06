@@ -444,6 +444,13 @@ SEO is a core of the product, with the design. Every public route pays for its p
 - **Following is idempotent** by the `(follower, following)` UNIQUE; a refused second insert is swallowed. A follow is refused for oneself, an inactive account, or across a block. `relation` on a profile is now `owner`, `follower` or `stranger`, and a blocked viewer gets a 404, not "private".
 - Every social action lives beside the page that offers it: reviews and add-to-list in `app/(site)/[type]/[slug]/actions.ts`, follow in `app/(site)/profile/[username]/actions.ts`, list editing in `app/(site)/lists/[slug]/actions.ts`, list creation in `app/(app)/lists/actions.ts`.
 
+## Imports
+
+- A member's list from elsewhere comes in through `/settings/imports` in two steps: `previewImport` parses the file, matches every line against the catalog and keeps the result in `Imports` and `ImportItems`; `applyImport` puts the matched lines into the library on the person's say-so. Nothing reaches `UserMedia` before the second step.
+- The parsers (`packages/services/src/import-parsers.ts`) are pure and tested on their own; each throws `ImportParseError`, which the service turns into a `ValidationError` the person reads. Matching is by the source's own id in `MediaExternalRefs` first, then by name and year.
+- An applied line becomes an entry and ONE `ProgressEvents` row dated by the file; no feed line is written. A title already in the library is skipped, never overwritten, by the `(user, media)` UNIQUE.
+- The import sources are named on screen by the person's own account elsewhere ("MyAnimeList export", "Letterboxd export"), on the same footing as "Continue with Google": the person's account, not a service Mediary uses.
+
 ## Design Tokens
 
 The brand palette from the blueprint, as `globals.css` tokens. The app is dark-mode-first; a light theme is added once the dark system is complete, as a `.light` override of the same tokens.
