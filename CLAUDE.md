@@ -10,7 +10,7 @@ This is a pnpm + Turborepo monorepo built on Next.js 16.
 
 **Apps**
 
-- `apps/web` — the one Next.js app: the public site, the signed-in product and the admin screens, all behind Clerk. There is no separate admin app and no `apps/api` yet; add `apps/api` (Route Handlers only, versioned under `/api/v1`) when a mobile client exists, and not before.
+- `apps/client` — the one Next.js app: the public site, the signed-in product and the admin screens, all behind Clerk. There is no separate admin app and no `apps/api` yet; add `apps/api` (Route Handlers only, versioned under `/api/v1`) when a mobile client exists, and not before.
 
 **Packages**
 
@@ -35,7 +35,7 @@ The schema and connection live in the repo-root `db/` folder, not in a package �
 - The `Users` table is **not** an identity store — it is a profile store. Clerk owns credentials, verification and sessions. Each `Users` row is linked to Clerk by `clerkUserId` and is kept in sync by the Clerk webhook. Username, display name, bio, avatar and every setting live on Mediary's rows, not in Clerk.
 - `clerkMiddleware` runs in `proxy.ts`; `<ClerkProvider nonce={nonce}>` wraps the root layout. `getCurrentUser` resolves the cookie session via Clerk's `auth()` then maps `userId → getUserByClerkId`, syncing the row on demand if the webhook has not landed. Pages decide what to show a signed-out visitor; they never redirect to sign-in for public content.
 - A new account has no username until the welcome screen (`/welcome`, the `(onboarding)` group) collects one. The `(app)` group's layout calls `requireOnboardedUser`, which sends a signed-in user without a handle there; nothing private renders before it. The handle is unique case-insensitively, by index.
-- Production is `mediary.com`. `SITE_URL` in `apps/web/src/lib/seo.ts` and `INDEXABLE_HOSTS` in `packages/security-headers` both name it and must move together.
+- Production is `mediary.com`. `SITE_URL` in `apps/client/src/lib/seo.ts` and `INDEXABLE_HOSTS` in `packages/security-headers` both name it and must move together.
 
 **Hard rules**
 
@@ -349,7 +349,7 @@ SEO is a core of the product, with the design. Every public route pays for its p
 ## Helpers
 
 - Reusable helper functions (formatters, parsers, URL builders) are never defined inline at the top of a component file. Import them.
-- Framework-agnostic helpers shared across the repo live in `packages/utils` and are imported from `"utils"`. Only helpers tied to the request/runtime (anything importing `next/headers` or `next/server`) stay in `apps/web/src/lib/server/`.
+- Framework-agnostic helpers shared across the repo live in `packages/utils` and are imported from `"utils"`. Only helpers tied to the request/runtime (anything importing `next/headers` or `next/server`) stay in `apps/client/src/lib/server/`.
 
 ## File Naming
 
