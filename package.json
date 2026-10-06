@@ -14,7 +14,7 @@
     "test": "vitest run --passWithNoTests",
     "test:db:setup": "dotenv -e .env.local -- tsx scripts/setup-test-db.ts",
     "test:integration": "dotenv -e .env.local -- vitest run --config vitest.integration.config.ts",
-    "db:push": "dotenv -e .env.local -- drizzle-kit push",
+    "db:push": "dotenv -e .env.local -- tsx scripts/ensure-extensions.ts && dotenv -e .env.local -- drizzle-kit push",
     "db:studio": "dotenv -e .env.local -- drizzle-kit studio"
   },
   "devDependencies": {

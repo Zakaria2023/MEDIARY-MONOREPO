@@ -1,4 +1,17 @@
-// THE BROWSER-SAFE DOOR INTO THIS PACKAGE. Only rules that touch no database
-// and no filesystem are re-exported here; a client component imports from
-// "services/pure", never from "services".
-export {};
+// THE BROWSER-SAFE DOOR INTO THIS PACKAGE.
+//
+// `services` is a server package: every service module imports `db`. A client
+// component that imports a VALUE from "services" therefore fails the build,
+// with a stack pointing at the database connection rather than at the
+// function it wanted.
+//
+// A rule that takes rows and returns rows, touching no database, may be
+// re-exported here, and a client component imports it from "services/pure".
+//
+// TYPES ARE NOT THE PROBLEM. `import type { AuthUser } from "services"` is
+// erased before anything runs and can stay pointed at the main barrel.
+//
+// NOTHING THAT IMPORTS `db` MAY BE ADDED HERE. pure.test.ts walks the import
+// graph and fails if one ever is.
+
+export { ValidationError, NotFoundError } from "./errors";

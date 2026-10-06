@@ -33,7 +33,9 @@ The schema and connection live in the repo-root `db/` folder, not in a package �
 
 - Clerk is the identity provider. Do not reintroduce a custom password/JWT/session system.
 - The `Users` table is **not** an identity store — it is a profile store. Clerk owns credentials, verification and sessions. Each `Users` row is linked to Clerk by `clerkUserId` and is kept in sync by the Clerk webhook. Username, display name, bio, avatar and every setting live on Mediary's rows, not in Clerk.
-- `clerkMiddleware` runs in `proxy.ts`; `<ClerkProvider nonce={nonce}>` wraps the root layout. `getCurrentUser` resolves the cookie session via Clerk's `auth()` then maps `userId → getUserByClerkId`. Pages decide what to show a signed-out visitor; they never redirect to sign-in for public content.
+- `clerkMiddleware` runs in `proxy.ts`; `<ClerkProvider nonce={nonce}>` wraps the root layout. `getCurrentUser` resolves the cookie session via Clerk's `auth()` then maps `userId → getUserByClerkId`, syncing the row on demand if the webhook has not landed. Pages decide what to show a signed-out visitor; they never redirect to sign-in for public content.
+- A new account has no username until the welcome screen (`/welcome`, the `(onboarding)` group) collects one. The `(app)` group's layout calls `requireOnboardedUser`, which sends a signed-in user without a handle there; nothing private renders before it. The handle is unique case-insensitively, by index.
+- Production is `mediary.com`. `SITE_URL` in `apps/web/src/lib/seo.ts` and `INDEXABLE_HOSTS` in `packages/security-headers` both name it and must move together.
 
 **Hard rules**
 
@@ -53,6 +55,17 @@ These come from the blueprint and settle arguments before they start.
 - **Fast first, cinematic second.** Motion under 250ms except page transitions; reduced-motion is respected; no 3D or WebGL anywhere basic navigation depends on it.
 - **Social is opt-in.** A private library is a complete product. Every visibility defaults open at sign-up and every one is a setting.
 - **Do not add a table without saying why the existing normalized model cannot hold the data.** Do not add a heavy dependency without a bundle-size justification.
+
+## SEO
+
+SEO is a core of the product, with the design. Every public route pays for its place in the index.
+
+- Every public page exports `generateMetadata` (or `metadata`) built with `pageMetadata` from `@/lib/seo`: title, description, path, image. That is what produces the canonical, Open Graph and Twitter tags together, so they cannot disagree. A private page passes `noIndex: true`.
+- Every public entity renders JSON-LD through `<JsonLd>` with the schema.org type that fits (`Movie`, `TVSeries`, `VideoGame`, `ProfilePage`, `ItemList`), referencing the site's `Organization` and `WebSite` nodes by `@id` rather than repeating them.
+- Every public route is in `sitemap.ts`, partitioned by entity once the counts justify it. Private routes are in `PRIVATE_PATHS` in `robots.ts`.
+- URLs are clean: `/[type]/[slug]` for a title, `/@username` for a profile, `/lists/[slug]` for a list. A slug never changes after it is public; a renamed title keeps its slug and gets an alias.
+- Headings are real `<h1>`/`<h2>` in reading order, images carry `alt`, and the first screen of a public page renders on the server with the title, poster and primary action in the HTML, not after hydration.
+- `noindex` is a header set in `proxy.ts` from `isIndexableHost`, never a `Disallow` in robots.txt, because a disallowed URL can still be indexed from a link and never receives the header.
 
 ## Package Manager
 
