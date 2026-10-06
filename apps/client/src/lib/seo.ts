@@ -11,6 +11,13 @@ type PageMetadataInput = {
   imageAlt?: string;
   type?: "website" | "article" | "profile";
   /**
+   * The route has its own opengraph-image file. Next serves that under a
+   * hashed path and writes the og:image tags for it, so none are written
+   * here: a hand-built URL to it would 404. Twitter reads og:image when it
+   * has no twitter:image of its own.
+   */
+  ownImage?: boolean;
+  /**
    * Signed-in-only screens. Their content is real for the person looking at
    * it and worthless in an index: a crawler sees a sign-in redirect or a thin
    * near-duplicate of every other account page.
@@ -53,6 +60,7 @@ export const pageMetadata = ({
   image,
   imageAlt,
   type = "website",
+  ownImage = false,
   noIndex = false,
   keywords,
 }: PageMetadataInput): Metadata => {
@@ -70,13 +78,15 @@ export const pageMetadata = ({
       siteName: SITE_NAME,
       title: `${title} · ${SITE_NAME}`,
       description,
-      images: [{ url: ogImage, width: 1200, height: 630, alt: imageAlt ?? title }],
+      ...(!ownImage && {
+        images: [{ url: ogImage, width: 1200, height: 630, alt: imageAlt ?? title }],
+      }),
     },
     twitter: {
       card: "summary_large_image",
       title: `${title} · ${SITE_NAME}`,
       description,
-      images: [ogImage],
+      ...(!ownImage && { images: [ogImage] }),
     },
     robots: noIndex
       ? { index: false, follow: false }

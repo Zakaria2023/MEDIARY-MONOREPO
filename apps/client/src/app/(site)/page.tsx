@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { SiteHeader } from "@/components/shared/site-header";
+import { AsyncSection } from "ui";
+import { HomeTrending } from "@/components/catalog/home-trending";
+import { TitleRailSkeleton } from "@/components/catalog/title-rail-skeleton";
 import { getCurrentUser } from "@/lib/auth";
 
 /**
- * The root: marketing when signed out, home when signed in. Both are
- * placeholders in Step 1. The landing page and the real home arrive with
- * the catalog and the library they show; the foundation only has to prove
- * that a signed-in person lands somewhere that knows who they are.
+ * The root: marketing when signed out, home when signed in. The hero is
+ * still the foundation's; the landing page and the real home arrive with
+ * the library they show. Under it, what is trending, so the first screen
+ * already shows the catalog.
  */
 const HomePage = async () => {
   const user = await getCurrentUser();
@@ -16,9 +18,8 @@ const HomePage = async () => {
   }
 
   return (
-    <>
-      <SiteHeader user={user} />
-      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center gap-6 px-5 py-20 text-center sm:px-8">
+    <main className="flex flex-1 flex-col gap-12 pb-8">
+      <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-center gap-6 px-5 pb-4 pt-20 text-center sm:px-8 sm:pt-24">
         {user ? (
           <>
             <h1 className="font-display text-3xl font-semibold text-ink sm:text-5xl">
@@ -27,20 +28,20 @@ const HomePage = async () => {
             <p className="max-w-md text-base text-muted">
               Your profile lives at{" "}
               <span className="font-mono text-secondary">/@{user.username}</span>.
-              The library, explore and the add sheet arrive in the next steps.
+              Tracking arrives with the next step; the catalog is open now.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2">
               <Link
-                href="/settings/profile"
+                href="/explore"
                 className="inline-flex h-10 items-center rounded-control bg-action-gradient px-4 text-sm font-medium text-white"
               >
-                Set up your profile
+                Explore the catalog
               </Link>
               <Link
-                href="/design"
+                href="/settings/profile"
                 className="inline-flex h-10 items-center rounded-control border border-hairline-strong px-4 text-sm font-medium text-ink transition-colors hover:bg-hover"
               >
-                See the design foundation
+                Set up your profile
               </Link>
             </div>
           </>
@@ -61,16 +62,21 @@ const HomePage = async () => {
                 Create your Mediary
               </Link>
               <Link
-                href="/design"
+                href="/explore"
                 className="inline-flex h-11 items-center rounded-control border border-hairline-strong px-5 text-sm font-medium text-ink transition-colors hover:bg-hover"
               >
-                Explore the design
+                Explore without an account
               </Link>
             </div>
           </>
         )}
-      </main>
-    </>
+      </div>
+      <div className="mx-auto w-full max-w-7xl">
+        <AsyncSection reloadKey="home-trending" skeleton={<TitleRailSkeleton />}>
+          <HomeTrending />
+        </AsyncSection>
+      </div>
+    </main>
   );
 };
 
