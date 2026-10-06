@@ -57,7 +57,7 @@ export const EntryRow = ({ entry, layout = "row" }: EntryRowProps) => {
             <button
               type="button"
               aria-label={`Log more of ${title.title}`}
-              className="relative z-20 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-chip border border-hairline text-secondary transition-colors hover:bg-primary hover:text-white"
+              className="relative z-20 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-chip border border-hairline text-secondary transition-colors hover:bg-action-gradient hover:text-white"
             >
               <Plus size={15} />
             </button>
@@ -107,7 +107,7 @@ export const EntryRow = ({ entry, layout = "row" }: EntryRowProps) => {
       <button
         type="button"
         aria-label={`Log more of ${title.title}`}
-        className="relative z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-chip border border-hairline text-secondary transition-colors hover:bg-primary hover:text-white"
+        className="relative z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-chip border border-hairline text-secondary transition-colors hover:bg-action-gradient hover:text-white"
       >
         <Plus size={15} />
       </button>

@@ -41,7 +41,7 @@ export const PosterCard = ({
       <button
         type="button"
         aria-label={`Add ${title.title} to Mediary`}
-        className="absolute end-2 top-2 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-chip bg-page/80 text-ink opacity-0 backdrop-blur transition-opacity duration-150 hover:bg-primary hover:text-white focus-visible:opacity-100 group-hover:opacity-100"
+        className="absolute end-2 top-2 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-chip bg-page/80 text-ink opacity-0 backdrop-blur transition-opacity duration-150 hover:bg-action-gradient hover:text-white focus-visible:opacity-100 group-hover:opacity-100"
       >
         <Plus size={16} />
       </button>

@@ -186,9 +186,10 @@ SEO is a core of the product, with the design. Every public route pays for its p
 
 - Never use arbitrary value syntax for spacing, sizing, or typography when a built-in Tailwind scale exists. `text-[22px]` is `text-2xl`; `tracking-[-0.012em]` is `tracking-tight`.
 - Every color is a token from `globals.css` (`bg-surface`, `text-ink`, `text-muted`, `border-hairline`, `bg-primary`). Never a raw Tailwind palette color (`bg-slate-900`, `text-violet-500`) and never a hex value in a class. The theme-tokens test in `packages/ui` fails when a shared component names a token the app has not defined.
-- **Gradients are a brand moment, not a background.** They are allowed in exactly four places: the landing hero, a selected/active state, share cards, and the Taste DNA visualization — and only through the named utilities for them (`bg-brand-gradient`, `bg-brand-gradient-soft`, `text-brand-gradient`). The one other permitted run is `bg-backdrop-fade`, the transparent-to-page scrim that makes a title legible over artwork on a hero or a banner; it is about reading, not looking. Everywhere else, backgrounds and text are flat color and a hairline separates one surface from another. Never `bg-linear-to-*`, never an inline `linear-gradient`. A gradient behind every card is the reason the trackers this product replaces look dated.
+- **Gradients are a brand moment, not a background.** They are allowed in exactly five places: the primary button, the landing hero, a selected/active state, share cards, and the Taste DNA visualization — and only through the named utilities for them (`bg-action-gradient` for the primary button, `bg-brand-gradient`, `bg-brand-gradient-soft`, `text-brand-gradient`). The one other permitted run is `bg-backdrop-fade`, the transparent-to-page scrim that makes a title legible over artwork on a hero or a banner; it is about reading, not looking. Everywhere else, backgrounds and text are flat color and a hairline separates one surface from another. Never `bg-linear-to-*`, never an inline `linear-gradient`. A gradient behind every card is the reason the trackers this product replaces look dated.
 - Never use a shadow to separate a surface from the page — use a hairline border. `shadow-*` is reserved for something that genuinely floats (a menu, a modal, the add sheet), and even then it is one restrained value.
-- Text on the primary color is always `text-white` — in the disabled state too. A disabled button dims as a whole (`disabled:opacity-60`).
+- **The primary button is the logo gradient, never flat blue.** Every filled call to action (the shared `Button`'s `primary` variant, a link styled as one, Clerk's form button, an icon button's hover fill) uses `bg-action-gradient`, which carries its own hover and press, so no `hover:bg-*` goes beside it. Its stops are deepened from the logo so white text keeps 4.5:1. `bg-primary` is not a button fill.
+- Text on the primary button is always `text-white` — in the disabled state too. A disabled button dims as a whole (`disabled:opacity-60`).
 - Never use the `truncate` class. Use `line-clamp-*` or let it wrap.
 - Weight is hierarchy, used sparingly. Body text is `font-normal`; emphasis is `font-medium`; `font-semibold` is for headings and the title on a detail hero only. Never `font-bold` or heavier. Where medium is not enough separation, get it from size, color or spacing instead of weight.
 
@@ -412,7 +413,8 @@ The brand palette from the blueprint, as `globals.css` tokens. The app is dark-m
 | ------------------------- | --------- | --------------------------------------------- |
 | `--color-page`            | `#090A10` | The canvas                                    |
 | `--color-surface`         | `#11131C` | Cards, menus, sheets                          |
-| `--color-primary`         | `#4057FF` | Primary buttons, important active states      |
+| `--color-primary`         | `#4057FF` | Active tints, progress, Clerk's links         |
+| `--gradient-action`       | logo sweep | The primary button (`bg-action-gradient`)    |
 | `--color-accent`          | `#1697FF` | Focus rings, links, selected controls         |
 | `--color-violet`          | `#7B2CFF` | Brand depth, gradient stop, charts            |
 | `--color-magenta`         | `#D815FF` | Rare highlight, taste features                |
@@ -423,7 +425,7 @@ The brand palette from the blueprint, as `globals.css` tokens. The app is dark-m
 | `--radius-card`           | `14px`    | Posters and cards                             |
 | `--radius-control`        | `10px`    | Buttons, inputs, chips                        |
 
-One or two accents per screen. The spectrum belongs to the logo and the four gradient surfaces named under Tailwind CSS above, not to the interface.
+One or two accents per screen. The spectrum belongs to the logo and the five gradient surfaces named under Tailwind CSS above, not to the interface.
 
 ## Routes
 

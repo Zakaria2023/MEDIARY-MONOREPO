@@ -12,7 +12,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary:
-    "bg-primary text-white hover:bg-primary-hover active:bg-primary-hover",
+    "bg-action-gradient text-white",
   outline:
     "border border-hairline-strong bg-transparent text-ink hover:bg-hover active:bg-pressed",
   ghost: "bg-transparent text-secondary hover:bg-hover hover:text-ink active:bg-pressed",
@@ -33,9 +33,10 @@ const ICON_SIZE_CLASSES: Record<ButtonSize, string> = {
 };
 
 /**
- * The one button. `primary` is the indigo fill and there is ONE of it per
- * screen: Add to Mediary, Save, Follow. Everything else is an outline or a
- * ghost, so the primary action is the thing that stands out.
+ * The one button. `primary` is the logo's gradient (`bg-action-gradient`,
+ * which carries its own hover and press) and there is ONE of it per screen:
+ * Add to Mediary, Save, Follow. Everything else is an outline or a ghost, so
+ * the primary action is the thing that stands out.
  *
  * Text on the primary fill is always white, in the disabled state too; a
  * disabled button dims as a whole.

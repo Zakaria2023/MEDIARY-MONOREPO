@@ -32,7 +32,7 @@ const HomePage = async () => {
             <div className="flex flex-wrap items-center justify-center gap-2">
               <Link
                 href="/settings/profile"
-                className="inline-flex h-10 items-center rounded-control bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
+                className="inline-flex h-10 items-center rounded-control bg-action-gradient px-4 text-sm font-medium text-white"
               >
                 Set up your profile
               </Link>
@@ -56,7 +56,7 @@ const HomePage = async () => {
             <div className="flex flex-wrap items-center justify-center gap-2">
               <Link
                 href="/sign-up"
-                className="inline-flex h-11 items-center rounded-control bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
+                className="inline-flex h-11 items-center rounded-control bg-action-gradient px-5 text-sm font-medium text-white"
               >
                 Create your Mediary
               </Link>

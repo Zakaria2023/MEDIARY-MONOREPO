@@ -13,7 +13,7 @@ const SURFACES: Swatch[] = [
 ];
 
 const BRAND: Swatch[] = [
-  { token: "primary", className: "bg-primary", note: "The one button per screen" },
+  { token: "primary", className: "bg-primary", note: "Active tints, progress" },
   { token: "accent", className: "bg-accent", note: "Focus, links, selected" },
   { token: "violet", className: "bg-violet", note: "Depth, charts" },
   { token: "magenta", className: "bg-magenta", note: "Taste features" },
@@ -65,9 +65,15 @@ export const TokenSwatches = () => (
     <SwatchRow title="Text" swatches={TEXT} />
     <div className="flex flex-col gap-3">
       <h3 className="text-xs font-medium uppercase tracking-wide text-faint">
-        The brand gradient, in its four places only
+        The brand gradient, in its five places only
       </h3>
-      <div className="grid gap-3 sm:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-5">
+        <button
+          type="button"
+          className="flex h-14 cursor-pointer items-center justify-center rounded-control bg-action-gradient text-sm font-medium text-white"
+        >
+          Primary button
+        </button>
         <div className="flex h-14 items-center justify-center rounded-control bg-brand-gradient text-sm font-medium text-white">
           Landing hero
         </div>

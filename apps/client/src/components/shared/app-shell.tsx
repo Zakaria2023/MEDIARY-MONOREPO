@@ -83,7 +83,7 @@ export const AppShell = ({ current, children }: AppShellProps) => (
 
         <Link
           href="/design/add"
-          className="hidden h-9 items-center gap-1.5 rounded-control bg-primary px-3.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover md:flex"
+          className="hidden h-9 items-center gap-1.5 rounded-control bg-action-gradient px-3.5 text-sm font-medium text-white md:flex"
         >
           <Plus size={16} />
           Add
@@ -123,7 +123,7 @@ export const AppShell = ({ current, children }: AppShellProps) => (
           aria-label="Add to Mediary"
           className="flex items-center justify-center"
         >
-          <span className="flex h-12 w-12 items-center justify-center rounded-chip bg-primary text-white">
+          <span className="flex h-12 w-12 items-center justify-center rounded-chip bg-action-gradient text-white">
             <Plus size={24} />
           </span>
         </Link>

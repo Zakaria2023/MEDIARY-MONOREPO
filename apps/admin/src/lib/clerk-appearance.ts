@@ -30,7 +30,7 @@ export const CLERK_APPEARANCE: Appearance = {
     cardBox: "shadow-none",
     headerTitle: "font-display",
     formButtonPrimary:
-      "bg-primary text-white hover:bg-primary-hover shadow-none",
+      "bg-action-gradient text-white shadow-none",
     footer: "hidden",
     socialButtonsBlockButton: "border-hairline-strong text-ink hover:bg-hover",
     formFieldInput: "border-hairline-strong focus:border-accent",

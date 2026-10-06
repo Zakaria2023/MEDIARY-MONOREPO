@@ -45,7 +45,7 @@ export const SiteHeader = ({ user }: SiteHeaderProps) => (
             </Link>
             <Link
               href="/sign-up"
-              className="flex h-9 items-center rounded-control bg-primary px-3.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
+              className="flex h-9 items-center rounded-control bg-action-gradient px-3.5 text-sm font-medium text-white"
             >
               Create your Mediary
             </Link>

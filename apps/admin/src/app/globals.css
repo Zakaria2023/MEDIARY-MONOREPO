@@ -21,8 +21,8 @@
 
      Mediary is dark-mode-first: the canvas is near-black, the artwork is the
      color, and the interface itself is grey with ONE accent per context. The
-     logo owns the blue-violet-magenta spectrum; the screens borrow it in four
-     named places (hero, selected state, share cards, Taste DNA) and nowhere
+     logo owns the blue-violet-magenta spectrum; the screens borrow it in five
+     named places (primary button, hero, selected state, share cards, Taste DNA) and nowhere
      else. A rainbow dashboard is what the trackers this replaces look like. */
 
   /* ---- Surfaces ---- */
@@ -122,10 +122,10 @@
 
 /* ---- THE BRAND GRADIENT ----
 
-   One definition, four permitted uses: the landing hero, a selected or active
-   state, a share card, and the Taste DNA visualization. The utilities below
-   are the only way a component reaches it; `bg-linear-to-*` and inline
-   gradients are not used anywhere in the product. */
+   One definition, five permitted uses: the primary button, the landing hero,
+   a selected or active state, a share card, and the Taste DNA visualization.
+   The utilities below are the only way a component reaches it;
+   `bg-linear-to-*` and inline gradients are not used anywhere in the product. */
 :root {
   --gradient-brand: linear-gradient(
     135deg,
@@ -133,6 +133,20 @@
     #4057ff 35%,
     #7b2cff 70%,
     #d815ff 100%
+  );
+  /* THE BUTTON GRADIENT: the logo's sweep, from its blue through indigo and
+     violet to the magenta and pink of the wordmark's tail. The logo's
+     lightest blue, brightest magenta and pink are deepened a step here so
+     white label text keeps 4.5:1 against every stop. Drawn at 150% width:
+     at rest the button shows blue to magenta, on hover it slides to show
+     violet to pink. */
+  --gradient-action: linear-gradient(
+    100deg,
+    #1f6bff 0%,
+    #3d3bff 28%,
+    #6a28f5 52%,
+    #b315e0 78%,
+    #d61a7a 100%
   );
   --gradient-brand-soft: linear-gradient(
     135deg,
@@ -151,6 +165,22 @@
 
 @utility bg-brand-gradient {
   background-image: var(--gradient-brand);
+}
+
+/* The primary action. Carries its own hover and press so every call site is
+   one class, and transitions only the background position, which stays well
+   under the 250ms motion budget and is cut by the reduced-motion rule. */
+@utility bg-action-gradient {
+  background-image: var(--gradient-action);
+  background-size: 150% 100%;
+  background-position: 0% 50%;
+  transition: background-position 200ms ease-out, filter 150ms ease-out;
+  &:hover {
+    background-position: 100% 50%;
+  }
+  &:active {
+    filter: brightness(0.92);
+  }
 }
 
 @utility bg-brand-gradient-soft {
