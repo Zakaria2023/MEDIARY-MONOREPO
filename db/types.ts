@@ -1,0 +1,38 @@
+// ---------------------------------------------------------------------------
+// Shared JSON-column shapes. A schema file imports these by relative path
+// (`../types`) rather than redefining them inline, so the service that writes a
+// column and the one that reads it agree on its shape by construction.
+// ---------------------------------------------------------------------------
+
+/** A link a user shows on their profile. */
+export type ProfileLink = {
+  label: string;
+  url: string;
+};
+
+/** How a user has set the interface up for themselves. */
+export type ThemePrefs = {
+  theme: "dark" | "light" | "system";
+  reducedMotion: boolean;
+  /** Accent token name, e.g. "indigo" or "violet". Null means the default. */
+  accent: string | null;
+};
+
+/**
+ * Which kinds of activity a user lets others see, within whatever the global
+ * `activityVisibility` allows.
+ */
+export type ActivityPrefs = {
+  started: boolean;
+  completed: boolean;
+  rated: boolean;
+  reviewed: boolean;
+  favorited: boolean;
+  listed: boolean;
+};
+
+/**
+ * A provider's own popularity signals, kept as it gave them. The normalized
+ * rank lives on `Media.popularity`; this is the evidence it was computed from.
+ */
+export type PopularityRecord = Record<string, number>;
