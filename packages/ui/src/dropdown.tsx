@@ -1,0 +1,574 @@
+"use client";
+
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  CornerDownRight,
+  Search,
+} from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import type { KeyboardEvent, ReactNode } from "react";
+import { createPortal } from "react-dom";
+import Image from "next/image";
+import { ImageOff } from "lucide-react";
+import { Button } from "./button";
+
+export type DropdownOption = {
+  value: string;
+  label: string;
+  depth?: number;
+  /**
+   * A picture of the thing this row names, as a URL the browser can fetch.
+   *
+   * A URL AND NOT A DOCUMENT ID, because this package has no idea where an app
+   * keeps its files — the caller passes what its own `documentImageUrl` (or
+   * equivalent) returns. Absent means a text row exactly as before; a list where
+   * only some rows have one still lines up, because the empty ones keep the
+   * frame and show the placeholder.
+   */
+  image?: string | null;
+  /**
+   * A small glyph drawn before the label — an icon picker shows each icon
+   * beside its name. Rendered in the row and, once chosen, in the trigger.
+   */
+  icon?: ReactNode;
+};
+
+type DropdownBaseProps = {
+  options: DropdownOption[];
+  placeholder?: string;
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  emptyMessage?: string;
+  // Pins the trigger's text regardless of what's selected. For menus that are
+  // an action ("+ Add attribute") rather than a display of the current value.
+  triggerLabel?: string;
+};
+
+type SingleDropdownProps = DropdownBaseProps & {
+  multiple?: false;
+  value: string;
+  onChange: (value: string) => void;
+};
+
+type MultiDropdownProps = DropdownBaseProps & {
+  multiple: true;
+  value: string[];
+  onChange: (value: string[]) => void;
+};
+
+type DropdownProps = SingleDropdownProps | MultiDropdownProps;
+
+type MenuPosition = {
+  left: number;
+  width: number;
+  maxHeight: number;
+  // Exactly one of these is set: anchored below (top) or flipped above (bottom).
+  top?: number;
+  bottom?: number;
+};
+
+export const Dropdown = (props: DropdownProps) => {
+  const {
+    options,
+    placeholder = "Select...",
+    searchable = false,
+    searchPlaceholder = "Search...",
+    emptyMessage = "No results",
+    triggerLabel: fixedLabel,
+  } = props;
+  const listboxId = useId();
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  // Index of the keyboard-highlighted row among the currently rendered rows.
+  const [activeIndex, setActiveIndex] = useState(0);
+  // Tree parents start collapsed so the menu doesn't dump the whole tree.
+  // A parent is any option immediately followed by a deeper-depth option.
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+    const set = new Set<string>();
+    for (let i = 0; i < options.length; i++) {
+      const depth = options[i].depth ?? 0;
+      const next = options[i + 1];
+      if (next && (next.depth ?? 0) > depth) {
+        set.add(options[i].value);
+      }
+    }
+    return set;
+  });
+  const [position, setPosition] = useState<MenuPosition | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // Anchor the portalled menu to the trigger in viewport coordinates. The menu
+  // is position:fixed, so it can't be reached by page scroll — instead of
+  // letting it spill past the viewport edge, flip it above the trigger when
+  // there's more room there, and always cap its height to the space available.
+  const updatePosition = useCallback(() => {
+    const trigger = containerRef.current;
+    if (!trigger) {
+      return;
+    }
+    const rect = trigger.getBoundingClientRect();
+    const margin = 8;
+    const gap = 4;
+    const spaceBelow = window.innerHeight - rect.bottom - margin;
+    const spaceAbove = rect.top - margin;
+    const openUp = spaceBelow < 240 && spaceAbove > spaceBelow;
+    const maxHeight = Math.max(160, Math.floor(openUp ? spaceAbove : spaceBelow));
+    setPosition({
+      left: rect.left,
+      width: rect.width,
+      maxHeight,
+      ...(openUp
+        ? { bottom: window.innerHeight - rect.top + gap }
+        : { top: rect.bottom + gap }),
+    });
+  }, []);
+
+  // Keep it anchored while open (scroll uses capture to catch any ancestor).
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+    updatePosition();
+
+    const reposition = () => updatePosition();
+    window.addEventListener("scroll", reposition, true);
+    window.addEventListener("resize", reposition);
+    return () => {
+      window.removeEventListener("scroll", reposition, true);
+      window.removeEventListener("resize", reposition);
+    };
+  }, [isOpen, updatePosition]);
+
+  // Focus the search field as soon as a searchable menu opens.
+  useEffect(() => {
+    if (isOpen && searchable) {
+      searchRef.current?.focus();
+    }
+  }, [isOpen, searchable]);
+
+  // Close on a click that lands outside both the trigger and the menu.
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        containerRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setIsOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const isSelected = (optionValue: string) =>
+    props.multiple
+      ? props.value.includes(optionValue)
+      : props.value === optionValue;
+
+  /**
+   * The `image` srcs that turned out not to resolve to a picture.
+   *
+   * A caller hands over a URL, not a photograph, and some of those 404 — a
+   * document whose object is not in the bucket, most often. The browser's answer
+   * to that is its own broken-image glyph inside our 32px frame, which is worse
+   * than the empty frame this component already draws for an option that has no
+   * photograph at all. So a failed load is treated as no photograph, and the
+   * frame it leaves behind keeps every label starting in the same place.
+   */
+  const [brokenImages, setBrokenImages] = useState<string[]>([]);
+
+  const triggerLabel = (() => {
+    if (fixedLabel) {
+      return fixedLabel;
+    }
+    if (props.multiple) {
+      const selected = options.filter((option) =>
+        props.value.includes(option.value),
+      );
+      if (selected.length === 0) {
+        return placeholder;
+      }
+      if (selected.length <= 2) {
+        return selected.map((option) => option.label).join(", ");
+      }
+      return `${selected.length} selected`;
+    }
+    return (
+      options.find((option) => option.value === props.value)?.label ??
+      placeholder
+    );
+  })();
+
+  const isPlaceholder = !fixedLabel && triggerLabel === placeholder;
+  // The chosen option's glyph, beside its name in the closed trigger.
+  const triggerIcon =
+    fixedLabel || props.multiple
+      ? null
+      : (options.find((option) => option.value === props.value)?.icon ?? null);
+
+  // Whether this list is a list of pictures at all, decided once for the whole
+  // dropdown rather than per row. A product with no photograph still gets the
+  // frame and the placeholder, so its label starts where every other one does —
+  // rows that indent themselves depending on whether an image happened to load
+  // are harder to scan than rows with a gap in them.
+  const withImages = options.some((option) => option.image);
+
+  // Rows to render: while searching, a flat list of label matches (no tree,
+  // no collapse). Otherwise the tree with collapsed parents' subtrees hidden.
+  const rows = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (term) {
+      return options
+        .filter((option) => option.label.toLowerCase().includes(term))
+        .map((option) => ({
+          option: { ...option, depth: 0 },
+          hasChildren: false,
+          isCollapsed: false,
+        }));
+    }
+
+    const result: {
+      option: DropdownOption;
+      hasChildren: boolean;
+      isCollapsed: boolean;
+    }[] = [];
+    // While inside a collapsed subtree, skip every deeper option until we come
+    // back out to the collapsed parent's depth (or shallower).
+    let hideDepth: number | null = null;
+    for (let i = 0; i < options.length; i++) {
+      const option = options[i];
+      const depth = option.depth ?? 0;
+      if (hideDepth !== null) {
+        if (depth > hideDepth) {
+          continue;
+        }
+        hideDepth = null;
+      }
+      const next = options[i + 1];
+      const hasChildren = next ? (next.depth ?? 0) > depth : false;
+      const isCollapsed = collapsed.has(option.value);
+      result.push({ option, hasChildren, isCollapsed });
+      if (hasChildren && isCollapsed) {
+        hideDepth = depth;
+      }
+    }
+    return result;
+  }, [options, query, collapsed]);
+
+  const toggleCollapse = (value: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(value)) {
+        next.delete(value);
+      } else {
+        next.add(value);
+      }
+      return next;
+    });
+
+  // The highlighted row, clamped to the rows currently rendered.
+  const active = rows.length > 0 ? Math.min(activeIndex, rows.length - 1) : -1;
+
+  // Keep the highlighted row scrolled into view as the user arrows through.
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+    menuRef.current
+      ?.querySelector('[data-active="true"]')
+      ?.scrollIntoView({ block: "nearest" });
+  }, [isOpen, active]);
+
+  // The parent values above an option, found by walking back through the
+  // depth-ordered list to each shallower ancestor.
+  const ancestorsOf = (value: string): string[] => {
+    const index = options.findIndex((option) => option.value === value);
+    if (index === -1) {
+      return [];
+    }
+    const ancestors: string[] = [];
+    let depth = options[index].depth ?? 0;
+    for (let i = index - 1; i >= 0 && depth > 0; i--) {
+      const candidate = options[i].depth ?? 0;
+      if (candidate < depth) {
+        ancestors.push(options[i].value);
+        depth = candidate;
+      }
+    }
+    return ancestors;
+  };
+
+  const handleToggle = () => {
+    if (!isOpen) {
+      updatePosition();
+      // Opening: reveal the selected option by expanding its ancestors.
+      const selectedValue = props.multiple ? props.value[0] : props.value;
+      if (selectedValue) {
+        const ancestors = ancestorsOf(selectedValue);
+        if (ancestors.length > 0) {
+          setCollapsed((prev) => {
+            const next = new Set(prev);
+            ancestors.forEach((value) => next.delete(value));
+            return next;
+          });
+        }
+      }
+    }
+    setIsOpen((open) => !open);
+    setQuery("");
+    setActiveIndex(0);
+  };
+
+  const handleSelect = (optionValue: string) => {
+    if (props.multiple) {
+      props.onChange(
+        props.value.includes(optionValue)
+          ? props.value.filter((current) => current !== optionValue)
+          : [...props.value, optionValue],
+      );
+      // Stay open so several options can be toggled in one pass.
+      return;
+    }
+    props.onChange(optionValue);
+    setIsOpen(false);
+    setQuery("");
+  };
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (!isOpen) {
+      if (event.key === "ArrowDown" || event.key === "Enter") {
+        event.preventDefault();
+        handleToggle();
+      }
+      return;
+    }
+
+    const row = active >= 0 ? rows[active] : undefined;
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        setActiveIndex(Math.min(active + 1, rows.length - 1));
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        setActiveIndex(Math.max(active - 1, 0));
+        break;
+      case "Enter":
+        event.preventDefault();
+        if (row) {
+          handleSelect(row.option.value);
+        }
+        break;
+      case "Escape":
+        event.preventDefault();
+        setIsOpen(false);
+        break;
+      case "ArrowRight":
+        if (row?.hasChildren && row.isCollapsed) {
+          event.preventDefault();
+          toggleCollapse(row.option.value);
+        }
+        break;
+      case "ArrowLeft":
+        if (row?.hasChildren && !row.isCollapsed) {
+          event.preventDefault();
+          toggleCollapse(row.option.value);
+        }
+        break;
+      default:
+        break;
+    }
+  };
+
+  const activeOptionId = active >= 0 ? `${listboxId}-opt-${active}` : undefined;
+
+  return (
+    <div ref={containerRef} className="relative">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={handleToggle}
+        onKeyDown={handleKeyDown}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-controls={isOpen ? listboxId : undefined}
+        aria-activedescendant={
+          isOpen && !searchable ? activeOptionId : undefined
+        }
+        className="w-full justify-between text-start font-normal outline-none focus:border-accent"
+      >
+        <span
+          className={`flex items-center gap-2 ${isPlaceholder ? "text-faint" : ""}`}
+        >
+          {triggerIcon && (
+            <span className="flex shrink-0 items-center text-muted">
+              {triggerIcon}
+            </span>
+          )}
+          {triggerLabel}
+        </span>
+        <ChevronDown size={16} className="text-faint" />
+      </Button>
+
+      {isOpen &&
+        position &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{
+              position: "fixed",
+              top: position.top,
+              bottom: position.bottom,
+              left: position.left,
+              width: position.width,
+              maxHeight: position.maxHeight,
+            }}
+            className="z-50 flex flex-col overflow-hidden rounded-control border border-hairline bg-overlay shadow-lg"
+          >
+            {searchable && (
+              <div className="flex shrink-0 items-center gap-2 border-b border-hairline px-3 py-2">
+                <Search size={15} className="shrink-0 text-faint" />
+                <input
+                  ref={searchRef}
+                  value={query}
+                  onChange={(event) => {
+                    setQuery(event.target.value);
+                    setActiveIndex(0);
+                  }}
+                  onKeyDown={handleKeyDown}
+                  placeholder={searchPlaceholder}
+                  role="combobox"
+                  aria-controls={listboxId}
+                  aria-expanded={isOpen}
+                  aria-activedescendant={activeOptionId}
+                  className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-faint"
+                />
+              </div>
+            )}
+
+            <ul
+              id={listboxId}
+              role="listbox"
+              aria-multiselectable={props.multiple ? true : undefined}
+              className="min-h-0 flex-1 overflow-y-auto"
+            >
+              {rows.length === 0 ? (
+                <li className="px-3 py-2 text-sm text-faint">{emptyMessage}</li>
+              ) : (
+                rows.map(({ option, hasChildren, isCollapsed }, index) => {
+                  const selected = isSelected(option.value);
+                  const isActive = index === active;
+                  const image =
+                    option.image && !brokenImages.includes(option.image)
+                      ? option.image
+                      : null;
+                  return (
+                    <li key={option.value}>
+                      <div
+                        className={`flex items-center ${
+                          selected
+                            ? "bg-primary-tint text-accent"
+                            : isActive
+                              ? "bg-hover text-ink"
+                              : "text-ink hover:bg-hover"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          id={`${listboxId}-opt-${index}`}
+                          role="option"
+                          aria-selected={selected}
+                          data-active={isActive ? "true" : undefined}
+                          onClick={() => handleSelect(option.value)}
+                          onMouseEnter={() => setActiveIndex(index)}
+                          style={{ paddingLeft: 12 + (option.depth ?? 0) * 16 }}
+                          className={`flex flex-1 cursor-pointer items-center gap-1.5 py-2 pe-3 text-start text-sm ${
+                            selected ? "font-medium" : ""
+                          }`}
+                        >
+                          {(option.depth ?? 0) > 0 && !hasChildren && (
+                            <CornerDownRight
+                              size={14}
+                              className="shrink-0 text-faint"
+                            />
+                          )}
+                          {withImages && (
+                            <span className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-control border border-hairline bg-hover">
+                              {image !== null ? (
+                                <Image
+                                  src={image}
+                                  alt=""
+                                  fill
+                                  sizes="32px"
+                                  className="object-contain p-0.5"
+                                  onError={() =>
+                                    setBrokenImages((previous) => [
+                                      ...previous,
+                                      image,
+                                    ])
+                                  }
+                                />
+                              ) : (
+                                <ImageOff size={13} className="text-faint" />
+                              )}
+                            </span>
+                          )}
+                          {option.icon && (
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                              {option.icon}
+                            </span>
+                          )}
+                          <span className="flex-1">{option.label}</span>
+                          {props.multiple && selected && (
+                            <Check size={15} className="shrink-0 text-accent" />
+                          )}
+                        </button>
+
+                        {hasChildren && (
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              toggleCollapse(option.value);
+                            }}
+                            aria-label={
+                              isCollapsed
+                                ? `Expand ${option.label}`
+                                : `Collapse ${option.label}`
+                            }
+                            className="flex h-8 w-8 shrink-0 items-center justify-center text-faint hover:text-ink"
+                          >
+                            <ChevronRight
+                              size={15}
+                              className={`transition-transform ${
+                                isCollapsed ? "" : "rotate-90"
+                              }`}
+                            />
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })
+              )}
+            </ul>
+          </div>,
+          document.body,
+        )}
+    </div>
+  );
+};
