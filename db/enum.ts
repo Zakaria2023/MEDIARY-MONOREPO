@@ -260,3 +260,26 @@ export const importOutcomes = [
 ] as const satisfies readonly string[];
 
 export type ImportOutcome = (typeof importOutcomes)[number];
+
+// ---------------------------------------------------------------------------
+// Moderation
+// ---------------------------------------------------------------------------
+
+/** Why a member flagged a review. */
+export const reportReasons = [
+  "spam",
+  "abuse",
+  "spoilers",
+  "other",
+] as const satisfies readonly string[];
+
+export type ReportReason = (typeof reportReasons)[number];
+
+/** A report's life: waiting for staff, closed without action, or acted on. */
+export const reportStatuses = [
+  "open",
+  "dismissed",
+  "actioned",
+] as const satisfies readonly string[];
+
+export type ReportStatus = (typeof reportStatuses)[number];

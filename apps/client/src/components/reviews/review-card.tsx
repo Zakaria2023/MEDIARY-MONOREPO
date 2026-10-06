@@ -3,15 +3,18 @@ import Link from "next/link";
 import { TitleReview } from "services";
 import { formatDate } from "utils";
 import { UserAvatar } from "@/components/profile/user-avatar";
+import { ReportReviewButton } from "@/components/reviews/report-review-button";
 import { ReviewBody } from "@/components/reviews/review-body";
 import { profilePath } from "@/lib/profile-path";
 
 type ReviewCardProps = {
   review: TitleReview;
+  /** Whether the viewer may flag it: signed in, and not its author. */
+  canReport: boolean;
 };
 
 /** One member's review: who, when, their score, the headline and the text. */
-export const ReviewCard = ({ review }: ReviewCardProps) => (
+export const ReviewCard = ({ review, canReport }: ReviewCardProps) => (
   <article className="flex flex-col gap-3 rounded-card border border-hairline bg-surface p-5">
     <header className="flex items-center gap-3">
       <UserAvatar name={review.author.displayName} imageUrl={review.author.imageUrl} size="md" />
@@ -40,5 +43,6 @@ export const ReviewCard = ({ review }: ReviewCardProps) => (
     </header>
     {review.headline && <h3 className="font-display text-base text-ink">{review.headline}</h3>}
     <ReviewBody body={review.body} containsSpoilers={review.containsSpoilers} />
+    {canReport && <ReportReviewButton reviewUuid={review.uuid} />}
   </article>
 );

@@ -16,6 +16,15 @@ const VISIBILITY_OPTIONS = [
   { value: "private", label: "Only you" },
 ];
 
+const FEED_KINDS: { name: `activityPrefs.${keyof PrivacySettings["activityPrefs"]}`; label: string }[] = [
+  { name: "activityPrefs.started", label: "When I start something" },
+  { name: "activityPrefs.completed", label: "When I finish something" },
+  { name: "activityPrefs.rated", label: "When I rate something" },
+  { name: "activityPrefs.reviewed", label: "When I review something" },
+  { name: "activityPrefs.favorited", label: "When I add a favorite" },
+  { name: "activityPrefs.listed", label: "When I add to a list" },
+];
+
 const COMPARISON_OPTIONS = [
   { value: "everyone", label: "Everyone" },
   { value: "followers", label: "People who follow you" },
@@ -94,6 +103,18 @@ export const PrivacyForm = ({ settings }: PrivacyFormProps) => {
           )}
         />
       </SettingsField>
+
+      <div className="flex flex-col gap-3 border-t border-hairline pt-5">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm font-medium text-ink">What reaches the feed</span>
+          <span className="text-sm text-muted">
+            Within who may see your activity, which moments are announced. Off means never written.
+          </span>
+        </div>
+        {FEED_KINDS.map((kind) => (
+          <Checkbox key={kind.name} id={kind.name} label={kind.label} {...register(kind.name)} />
+        ))}
+      </div>
 
       <div className="flex flex-col gap-3 border-t border-hairline pt-5">
         <Checkbox label="Hide spoilers until I click them" {...register("hideSpoilers")} />

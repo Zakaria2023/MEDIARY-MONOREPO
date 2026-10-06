@@ -5,7 +5,18 @@ import {
   SelectUserSettings,
   UserSettings,
 } from "../../../db/schema/user-settings";
+import { ActivityPrefs } from "../../../db/types";
 import { NotFoundError } from "./errors";
+
+/** Every kind on, which is what a null column means. */
+export const DEFAULT_ACTIVITY_PREFS: ActivityPrefs = {
+  started: true,
+  completed: true,
+  rated: true,
+  reviewed: true,
+  favorited: true,
+  listed: true,
+};
 
 /** The privacy page's fields, derived from the settings row. */
 export type PrivacySettings = Pick<
@@ -16,7 +27,9 @@ export type PrivacySettings = Pick<
   | "tasteComparison"
   | "hideSpoilers"
   | "showAdultContent"
->;
+> & {
+  activityPrefs: ActivityPrefs;
+};
 
 export const getPrivacySettings = async (
   userUuid: string,
@@ -29,13 +42,14 @@ export const getPrivacySettings = async (
       tasteComparison: UserSettings.tasteComparison,
       hideSpoilers: UserSettings.hideSpoilers,
       showAdultContent: UserSettings.showAdultContent,
+      activityPrefs: UserSettings.activityPrefs,
     })
     .from(UserSettings)
     .where(eq(UserSettings.userUuid, userUuid));
   if (!row) {
     throw new NotFoundError("Settings not found");
   }
-  return row;
+  return { ...row, activityPrefs: { ...DEFAULT_ACTIVITY_PREFS, ...row.activityPrefs } };
 };
 
 export const updatePrivacySettings = async (
