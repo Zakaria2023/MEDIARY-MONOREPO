@@ -1,3 +1,4 @@
+import { Download } from "lucide-react";
 import { Metadata } from "next";
 import { AsyncSection } from "ui";
 import { SectionHeading } from "@/components/shared/section-heading";
@@ -31,6 +32,16 @@ const StatsPage = async () => {
         size="page"
         title="Your stats"
         description="Everything you have tracked, across every medium."
+        action={
+          <a
+            href="/stats/recap"
+            download={`mediary-${new Date().getUTCFullYear()}-recap.png`}
+            className="inline-flex h-10 items-center gap-2 rounded-control border border-hairline-strong px-4 text-sm font-medium text-ink transition-colors hover:bg-hover"
+          >
+            <Download size={16} />
+            Save your {new Date().getUTCFullYear()} recap
+          </a>
+        }
       />
       <AsyncSection reloadKey={`stats-${user.uuid}`} skeleton={<StatsSkeleton />}>
         <StatsOverview userUuid={user.uuid} />

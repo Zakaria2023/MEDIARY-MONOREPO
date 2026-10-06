@@ -10,8 +10,8 @@ type FollowButtonProps = {
 };
 
 /**
- * Follow, or Following. The one primary action on someone else's profile,
- * so it is the gradient button until it is pressed, then an outline.
+ * Follow, or Following. An outline beside Compare taste, which carries
+ * the gradient; the pressed state shows the check.
  */
 export const FollowButton = ({ userUuid, initialFollowing }: FollowButtonProps) => {
   const { following, isPending, error, onToggle } = useFollowButton(userUuid, initialFollowing);
@@ -19,7 +19,7 @@ export const FollowButton = ({ userUuid, initialFollowing }: FollowButtonProps) 
   return (
     <div className="flex flex-col items-end gap-1">
       <Button
-        variant={following ? "outline" : "primary"}
+        variant="outline"
         onClick={onToggle}
         disabled={isPending}
         aria-pressed={following}

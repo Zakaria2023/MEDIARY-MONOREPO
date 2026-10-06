@@ -28,6 +28,8 @@ export type {
 export * from "./roles";
 export * from "./settings";
 export * from "./stats";
+export * from "./taste";
+export * from "./taste-rules";
 export * from "./tracking";
 export * from "./tracking-rules";
 export * from "./visibility";

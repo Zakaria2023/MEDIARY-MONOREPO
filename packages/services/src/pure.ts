@@ -36,3 +36,6 @@ export type { DiaryKind, DiaryEventFields } from "./diary-rules";
 
 export { parseStatusWord, MAX_IMPORT_ITEMS } from "./import-parsers";
 export type { ParsedImportItem } from "./import-parsers";
+
+export { computeTasteMatch, computeTasteTraits, LOVED_SCORE, TASTE_TRAIT_LIMIT } from "./taste-rules";
+export type { MediumMatch, TasteEntry, TasteMatch, TasteTrait } from "./taste-rules";

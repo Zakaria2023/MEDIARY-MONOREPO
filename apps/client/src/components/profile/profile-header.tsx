@@ -1,4 +1,4 @@
-import { CalendarDays, Link2, MapPin, Settings } from "lucide-react";
+import { CalendarDays, Link2, MapPin, Settings, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { ReactNode } from "react";
 import { AuthUser, PublicProfile } from "services";
@@ -16,8 +16,8 @@ type ProfileHeaderProps = {
 /**
  * The identity area: a flat band with the avatar over its edge, the name as
  * the page's h1, the handle, the bio, the facts and the counts. The owner
- * gets a way to their settings; a signed-in visitor gets Follow. Compare
- * Taste arrives with the step that builds it.
+ * gets a way to their settings; a signed-in visitor gets Follow and
+ * Compare taste, the gradient on Compare because it is the growth loop.
  */
 export const ProfileHeader = ({ profile, viewer, children }: ProfileHeaderProps) => {
   const isOwner = viewer?.uuid === profile.uuid;
@@ -38,7 +38,16 @@ export const ProfileHeader = ({ profile, viewer, children }: ProfileHeaderProps)
             </Link>
           ) : (
             viewer && (
-              <FollowButton userUuid={profile.uuid} initialFollowing={profile.relation === "follower"} />
+              <div className="flex items-center gap-2">
+                <FollowButton userUuid={profile.uuid} initialFollowing={profile.relation === "follower"} />
+                <Link
+                  href={`/compare/${profile.username}`}
+                  className="inline-flex h-10 items-center gap-2 rounded-control bg-action-gradient px-4 text-sm font-medium text-white"
+                >
+                  <Sparkles size={16} />
+                  Compare taste
+                </Link>
+              </div>
             )
           )}
         </div>

@@ -451,6 +451,12 @@ SEO is a core of the product, with the design. Every public route pays for its p
 - An applied line becomes an entry and ONE `ProgressEvents` row dated by the file; no feed line is written. A title already in the library is skipped, never overwritten, by the `(user, media)` UNIQUE.
 - The import sources are named on screen by the person's own account elsewhere ("MyAnimeList export", "Letterboxd export"), on the same footing as "Continue with Google": the person's account, not a service Mediary uses.
 
+## Taste Match And Share Cards
+
+- Taste DNA and Taste Match are pure (`packages/services/src/taste-rules.ts`, via `services/pure`): a genre vector weighted by score or status, the cosine between two of them, and agreement on shared scores. The catalog carries no tags yet, so taste is genres; tags join the vector when an adapter writes them, without changing the rules' shape.
+- `/compare/[username]` is private and honors the other person's `tasteComparison` setting (everyone, followers, nobody) and blocks; `CompareRefused` says which. Comparing with oneself is a 404.
+- **Share cards are drawn by `src/lib/server/share-card.tsx`**, one frame for every card, in the image renderer's flexbox subset. A public card is a route's `opengraph-image.tsx` (a profile's); a private one is a `route.ts` under the page that offers it (`/compare/[username]/card`, `/stats/recap`), which checks the caller itself and is the image-endpoint exception to "no Route Handlers". A share card is one of the gradient's permitted places.
+
 ## Design Tokens
 
 The brand palette from the blueprint, as `globals.css` tokens. The app is dark-mode-first; a light theme is added once the dark system is complete, as a `.light` override of the same tokens.
