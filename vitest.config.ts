@@ -12,7 +12,14 @@ const serverOnlyEmpty = join(
 );
 
 export default defineConfig({
-  resolve: { alias: { "server-only": serverOnlyEmpty } },
+  resolve: {
+    alias: {
+      "server-only": serverOnlyEmpty,
+      // The apps' alias for the repo-root schema folder (tsconfig paths),
+      // so a helper in an app that reads a label map can be tested here.
+      "@/db": join(import.meta.dirname, "db"),
+    },
+  },
   test: {
     // Apps as well as packages: a rule that is genuinely about ONE app (which
     // routes it serves, say) belongs in that app, beside the code it checks.

@@ -449,6 +449,18 @@ body {
   animation: var(--animate-shimmer);
 }
 
+/* A number field draws its own stepper where the design wants one, so the
+   browser's spinner is never shown. */
+input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
 /* Slim themed scrollbar for panes that scroll inside the page. */
 .scrollbar-slim {
   scrollbar-width: thin;

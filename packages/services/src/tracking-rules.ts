@@ -1,5 +1,7 @@
 import { clampScore } from "utils";
-import { ProgressUnit, TrackingStatus } from "../../../db/enum";
+// A type-only import on purpose: it is erased before anything runs, which is
+// what lets services/pure re-export this file to the browser (pure.test.ts).
+import type { ProgressUnit, TrackingStatus } from "../../../db/enum";
 
 // THE RULES AN ENTRY FOLLOWS, with no database in sight. The tracking service
 // applies them inside its transaction; the Add sheet applies the same ones

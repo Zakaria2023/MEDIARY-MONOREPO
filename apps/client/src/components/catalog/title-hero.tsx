@@ -1,22 +1,25 @@
 import { Plus, Star } from "lucide-react";
 import Link from "next/link";
-import { AuthUser, CatalogTitle } from "services";
+import { AuthUser, CatalogTitle, TitleTracking } from "services";
 import { Badge, CatalogImage, Poster } from "ui";
 import { MEDIA_STATUS_LABELS, MEDIA_TYPE_LABELS } from "@/db/label";
+import { TrackButton } from "@/components/tracking/track-button";
 
 type TitleHeroProps = {
   title: CatalogTitle;
   viewer: AuthUser | null;
+  /** The title as the sheet needs it, with the viewer's entry; null for a visitor. */
+  tracking: TitleTracking | null;
 };
 
 /**
  * The first screen of a title page, rendered on the server: the backdrop
  * behind a scrim, the poster, the name as the page's h1, its badges, the
  * community score and the primary action, all in the HTML before any script
- * runs. A visitor without an account is offered one; the Add sheet for
- * members arrives with tracking.
+ * runs. A visitor without an account is offered one; a member gets the
+ * track button, which is the Add sheet's door.
  */
-export const TitleHero = ({ title, viewer }: TitleHeroProps) => {
+export const TitleHero = ({ title, viewer, tracking }: TitleHeroProps) => {
   const original = title.titles.find(
     (entry) => entry.titleType === "native" && entry.title !== title.canonicalTitle,
   );
@@ -76,6 +79,10 @@ export const TitleHero = ({ title, viewer }: TitleHeroProps) => {
               <span>{title.genres.map((genre) => genre.name).join(" · ")}</span>
             )}
           </div>
+
+          {viewer && tracking && (
+            <TrackButton target={tracking.target} initialEntry={tracking.entry} />
+          )}
 
           {!viewer && (
             <div className="flex flex-wrap items-center gap-3 pt-1">
