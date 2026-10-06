@@ -18,7 +18,7 @@ import { describe, expect, it } from "vitest";
  */
 
 const ROOT = join(import.meta.dirname, "../../..");
-const APPS = ["web"] as const;
+const APPS = ["client", "admin"] as const;
 
 // Every Tailwind colour utility the ui package uses, e.g. "overlay" from
 // `bg-overlay`. Deliberately broad — it is filtered below.

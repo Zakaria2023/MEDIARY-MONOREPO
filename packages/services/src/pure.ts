@@ -15,3 +15,6 @@
 // graph and fails if one ever is.
 
 export { ValidationError, NotFoundError } from "./errors";
+
+export { STAFF_ROLES, isStaffRole, isAdminRole } from "./roles";
+export type { StaffRole } from "./roles";

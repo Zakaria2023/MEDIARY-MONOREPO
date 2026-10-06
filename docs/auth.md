@@ -11,7 +11,7 @@ nothing else about identity: no passwords, no sessions table.
    svix signature and calls `syncClerkUser`. That creates the `Users` row and,
    in the same transaction, its `Profiles` and `UserSettings` rows.
 3. If the webhook has not landed by the time the person reaches a page,
-   `getCurrentUser` in `apps/web/src/lib/auth.ts` syncs from Clerk on demand,
+   `getCurrentUser` in `apps/client/src/lib/auth.ts` syncs from Clerk on demand,
    so a signed-in user is never treated as missing.
 4. `/welcome` asks for a username (checked live as it is typed) and a display
    name. `completeWelcome` saves them; the case-insensitive UNIQUE index on
