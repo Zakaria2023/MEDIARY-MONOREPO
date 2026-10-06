@@ -1,0 +1,435 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+Mediary is a cross-media entertainment tracker: one profile for everything a person watches, plays and reads. Launch media are anime, games, movies and TV; manga, books, music and podcasts come later and the data model is shaped to take them without a rebuild. The full product blueprint is the PDF the owner keeps outside the repo; the decisions that matter for code are restated here.
+
+## Monorepo Architecture
+
+This is a pnpm + Turborepo monorepo built on Next.js 16.
+
+**Apps**
+
+- `apps/web` — the one Next.js app: the public site, the signed-in product and the admin screens, all behind Clerk. There is no separate admin app and no `apps/api` yet; add `apps/api` (Route Handlers only, versioned under `/api/v1`) when a mobile client exists, and not before.
+
+**Packages**
+
+- `packages/services` — all business logic lives here as plain, framework-agnostic async functions. No `"use server"`, no request/response objects, no auth checks inside these functions, and no framework imports at all — that last one is why `next/cache` cannot be used here, so anything that needs caching or revalidation is wrapped in the app layer. Every operation (add a title, tick progress, follow a user) exists as exactly one function here, called by Server Actions and, later, Route Handlers. It is also the only place Drizzle is imported: services own database access, and nothing outside them talks to the database directly. `services/pure` is the browser-safe door for rules that touch no database.
+- `packages/validators` — zod schemas shared between Server Actions and Route Handlers so input validation never drifts between the two.
+- `packages/utils` — framework-agnostic helpers (`slugify`, `generateUuid`, `formatDate`, pagination shapes like `ListParams`/`ListQuery`/`PaginatedResult`, `ActionResult`, `fail`) shared across apps, imported from `"utils"`. Browser code imports this, so nothing server-only may go here.
+- `packages/storage` — Cloudflare R2 access plus the shared Route Handler bodies for image upload and the resizing image route, so the app's `route.ts` only imports and calls them.
+- `packages/ui` — shared React components (`Button`, `Input`, `Dropdown`, `useFocusTrap`, …) and the theme-tokens test that proves every color they paint with exists in the app's `globals.css`.
+- `packages/rate-limit` — the request ceiling `proxy.ts` enforces, behind a `CounterStore` interface so the in-process counter can be swapped for a shared one.
+- `packages/security-headers` — CSP, the fixed security headers, and the indexable-host allowlist.
+
+The schema and connection live in the repo-root `db/` folder, not in a package — services import it by relative path (`../../../db`). There is no `packages/database` and no `packages/types`; shared types are exported from the package that owns them, usually `services` or `utils`.
+
+**Calling convention**
+
+- Server Actions (`"use server"`) are the only way the app calls into services. They must stay thin: check the caller's identity, validate input, call exactly one `packages/services` function, return the result. No business logic inside an action.
+- Route Handlers exist only where a Server Action cannot do the job: a webhook that needs the raw body, an image endpoint, a file upload. Same rule: thin, and they call the same `packages/services` functions.
+
+**Auth**
+
+- Clerk is the identity provider. Do not reintroduce a custom password/JWT/session system.
+- The `Users` table is **not** an identity store — it is a profile store. Clerk owns credentials, verification and sessions. Each `Users` row is linked to Clerk by `clerkUserId` and is kept in sync by the Clerk webhook. Username, display name, bio, avatar and every setting live on Mediary's rows, not in Clerk.
+- `clerkMiddleware` runs in `proxy.ts`; `<ClerkProvider nonce={nonce}>` wraps the root layout. `getCurrentUser` resolves the cookie session via Clerk's `auth()` then maps `userId → getUserByClerkId`. Pages decide what to show a signed-out visitor; they never redirect to sign-in for public content.
+
+**Hard rules**
+
+- No business logic inside a Server Action or Route Handler — only in `packages/services`.
+- No direct database access from client components or anywhere outside `packages/services`.
+- Never modify `db/index.ts` (the database connection/pool setup). The Aiven service allows 20 connections in total; the pool is sized for that. Leave this file exactly as-is unless the user explicitly asks to change it.
+- Never commit `.env.local`. Every secret the app reads is listed in `.env.example` with an empty value.
+
+## Product Rules
+
+These come from the blueprint and settle arguments before they start.
+
+- **UI quality is a feature, not polish.** Every new page gets desktop and mobile states and designed loading, empty and error states before it is called done. Default browser text in any of those states is a bug.
+- **One lifecycle for every medium.** The database stores a normalized tracking status (`in_progress`, `completed`, `paused`, `dropped`, `planned`); the screen shows the medium's own word for it from one label map in `db/label.ts`. Never branch on medium to decide a status; branch on medium only to pick a label or a progress unit.
+- **Provider ids are mappings, never primary keys.** Every title has a Mediary uuid. TMDB, IGDB and AniList ids live in `MediaExternalRefs` with a unique `(provider, external_id)`. Nothing outside the provider adapters knows which provider a record came from; adapters normalize into Mediary's shape before anything else sees the data.
+- **Progress events are the source of truth for history.** The diary, the stats and the yearly recap are built from `ProgressEvents`, written in the same transaction as the `UserMedia` change. History is never reconstructed from current state.
+- **Fast first, cinematic second.** Motion under 250ms except page transitions; reduced-motion is respected; no 3D or WebGL anywhere basic navigation depends on it.
+- **Social is opt-in.** A private library is a complete product. Every visibility defaults open at sign-up and every one is a setting.
+- **Do not add a table without saying why the existing normalized model cannot hold the data.** Do not add a heavy dependency without a bundle-size justification.
+
+## Package Manager
+
+- Always use `pnpm` for installing dependencies and running scripts in this repo — never `npm` or `yarn`. (`npm install <pkg>` → `pnpm add <pkg>`, `npm run <script>` → `pnpm <script>`.)
+
+## Testing
+
+- Two suites. `pnpm test` is the fast, offline one (`*.test.ts`) — pure functions, no credentials needed. `pnpm test:integration` (`*.integration.test.ts`) runs against a real PostgreSQL; run `pnpm test:db:setup` once first to build `${DB_NAME}_test` on the same Aiven service.
+- Put a test in the integration suite when the thing being checked is a property of the **database** and a mocked one would agree with either answer: a UNIQUE constraint, a foreign key, transaction isolation, a row lock.
+- Every path that reads, decides, then writes needs a locking read (`.for("update")`) and, wherever a business key exists, a UNIQUE constraint behind it. Prefer the database refusing over a code path remembering to check. The `(user, media)` pair on `UserMedia` is the first of these.
+- A concurrency test written as two calls fired with `Promise.all` proves nothing. Hold the rows deliberately with a second connection. Before trusting any test of a fix, take the fix out and watch it fail.
+
+## React
+
+- Never use namespace-qualified React types like `React.ReactNode`, `React.FC`, `React.MouseEvent`, etc. Always import the specific type directly from `react`.
+
+  ```tsx
+  // ❌ Bad
+  const foo: React.ReactNode = null;
+
+  // ✅ Good
+  import type { ReactNode } from "react";
+  const foo: ReactNode = null;
+  ```
+
+## Components & Functions
+
+- Never use named function declarations. Always use arrow functions.
+- When a component or function body is only a `return`, use the implicit arrow return — no curly braces, no `return` keyword. If the returned JSX spans multiple lines, wrap it in `()`.
+
+  ```tsx
+  // ❌ Bad
+  function MyComponent() {
+    return <div>Hello</div>;
+  }
+
+  // ❌ Also bad
+  const MyComponent = () => {
+    return (
+      <div>
+        <span>Hello</span>
+      </div>
+    );
+  };
+
+  // ✅ Good
+  const MyComponent = () => (
+    <div>
+      <span>Hello</span>
+    </div>
+  );
+  ```
+
+## Props
+
+- Never define props inline. Always declare a named type above the component.
+- All types in a file live together at the top, above every function/component in that file — not interleaved as one type directly above each function.
+
+  ```tsx
+  // ❌ Bad
+  const PosterCard = ({ title }: { title: string }) => <div>{title}</div>;
+
+  // ✅ Good
+  type PosterCardProps = {
+    title: string;
+  };
+
+  const PosterCard = ({ title }: PosterCardProps) => <div>{title}</div>;
+  ```
+
+## Icons
+
+- Never use inline `<svg>` elements for icons. Always use [`lucide-react`](https://lucide.dev) instead.
+
+  ```tsx
+  // ❌ Bad
+  <svg width="24" height="24" viewBox="0 0 24 24">...</svg>
+
+  // ✅ Good
+  import { Play } from "lucide-react";
+  <Play size={24} />;
+  ```
+
+## Images
+
+- Never use a plain `<img>` tag. Always use `Image` from `next/image` instead, with `sizes` set on anything that is not a fixed-size avatar.
+- Never put a background plate behind a poster or an avatar. The artwork sits directly on the surface it is placed on. A poster that has not loaded shows the title's `dominantColor`, not a grey box.
+- Never show a title by its name alone. Wherever a title is listed — a library row, a diary line, an activity, a list item, a comparison — its poster sits beside the name. A title with no poster shows the outlined placeholder; the row never loses its image slot.
+
+## Dropdowns
+
+- Never use a native `<select>` element. Always use the `Dropdown` component from `ui` instead.
+
+## Navigation
+
+- Never use a plain `<a>` tag for in-app navigation. Always use `Link` from `next/link`.
+- Never navigate imperatively with `useRouter().push()` inside an `onClick` for what is really just a link. For a whole clickable element (a poster card) that also contains its own buttons, use a stretched `Link` overlay (`absolute inset-0`) plus `relative z-10` on the inner buttons — don't nest a `<button>` inside the `Link`.
+
+  ```tsx
+  // ✅ Good
+  <article className="relative">
+    <Link href={`/anime/${slug}`} aria-label={`View ${title}`} className="absolute inset-0" />
+    <button type="button" onClick={openAddSheet} className="relative z-10">
+      Add to Mediary
+    </button>
+  </article>
+  ```
+
+## Linting
+
+- Never disable a lint rule (`eslint-disable`, `eslint-disable-next-line`, etc.) to make a warning or error go away. Fix the underlying code so it satisfies the rule instead.
+
+## Tailwind CSS
+
+- Never use arbitrary value syntax for spacing, sizing, or typography when a built-in Tailwind scale exists. `text-[22px]` is `text-2xl`; `tracking-[-0.012em]` is `tracking-tight`.
+- Every color is a token from `globals.css` (`bg-surface`, `text-ink`, `text-muted`, `border-hairline`, `bg-primary`). Never a raw Tailwind palette color (`bg-slate-900`, `text-violet-500`) and never a hex value in a class. The theme-tokens test in `packages/ui` fails when a shared component names a token the app has not defined.
+- **Gradients are a brand moment, not a background.** They are allowed in exactly four places: the landing hero, a selected/active state, share cards, and the Taste DNA visualization — and only through the named tokens for them (`bg-brand-gradient`, `text-brand-gradient`). Everywhere else, backgrounds and text are flat color and a hairline separates one surface from another. A gradient behind every card is the reason the trackers this product replaces look dated.
+- Never use a shadow to separate a surface from the page — use a hairline border. `shadow-*` is reserved for something that genuinely floats (a menu, a modal, the add sheet), and even then it is one restrained value.
+- Text on the primary color is always `text-white` — in the disabled state too. A disabled button dims as a whole (`disabled:opacity-60`).
+- Never use the `truncate` class. Use `line-clamp-*` or let it wrap.
+- Weight is hierarchy, used sparingly. Body text is `font-normal`; emphasis is `font-medium`; `font-semibold` is for headings and the title on a detail hero only. Never `font-bold` or heavier. Where medium is not enough separation, get it from size, color or spacing instead of weight.
+
+## Exports
+
+- Regular components use **named exports** — inline on the declaration is fine, just never `export default`.
+- Only Next.js pages, layouts and the special files (`error.tsx`, `not-found.tsx`, `robots.ts`, `sitemap.ts`) use `export default`, and it must be written at the **bottom** of the file, never inline.
+
+  ```tsx
+  // ✅ Good — page/layout with default export at the bottom
+  const LibraryPage = () => <main>...</main>;
+
+  export default LibraryPage;
+  ```
+
+## TypeScript
+
+- Never use the non-null assertion operator (`!`). Handle the missing case explicitly by throwing an error or returning early.
+- Never use the `any` type. Use the actual type, `unknown` with a narrowing check, or a generic.
+- Never write `type` on the import when the thing being imported is already exported as a type.
+
+  ```ts
+  // ❌ Bad
+  const value = process.env.TMDB_API_KEY!;
+
+  // ✅ Good
+  const value = process.env.TMDB_API_KEY;
+  if (!value) {
+    throw new Error("Missing required environment variable: TMDB_API_KEY");
+  }
+  ```
+
+## Type Placement
+
+- Every `type` in a file lives in one block at the top, directly under the imports and above all the code. This holds for **every** file — services, actions, hooks, validators, tests. No type may appear below a function, a `const`, or any other statement.
+- A re-export of a type (`export type { SelectMedia };`) belongs in that same top block.
+
+## Control Flow
+
+- Never write a brace-less `if`. Every `if` (and `else`) body must be wrapped in `{}`, even when it is a single early `return` or `throw`.
+
+  ```ts
+  // ❌ Bad
+  if (!entry) return null;
+
+  // ✅ Good
+  if (!entry) {
+    return null;
+  }
+  ```
+
+## Route Handlers
+
+- When a route handler's logic is shared (the image upload and image routes in `packages/storage`), the handler body lives once in a package as a plain function taking the Web `Request` (and route `context`). The app's `route.ts` **imports and calls** it from a normal handler export. Never use the `export { handler as METHOD } from "package"` re-export syntax.
+
+  ```ts
+  // ✅ Good
+  import { handleImage } from "storage";
+
+  export const GET = (
+    request: Request,
+    context: { params: Promise<{ documentId: string }> },
+  ) => handleImage(request, context);
+  ```
+
+## Next.js Server Actions
+
+- Always use Server Actions for data mutations and queries. Never create a new route handler to duplicate something a Server Action could do.
+- Server Actions are defined in `actions.ts` files within the route's own folder, with `"use server"` at the top of the file.
+- Always perform redirects on the server, inside the Server Action, using `redirect` from `next/navigation`. Never redirect on the client after checking `state.success`.
+- Every action ends in the same catch: `return fail(error, "Could not save this entry");` so a `ValidationError` naming the exact problem reaches the user instead of a generic message.
+
+## Auth Checks
+
+- Never call an auth guard from a `page.tsx`. A page is layout — it decides what the screen looks like, not who may see it. The check belongs where the data is reached: the Server Action, or the shared helper the action goes through. For a whole private section, the guard lives in that route group's `layout.tsx`.
+- A read that must respect privacy (another user's library, a followers-only list) asks the service with the viewer's uuid, and the service applies the visibility rule. Privacy is enforced in the query, never only by hiding a button.
+
+## Dynamic Route Params
+
+- Page components for dynamic routes always type `params` as a `Promise` and `await` it.
+
+  ```tsx
+  type Props = {
+    params: Promise<{ type: string; slug: string }>;
+  };
+
+  const MediaPage = async ({ params }: Props) => {
+    const { type, slug } = await params;
+    // ...
+  };
+  ```
+
+## Loading UI
+
+- Never add route-level `loading.tsx` files. Show loading state with `<Suspense>` boundaries **inside** the page, wrapping only the async, data-dependent part, with a static skeleton as the `fallback`.
+- Give the `<Suspense>` a `key` derived from the relevant search params so changing a filter re-shows the fallback while the new data streams in — the fast, param-independent chrome stays mounted outside the boundary.
+- Pair the `<Suspense>` with an error boundary so a thrown fetch shows a retry UI instead of erroring the whole route. Use the shared `<AsyncSection reloadKey={...}>` which bundles both.
+- Skeletons match the shape of what they replace: a poster grid skeleton is a grid of 2:3 boxes, not a list of bars.
+
+## Form Submissions
+
+- Always use `useActionState` from `react` when a form submits to a server action, paired with `react-hook-form` and `zodResolver` for client-side validation. Call `dispatch(validatedData)` inside `handleSubmit` — never call the server action directly.
+- The add/update sheet saves optimistically: the status control reflects the chosen value at once and reverts, with the server's error, only if the action fails.
+
+## Logic Lives In A Hook
+
+- A component renders. Anything it has to **work out** before it can render — `useActionState`, `useForm`, derived values, submit handlers, effects, fetches — lives in a custom hook. What is left in the component is the destructuring of that hook and the `return`.
+- The hook file is named after what it does — `use-entry-form.ts`, `use-library-filters.ts` — kebab-case file, camelCase export, and it carries `"use client"` of its own.
+- It lives in that route's own folder in `app/`, beside the `page.tsx` and `actions.ts` it belongs to. Never in `components/`, never in a top-level `hooks/`. A hook serving a component in `packages/ui` sits beside that component; a hook for something the whole app uses (a widget in the header) goes in `src/lib/`.
+- Return the form object **whole**, plus whatever the markup branches on: `{ form, state, isPending, onSubmit }`.
+
+**What stays in the component:** state that is only about appearance and is read nowhere else (an open panel, a hovered row, the current tab), and field-level `react-hook-form` wiring inside a component that renders that one field.
+
+## Enums
+
+- Never use TypeScript's `enum`. Define enums as a `const` array typed with `as const satisfies readonly string[]`, and derive the union type with `(typeof arr)[number]`.
+- All enums for the app live together in the single `db/enum.ts` file. The Postgres enum types built from them (`pgEnum`) live together in `db/schema/enums.ts`, because drizzle-kit creates a type only when it sees it exported from the schema.
+- Labels never live in `enum.ts`. All label maps live together in `db/label.ts`, each exported as a `Record<EnumType, string>`. The medium-specific status words are one `Record<MediaType, Record<TrackingStatus, string>>` there.
+- Shared JSON-column shape types live in `db/types.ts` and are imported by schema files via `../types`.
+
+  ```ts
+  // ✅ Good — db/enum.ts
+  export const trackingStatuses = [
+    "in_progress",
+    "completed",
+    "paused",
+    "dropped",
+    "planned",
+  ] as const satisfies readonly string[];
+
+  export type TrackingStatus = (typeof trackingStatuses)[number];
+
+  // ✅ Good — db/schema/enums.ts
+  export const trackingStatusEnum = pgEnum("tracking_status", trackingStatuses);
+  ```
+
+## Folder Structure
+
+- The `actions.ts` file for a page always lives inside that page's own route folder in `app/`, next to its `page.tsx` — never in a separate top-level actions directory.
+- Zod validation schemas and custom hooks for a page also live inside that same route folder — not in `components/`, not in a top-level `hooks/` or `schemas/` directory.
+- Components never live inside `app/`. All components live under `src/components/`, grouped into a subfolder named after the page/feature they belong to (`components/library/`, `components/media/`, `components/profile/`, `components/shared/`).
+
+  ```
+  // ✅ Good
+  app/
+    library/
+      page.tsx
+      actions.ts
+      validation.ts
+      use-library-filters.ts
+
+  components/
+    library/
+      library-grid.tsx
+      library-row.tsx
+  ```
+
+## One Component Per File
+
+- A file holds exactly one component — the one it is named for. Never define a second component beside it, and never inside a `page.tsx` or `layout.tsx`. The async child a `<Suspense>` wraps is a component like any other and lives in `components/<feature>/`.
+
+## Helpers
+
+- Reusable helper functions (formatters, parsers, URL builders) are never defined inline at the top of a component file. Import them.
+- Framework-agnostic helpers shared across the repo live in `packages/utils` and are imported from `"utils"`. Only helpers tied to the request/runtime (anything importing `next/headers` or `next/server`) stay in `apps/web/src/lib/server/`.
+
+## File Naming
+
+- All file names are kebab-case, regardless of what they export — never PascalCase or camelCase.
+
+  ```
+  // ❌ Bad
+  PosterCard.tsx
+  useLibraryFilters.ts
+
+  // ✅ Good
+  poster-card.tsx
+  use-library-filters.ts
+  ```
+
+## Database Schema
+
+- **Never add SQL files to the repository.** No `.sql` files, no migrations folder, no "run this by hand" scripts. `db/schema/` is the only description of the database this repo keeps. `drizzle/` stays in `.gitignore`.
+- The schema is applied with `pnpm db:push`. When push proposes something destructive, the answer is to fix the schema so it stops proposing it — not to apply a statement around push.
+- Table definitions use PascalCase — both the exported const and the table name string passed to `pgTable` must match.
+- Every table has `id: serial` as the primary key and, where rows are referenced from outside, `uuid: uuid().defaultRandom().notNull().unique()`. Foreign keys reference the uuid, never the serial. Timestamps are `timestamp(..., { withTimezone: true })`.
+- A business key gets a UNIQUE constraint, declared in the schema's index list with a named constraint (`unique("uq_user_media_user_media")`). Indexes follow observed queries; do not add a composite index because it looks useful.
+- Postgres enums can be widened in place and never narrowed. A value is added to the array in `db/enum.ts`; it is never removed, only retired from the labels.
+
+  ```ts
+  // ✅ Good
+  export const UserMedia = pgTable(
+    "UserMedia",
+    {
+      id: serial("id").primaryKey(),
+      uuid: uuid("uuid").defaultRandom().notNull().unique(),
+      // ...
+    },
+    (table) => [unique("uq_user_media_user_media").on(table.userUuid, table.mediaUuid)],
+  );
+  ```
+
+## Service DTO Types
+
+- Service DTO/list/detail types must derive every field that maps to a database column from the table's `Select*` type — via indexed access (`SelectMedia["slug"]`), `Pick`, or `Omit` — never hand-typed. Add `| null` for a left-joined column.
+- Only genuinely computed values — SQL aggregates (`COUNT`, `SUM` of hours) or composed values — may be plain types.
+
+## Catalog Providers
+
+- Every provider (TMDB, IGDB, AniList, later Open Library and MusicBrainz) implements the same `MediaProvider` interface in `packages/services/src/providers/`: `search`, `getById`, `getPopular`, `getTrending`, `normalize`, `mapExternalIds`, `getImages`. Credentials and rate-limit handling stay inside the adapter.
+- Nothing outside `providers/` imports a provider SDK or reads a provider-shaped object. The normalized shape is Mediary's `Media` row plus its titles, refs, images, genres and tags.
+- Never call a provider on a page view. The catalog is synced into PostgreSQL and refreshed by background jobs; a search that finds nothing locally may supplement from a provider and then normalizes the chosen item in.
+- Store only what the provider's terms permit. Image URLs are stored for providers that allow hotlinking under attribution; bytes are copied only where terms allow. Attribution text is data-driven, never hard-coded in a component.
+- Before any provider goes to production, re-check its terms, attribution rules, image rights and rate limits. They change.
+
+## Design Tokens
+
+The brand palette from the blueprint, as `globals.css` tokens. The app is dark-mode-first; a light theme is added once the dark system is complete, as a `.light` override of the same tokens.
+
+| Token                     | Value     | Usage                                         |
+| ------------------------- | --------- | --------------------------------------------- |
+| `--color-page`            | `#090A10` | The canvas                                    |
+| `--color-surface`         | `#11131C` | Cards, menus, sheets                          |
+| `--color-primary`         | `#4057FF` | Primary buttons, important active states      |
+| `--color-accent`          | `#1697FF` | Focus rings, links, selected controls         |
+| `--color-violet`          | `#7B2CFF` | Brand depth, gradient stop, charts            |
+| `--color-magenta`         | `#D815FF` | Rare highlight, taste features                |
+| `--color-pink`            | `#FF2C8A` | Rare accent, share moments                    |
+| `--color-ink`             | `#F7F8FC` | Primary text                                  |
+| `--color-muted`           | `#A9AFBF` | Secondary text                                |
+| `--color-hairline`        | 10% white | The only thing that separates two surfaces    |
+| `--radius-card`           | `14px`    | Posters and cards                             |
+| `--radius-control`        | `10px`    | Buttons, inputs, chips                        |
+
+One or two accents per screen. The spectrum belongs to the logo and the four gradient surfaces named under Tailwind CSS above, not to the interface.
+
+## Routes
+
+| Route                   | Purpose                                     |
+| ----------------------- | ------------------------------------------- |
+| `/`                     | Marketing when signed out, home when signed in |
+| `/explore`              | Cross-media discovery hub                   |
+| `/explore/[type]`       | One medium's discovery page                 |
+| `/search?q=`            | Universal search with type filters          |
+| `/[type]/[slug]`        | Canonical media detail page                 |
+| `/library`              | The signed-in user's library                |
+| `/library/[type]`       | Filtered to one medium                      |
+| `/diary`                | Chronological progress log                  |
+| `/stats`                | Cross-media statistics                      |
+| `/feed`                 | Following activity                          |
+| `/lists`, `/lists/[slug]` | Custom lists                              |
+| `/compare/[username]`   | Taste Match                                 |
+| `/@[username]`          | Public profile                              |
+| `/settings/*`           | Account, profile, privacy, imports, appearance |
+| `/admin/*`              | Moderation and data corrections             |
+
+`[type]` is always one of `mediaTypes` in `db/enum.ts`; a slug is unique per type, not globally.
+
+## Roadmap
+
+Delivery order, each step shippable on its own: platform foundation → catalog + universal search → add/update sheet + library → profiles + stats + diary → reviews + lists + follows + feed → imports → Taste Match + share cards → beta hardening. Build the step in front of you; do not pre-build the one after it.
