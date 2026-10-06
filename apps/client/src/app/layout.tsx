@@ -4,7 +4,6 @@ import localFont from "next/font/local";
 import { headers } from "next/headers";
 import { ReactNode } from "react";
 import { JsonLd } from "@/components/seo/json-ld";
-import { CLERK_APPEARANCE } from "@/lib/clerk-appearance";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/seo";
 import { graph, organizationNode, webSiteNode } from "@/lib/structured-data";
 import "./globals.css";
@@ -130,7 +129,7 @@ const RootLayout = async ({ children }: Props) => {
     // and trust only nonce-approved scripts. Without the nonce the script is
     // refused, clerk-js never boots, and every Clerk control renders but does
     // nothing when clicked.
-    <ClerkProvider nonce={nonce} appearance={CLERK_APPEARANCE}>
+    <ClerkProvider nonce={nonce}>
       <html lang="en" className={`h-full antialiased ${FONT_VARIABLES}`}>
         <body className="flex min-h-full flex-col bg-page font-sans text-ink">
           {/* Site-wide identity: every page inherits it, and per-page nodes

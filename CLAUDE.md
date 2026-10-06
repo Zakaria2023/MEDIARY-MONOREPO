@@ -24,6 +24,7 @@ This is a pnpm + Turborepo monorepo built on Next.js 16.
 - `packages/ui` — shared React components (`Button`, `Input`, `Dropdown`, `useFocusTrap`, …) and the theme-tokens test that proves every color they paint with exists in the app's `globals.css`.
 - `packages/rate-limit` — the request ceiling `proxy.ts` enforces, behind a `CounterStore` interface so the in-process counter can be swapped for a shared one.
 - `packages/security-headers` — CSP, the fixed security headers, and the indexable-host allowlist.
+- `packages/auth` — Mediary's own sign-in, sign-up, password reset, Google return page, account menu and sign-out button, used by both apps. The identity service runs underneath through its headless hooks; every word on these screens, error messages included, is Mediary's (`src/errors.ts`).
 
 The schema and connection live in the repo-root `db/` folder, not in a package — services import it by relative path (`../../../db`). There is no `packages/database` and no `packages/types`; shared types are exported from the package that owns them, usually `services` or `utils`.
 
@@ -35,6 +36,8 @@ The schema and connection live in the repo-root `db/` folder, not in a package �
 **Auth**
 
 - Clerk is the identity provider. Do not reintroduce a custom password/JWT/session system.
+- **Clerk is headless. Never render a component Clerk draws**: no `SignIn`, `SignUp`, `UserButton`, `UserProfile`, `SignOutButton`, `OrganizationSwitcher` or any other. Every auth screen comes from `packages/auth`. Credential changes and account deletion go through Server Actions calling Clerk's server API (`apps/client/src/lib/server/account.ts`), never Clerk's browser re-verification, which draws its own dialog.
+- **The admin is sign-in only.** No sign-up page, no create-account link, no Google button: a Google sign-in from an unknown address quietly creates an account, and the admin never creates accounts. A staff account is a member account promoted by role.
 - The `Users` table is **not** an identity store — it is a profile store. Clerk owns credentials, verification and sessions. Each `Users` row is linked to Clerk by `clerkUserId` and is kept in sync by the Clerk webhook. Username, display name, bio, avatar and every setting live on Mediary's rows, not in Clerk.
 - `clerkMiddleware` runs in `proxy.ts`; `<ClerkProvider nonce={nonce}>` wraps the root layout. `getCurrentUser` resolves the cookie session via Clerk's `auth()` then maps `userId → getUserByClerkId`, syncing the row on demand if the webhook has not landed. Pages decide what to show a signed-out visitor; they never redirect to sign-in for public content.
 - **Staff access is a role, not a separate account.** `apps/admin` gates every screen in its `(dashboard)` layout with `requireStaff` (role `admin` or `moderator`, status `active`) and sends a signed-in member without one to `/no-access`, never back to `/sign-in`. Imports, role changes and deletions call `requireAdmin`. Every admin Server Action calls the guard again itself; the layout gate is not enough on its own. The role lives on Mediary's `Users` row, never in Clerk metadata. `STAFF_ROLES` and `isStaffRole` live in `packages/services/src/roles.ts`.
@@ -47,6 +50,15 @@ The schema and connection live in the repo-root `db/` folder, not in a package �
 - No direct database access from client components or anywhere outside `packages/services`.
 - Never modify `db/index.ts` (the database connection/pool setup). The Aiven service allows 20 connections in total; the pool is sized for that. Leave this file exactly as-is unless the user explicitly asks to change it.
 - Never commit `.env.local`. Every secret the app reads is listed in `.env.example` with an empty value.
+
+## No Vendor On Screen
+
+- **No third-party service is ever named on any screen, in either app**: not Clerk, not TMDB, IGDB, Twitch, Google Cloud, Aiven, Cloudflare or any other. Not in a page, a label, an empty state, an error message, a tooltip or an alt text. The one exception is the "Continue with Google" button, which names the person's own account choice, not a service Mediary uses.
+- **No credential, key or environment variable name is ever shown**, not even to staff. A source that is not configured says its access keys are missing on the server, nothing more.
+- Catalog sources are named on screen by what they are, from `PROVIDER_LABELS` in `db/label.ts` ("Movie and TV database"), never by the vendor. Error messages a person may read use the same descriptive wording; an adapter's `SOURCE_LABEL` is the name its errors use.
+- An identity error is shown through `authErrorMessage`, never as the service sent it.
+- Vendor names are fine in code, comments, docs, env files and machine-only markup (JSON-LD `sameAs`, image URLs).
+- **Provider attribution is not rendered**, by the owner's decision of 2026-10-06. TMDB's terms require visible attribution once the site is public; that is recorded as a launch blocker in `docs/catalog-providers.md`, and the attribution data stays on each adapter for when the owner decides how to meet it.
 
 ## Product Rules
 
@@ -406,7 +418,7 @@ SEO is a core of the product, with the design. Every public route pays for its p
 - `ingestNormalizedMedia` is the one writer: it upserts by external mapping inside one transaction, locks the matched refs, picks a slug once and never changes it, and leaves every field or section named in `Media.lockedFields` alone. A lost race ends in a UNIQUE violation that rolls back and retries.
 - Genres map onto Mediary's one vocabulary in `providers/vocabulary.ts`; a provider genre with no entry is dropped, never invented. Popularity is put on one 0 to 100 scale across providers, with the raw signals kept beside it.
 - Never call a provider on a public page view. The public site reads PostgreSQL only. Providers are called from the admin's Imports screen, its Refresh button, and the daily cron (`/api/cron/catalog` in `apps/admin`, guarded by `CRON_SECRET`).
-- Store only what the provider's terms permit. Image URLs are stored for providers that allow hotlinking under attribution, and rendered through `CatalogImage`/`Poster` from `ui`, whose loader asks the provider's CDN for the size the slot needs instead of re-encoding through Next's optimizer. Attribution is data on the adapter, rendered by the footer and the title page; never hard-coded in a component.
+- Store only what the provider's terms permit. Image URLs are stored for providers that allow hotlinking under attribution, and rendered through `CatalogImage`/`Poster` from `ui`, whose loader asks the provider's CDN for the size the slot needs instead of re-encoding through Next's optimizer. Attribution is data on the adapter and is currently rendered nowhere (see No Vendor On Screen).
 - Before any provider goes to production, re-check its terms, attribution rules, image rights and rate limits. They change.
 
 ## Design Tokens

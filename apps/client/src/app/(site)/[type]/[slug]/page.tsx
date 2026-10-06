@@ -7,7 +7,6 @@ import { MEDIA_TYPE_LABELS } from "@/db/label";
 import { RelatedTitles } from "@/components/catalog/related-titles";
 import { TitleHero } from "@/components/catalog/title-hero";
 import { TitleRailSkeleton } from "@/components/catalog/title-rail-skeleton";
-import { TitleSources } from "@/components/catalog/title-sources";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getCurrentUser } from "@/lib/auth";
 import { EXPLORE_COPY } from "@/lib/explore-copy";
@@ -73,7 +72,7 @@ const TitlePage = async ({ params }: Props) => {
       />
       <TitleHero title={title} viewer={viewer} />
 
-      <div className="mx-auto grid w-full max-w-7xl gap-10 px-5 py-8 sm:px-8 lg:grid-cols-[1fr_320px]">
+      <div className="mx-auto grid w-full max-w-7xl gap-10 px-5 py-8 sm:px-8">
         <div className="flex flex-col gap-10">
           <section className="flex flex-col gap-3">
             <h2 className="text-xs font-medium uppercase tracking-wide text-faint">About</h2>
@@ -108,9 +107,6 @@ const TitlePage = async ({ params }: Props) => {
           )}
         </div>
 
-        <aside className="flex flex-col gap-8 lg:sticky lg:top-20 lg:self-start">
-          <TitleSources refs={title.refs} />
-        </aside>
       </div>
 
       <div className="mx-auto w-full max-w-7xl pb-8">

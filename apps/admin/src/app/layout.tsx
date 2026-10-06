@@ -3,7 +3,6 @@ import { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { headers } from "next/headers";
 import { ReactNode } from "react";
-import { CLERK_APPEARANCE } from "@/lib/clerk-appearance";
 import "./globals.css";
 
 // The same three faces as the client, as files in the repo: no build can
@@ -70,7 +69,7 @@ const RootLayout = async ({ children }: Props) => {
   return (
     // The CSP carries 'strict-dynamic'; without the nonce clerk-js is refused
     // and every Clerk control renders but does nothing when clicked.
-    <ClerkProvider nonce={nonce} appearance={CLERK_APPEARANCE}>
+    <ClerkProvider nonce={nonce}>
       <html lang="en" className={`h-full antialiased ${FONT_VARIABLES}`}>
         <body className="flex min-h-full flex-col bg-page font-sans text-ink">
           {children}

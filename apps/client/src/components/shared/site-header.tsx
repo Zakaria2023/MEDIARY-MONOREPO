@@ -1,4 +1,4 @@
-import { UserButton } from "@clerk/nextjs";
+import { UserMenu } from "auth";
 import { Settings } from "lucide-react";
 import Link from "next/link";
 import { AuthUser } from "services";
@@ -12,10 +12,9 @@ type SiteHeaderProps = {
 
 /**
  * The header: the mark, Explore, search everywhere, and either the sign-in
- * links or Clerk's user menu beside a settings link. The viewer is passed in
- * because Clerk's <SignedIn> helpers are client-only in this version and the
- * header is a server component. Library and the Add button join it with the
- * tracking step.
+ * links or the account menu. The viewer is passed in because the header is
+ * a server component and knows who is looking from the request. Library and
+ * the Add button join it with the tracking step.
  */
 export const SiteHeader = ({ user }: SiteHeaderProps) => (
   <header className="sticky top-0 z-40 border-b border-hairline bg-page/80 backdrop-blur-md">
@@ -39,16 +38,13 @@ export const SiteHeader = ({ user }: SiteHeaderProps) => (
       <div className="ms-auto flex items-center gap-2">
         <SearchPalette />
         {user ? (
-          <>
-            <Link
-              href="/settings/profile"
-              aria-label="Settings"
-              className="flex h-9 w-9 items-center justify-center rounded-control text-muted transition-colors hover:bg-hover hover:text-ink"
-            >
-              <Settings size={18} />
-            </Link>
-            <UserButton />
-          </>
+          <UserMenu
+            name={user.displayName}
+            detail={user.username ? `@${user.username}` : user.email}
+            imageUrl={user.imageUrl}
+            signOutRedirect="/"
+            links={[{ label: "Settings", href: "/settings/profile", icon: <Settings size={16} /> }]}
+          />
         ) : (
           <>
             <Link

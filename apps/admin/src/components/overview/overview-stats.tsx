@@ -16,7 +16,7 @@ export const OverviewStats = async () => {
       <StatTile
         label="Members"
         value={FORMAT.format(overview.members)}
-        detail="Accounts synced from Clerk"
+        detail="Everyone with an account"
         icon={<Users size={16} />}
       />
       <StatTile

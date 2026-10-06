@@ -139,9 +139,10 @@ export type ProviderCandidate = {
 export type ProviderListKind = "trending" | "popular" | "upcoming";
 
 /**
- * What a provider must show wherever its data appears. Data, not markup, so
- * the one attribution component renders whichever providers contributed to
- * the page it is on.
+ * What a provider's terms ask a site to show. KEPT AS DATA, RENDERED NOWHERE:
+ * the owner has decided no vendor is named on screen (CLAUDE.md, "No vendor
+ * on screen"). TMDB's terms require attribution once the site is public;
+ * docs/catalog-providers.md records that as a launch blocker the owner holds.
  */
 export type ProviderAttribution = {
   provider: Provider;

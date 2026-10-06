@@ -1,12 +1,44 @@
 # Authentication and onboarding
 
-Clerk is the identity provider. Mediary keeps a profile row per Clerk user and
+Clerk is the identity provider, used HEADLESSLY: no component Clerk draws is
+ever rendered, and its name appears on no screen. Every auth screen is
+Mediary's own, from `packages/auth`, built on Clerk's custom-flow hooks
+(`useSignIn`, `useSignUp`). Mediary keeps a profile row per Clerk user and
 nothing else about identity: no passwords, no sessions table.
+
+## The screens
+
+| Screen | Client app | Admin app |
+| ------ | ---------- | --------- |
+| Sign in: password, or a code by email | `/sign-in` | `/sign-in` |
+| New-browser check (a code by email) | inside sign-in | inside sign-in |
+| Sign up: email and password, then a code | `/sign-up` | none: the admin never creates accounts |
+| Google | button on sign-in and sign-up, returns to `/sso-callback` | none |
+| Forgot password | `/forgot-password` | `/forgot-password` |
+| Account menu, sign out | header | sidebar and top bar |
+| Email, password, delete account | `/settings/account` | none |
+
+The sign-up form keeps an element with id `clerk-captcha` on the page: the
+instance has bot protection on, and the check renders there (invisible for
+almost everyone). Passwords must be at least 15 characters, the instance's
+setting, mirrored as `PASSWORD_MIN_LENGTH` in `validators`.
+
+Changing the password and deleting the account are Server Actions calling
+Clerk's server API (`apps/client/src/lib/server/account.ts`). The browser API
+would ask for re-verification through a dialog Clerk draws itself.
+
+## Things to set in the Clerk dashboard
+
+- **Email templates.** The codes are emailed by Clerk. Set the sender name to
+  Mediary and edit the templates so no Clerk branding is in them.
+- **Google credentials.** A development instance signs in with Clerk's shared
+  Google app, so Google's consent screen names Clerk. Add Mediary's own Google
+  OAuth client in the dashboard before launch.
 
 ## The flow
 
-1. `/sign-up` is Clerk's component. On success Clerk redirects to
-   `NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL`, which is `/welcome`.
+1. `/sign-up` creates the account and verifies the email with a code, then
+   goes to `/welcome`.
 2. Clerk sends `user.created` to `/api/webhooks/clerk`, which verifies the
    svix signature and calls `syncClerkUser`. That creates the `Users` row and,
    in the same transaction, its `Profiles` and `UserSettings` rows.

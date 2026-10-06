@@ -1,4 +1,4 @@
-import { SignOutButton } from "@clerk/nextjs";
+import { SignOutButton } from "auth";
 import { ShieldAlert } from "lucide-react";
 import { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth";
@@ -42,14 +42,7 @@ const NoAccessPage = async () => {
             )}
           </p>
         </div>
-        <SignOutButton redirectUrl="/sign-in">
-          <button
-            type="button"
-            className="rounded-control border border-hairline-strong px-4 py-2.5 text-sm font-medium text-secondary transition-colors hover:bg-hover hover:text-ink"
-          >
-            Sign out and use another account
-          </button>
-        </SignOutButton>
+        <SignOutButton redirectTo="/sign-in" label="Sign out and use another account" />
         <p className="text-xs leading-relaxed text-faint">
           Mediary and its admin share one sign-in, so this signs you out of
           both.

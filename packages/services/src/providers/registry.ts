@@ -1,16 +1,16 @@
 import { MediaType, Provider } from "../../../../db/enum";
+import { PROVIDER_LABELS } from "../../../../db/label";
 import { igdbProvider } from "./igdb";
 import { tmdbProvider } from "./tmdb";
-import { MediaProvider, ProviderAttribution } from "./types";
+import { MediaProvider } from "./types";
 
 /** What the admin shows about a source: whether it can be used yet. */
 export type ProviderStatus = {
   provider: Provider;
+  /** The descriptive label from PROVIDER_LABELS; never the vendor's name. */
   name: string;
   mediaTypes: readonly MediaType[];
   configured: boolean;
-  /** The environment variables it reads, for the "not configured" hint. */
-  envVars: string[];
 };
 
 /**
@@ -19,11 +19,6 @@ export type ProviderStatus = {
  * (docs/catalog-providers.md). Adding it is one adapter and one line here.
  */
 const ADAPTERS: MediaProvider[] = [tmdbProvider, igdbProvider];
-
-const ENV_VARS: Partial<Record<Provider, string[]>> = {
-  tmdb: ["TMDB_READ_ACCESS_TOKEN"],
-  igdb: ["TWITCH_CLIENT_ID", "TWITCH_CLIENT_SECRET"],
-};
 
 /** The adapter for a provider, or an error naming what is missing. */
 export const getProvider = (provider: Provider): MediaProvider => {
@@ -42,18 +37,7 @@ export const providerForType = (mediaType: MediaType): MediaProvider | null =>
 export const listProviderStatuses = (): ProviderStatus[] =>
   ADAPTERS.map((adapter) => ({
     provider: adapter.provider,
-    name: adapter.attribution.name,
+    name: PROVIDER_LABELS[adapter.provider],
     mediaTypes: adapter.mediaTypes,
     configured: adapter.isConfigured(),
-    envVars: ENV_VARS[adapter.provider] ?? [],
   }));
-
-/** The attribution each of the given providers requires, adapters only. */
-export const attributionsFor = (providers: Provider[]): ProviderAttribution[] =>
-  ADAPTERS.filter((adapter) => providers.includes(adapter.provider)).map(
-    (adapter) => adapter.attribution,
-  );
-
-/** Every adapter's attribution, for the site footer. */
-export const allAttributions = (): ProviderAttribution[] =>
-  ADAPTERS.map((adapter) => adapter.attribution);

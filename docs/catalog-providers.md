@@ -13,6 +13,17 @@ where the check is recorded.
 | IGDB     | Built: games | Unit-tested against the documented v4 shape only. Not yet called live: the Twitch credentials are not configured. Run one import as soon as they are. |
 | Anime    | Not built | Waiting on the owner's choice of source; see below. |
 
+## Launch blocker: TMDB attribution
+
+On 2026-10-06 the owner decided that no vendor is named anywhere on screen,
+TMDB included, so its logo and notice are not rendered. TMDB's terms require
+every application using its data or images to attribute TMDB (logo plus "This
+product uses the TMDB API but is not endorsed or certified by TMDB.", in an
+about or credits section at least). Running without it in development is the
+owner's call; before the site is public the owner must either add that credit
+or reach a separate agreement with TMDB. The text and logo requirement stay on
+the adapter (`tmdbProvider.attribution`) for that day.
+
 ## The matrix
 
 | Provider | Media         | Auth                                        | Rate limit                                                  | Commercial use                                                                                                    | Data and images                                                                                                      | Verdict for Mediary |

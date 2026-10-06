@@ -1,25 +1,30 @@
 import { Metadata } from "next";
-import { UserProfile } from "@clerk/nextjs";
+import { AccountSignIn } from "@/components/settings/account-sign-in";
+import { ChangePasswordForm } from "@/components/settings/change-password-form";
+import { DeleteAccountForm } from "@/components/settings/delete-account-form";
+import { requireOnboardedUser } from "@/lib/auth";
+import { getAccountSummary } from "@/lib/server/account";
 
 export const metadata: Metadata = {
   title: "Account settings",
 };
 
 /**
- * Email, password, connected accounts, sessions and deletion are Clerk's,
- * so this section is Clerk's own panel in Mediary's colors. Nothing here
- * writes a Mediary table; the webhook mirrors what changes.
+ * How this account signs in, its password, and deleting it. Mediary's own
+ * panel; the layout above has already gated the section, and the user
+ * lookup here is the key to the account, not a check.
  */
-const AccountSettingsPage = () => (
-  <div className="flex flex-col gap-4">
-    <div className="flex flex-col gap-1">
-      <h2 className="font-display text-lg text-ink">Account</h2>
-      <p className="text-sm text-muted">
-        Sign-in email, password, connected accounts and active sessions.
-      </p>
+const AccountSettingsPage = async () => {
+  const user = await requireOnboardedUser();
+  const summary = await getAccountSummary(user.clerkUserId);
+
+  return (
+    <div className="flex flex-col gap-6">
+      <AccountSignIn summary={summary} />
+      <ChangePasswordForm hasPassword={summary.hasPassword} />
+      <DeleteAccountForm />
     </div>
-    <UserProfile routing="hash" />
-  </div>
-);
+  );
+};
 
 export default AccountSettingsPage;

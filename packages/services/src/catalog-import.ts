@@ -58,12 +58,12 @@ const usableProvider = (provider: Provider, mediaType: MediaType): MediaProvider
   const adapter = getProvider(provider);
   if (!adapter.mediaTypes.includes(mediaType)) {
     throw new ValidationError(
-      `${PROVIDER_LABELS[provider]} does not supply ${mediaType} titles`,
+      `The ${PROVIDER_LABELS[provider].toLowerCase()} does not supply ${mediaType} titles`,
     );
   }
   if (!adapter.isConfigured()) {
     throw new ValidationError(
-      `${PROVIDER_LABELS[provider]} is not configured yet. Add its credentials to the environment.`,
+      `The ${PROVIDER_LABELS[provider].toLowerCase()} is not set up yet. Its access keys are missing on the server.`,
     );
   }
   return adapter;
