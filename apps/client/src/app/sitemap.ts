@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
-import { listSitemapTitles } from "services";
+import { listSitemapProfiles, listSitemapTitles } from "services";
 import { launchMediaTypes } from "@/db/enum";
 import { absoluteUrl } from "@/lib/seo";
+import { profilePath } from "@/lib/profile-path";
 import { titlePath } from "@/lib/title-path";
 
 // Read from the catalog on every request rather than frozen at build time:
@@ -12,10 +13,11 @@ export const dynamic = "force-dynamic";
  * Every public page: the home page, explore and each medium's page, then
  * every public title, most recently changed first. One file while the
  * catalog fits the protocol's 50,000-URL limit; it is split by medium when
- * it outgrows that. Profiles and lists join with the steps that make them.
+ * it outgrows that. Public profiles follow the titles; lists join with the
+ * step that makes them.
  */
 const sitemap = async (): Promise<MetadataRoute.Sitemap> => {
-  const titles = await listSitemapTitles();
+  const [titles, profiles] = await Promise.all([listSitemapTitles(), listSitemapProfiles()]);
 
   return [
     { url: absoluteUrl("/"), changeFrequency: "daily", priority: 1 },
@@ -30,6 +32,12 @@ const sitemap = async (): Promise<MetadataRoute.Sitemap> => {
       lastModified: title.updatedAt,
       changeFrequency: "weekly" as const,
       priority: 0.7,
+    })),
+    ...profiles.map((profile) => ({
+      url: absoluteUrl(profilePath(profile.username)),
+      lastModified: profile.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.5,
     })),
   ];
 };

@@ -1,6 +1,7 @@
-import { CatalogCard, CatalogTitle } from "services";
+import { CatalogCard, CatalogTitle, ProfileCounts, PublicProfile } from "services";
 import { catalogImageUrl } from "utils";
 import { absoluteUrl, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { profilePath } from "@/lib/profile-path";
 import { titlePath } from "@/lib/title-path";
 
 type JsonLdNode = Record<string, unknown> & { "@type": string; "@id"?: string };
@@ -178,3 +179,38 @@ export const itemListNode = (path: string, name: string, cards: CatalogCard[]): 
     name: card.canonicalTitle,
   })),
 });
+
+/** A public profile: the page, and the person it is about. */
+export const profileNodes = (profile: PublicProfile, counts: ProfileCounts): JsonLdNode[] => {
+  const url = absoluteUrl(profilePath(profile.username));
+  const personId = `${url}#person`;
+
+  return [
+    {
+      "@type": "ProfilePage",
+      "@id": url,
+      url,
+      name: `${profile.displayName} (@${profile.username})`,
+      isPartOf: { "@id": WEBSITE_ID },
+      mainEntity: { "@id": personId },
+      dateCreated: profile.joinedAt.toISOString(),
+    },
+    {
+      "@type": "Person",
+      "@id": personId,
+      name: profile.displayName,
+      alternateName: profile.username,
+      url,
+      ...(profile.bio && { description: profile.bio }),
+      ...(profile.imageUrl && { image: profile.imageUrl }),
+      ...(profile.links.length > 0 && { sameAs: profile.links.map((link) => link.url) }),
+      interactionStatistic: [
+        {
+          "@type": "InteractionCounter",
+          interactionType: "https://schema.org/WriteAction",
+          userInteractionCount: counts.titles,
+        },
+      ],
+    },
+  ];
+};

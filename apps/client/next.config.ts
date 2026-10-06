@@ -29,6 +29,14 @@ if (fs.existsSync(rootEnv)) {
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, "../.."),
+  // THE PROFILE URL IS /@username. A folder starting with "@" is a parallel
+  // route slot to the App Router, so the page lives at /profile/[username]
+  // and the public address is rewritten onto it; the internal address
+  // redirects back out so there is one URL for a profile, as SEO wants.
+  rewrites: async () => [{ source: "/@:username", destination: "/profile/:username" }],
+  redirects: async () => [
+    { source: "/profile/:username", destination: "/@:username", permanent: true },
+  ],
   images: {
     // Where catalog artwork is served from. Provider CDNs are listed by host
     // because the providers' terms allow hotlinking under attribution; R2

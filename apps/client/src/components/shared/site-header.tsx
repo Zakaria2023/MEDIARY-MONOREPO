@@ -1,9 +1,10 @@
 import { UserMenu } from "auth";
-import { BookMarked, Settings } from "lucide-react";
+import { BarChart3, BookMarked, NotebookPen, Settings, UserRound } from "lucide-react";
 import Link from "next/link";
 import { AuthUser } from "services";
 import { SearchPalette } from "@/components/search/search-palette";
 import { Logo } from "@/components/shared/logo";
+import { profilePath } from "@/lib/profile-path";
 
 type SiteHeaderProps = {
   /** The viewer, resolved by the page or layout that renders the header. */
@@ -52,7 +53,12 @@ export const SiteHeader = ({ user }: SiteHeaderProps) => (
             imageUrl={user.imageUrl}
             signOutRedirect="/"
             links={[
+              ...(user.username
+                ? [{ label: "Profile", href: profilePath(user.username), icon: <UserRound size={16} /> }]
+                : []),
               { label: "Library", href: "/library", icon: <BookMarked size={16} /> },
+              { label: "Diary", href: "/diary", icon: <NotebookPen size={16} /> },
+              { label: "Stats", href: "/stats", icon: <BarChart3 size={16} /> },
               { label: "Settings", href: "/settings/profile", icon: <Settings size={16} /> },
             ]}
           />

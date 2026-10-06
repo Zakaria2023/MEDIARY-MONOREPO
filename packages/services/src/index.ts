@@ -5,10 +5,13 @@ export * from "./catalog-facts";
 export * from "./catalog-import";
 export * from "./catalog-ingest";
 export * from "./clerk-sync";
+export * from "./diary";
+export * from "./diary-rules";
 export * from "./db-result";
 export * from "./errors";
 export * from "./profiles";
 export * from "./providers/registry";
+export * from "./public-profile";
 export type {
   NormalizedMedia,
   ProviderAttribution,
@@ -17,5 +20,7 @@ export type {
 } from "./providers/types";
 export * from "./roles";
 export * from "./settings";
+export * from "./stats";
 export * from "./tracking";
 export * from "./tracking-rules";
+export * from "./visibility";
