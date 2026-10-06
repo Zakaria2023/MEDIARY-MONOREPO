@@ -11,6 +11,7 @@ import { ProfileHeader } from "@/components/profile/profile-header";
 import { ProfileLists } from "@/components/profile/profile-lists";
 import { ProfileSectionSkeleton } from "@/components/profile/profile-section-skeleton";
 import { ProfileSplit } from "@/components/profile/profile-split";
+import { ProfileTaste } from "@/components/profile/profile-taste";
 import { DiaryLinesSkeleton } from "@/components/diary/diary-lines-skeleton";
 import { getCurrentUser } from "@/lib/auth";
 import { loadProfile } from "@/lib/load-profile";
@@ -33,7 +34,7 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
       profile.bio ??
       `${profile.displayName} tracks anime, games, movies and TV on Mediary. See what they are watching and playing.`,
     path: profilePath(profile.username),
-    image: profile.imageUrl ?? undefined,
+    ownImage: true,
   });
 };
 
@@ -72,9 +73,14 @@ const ProfilePage = async ({ params }: Props) => {
             <AsyncSection reloadKey={`current-${profile.uuid}`} skeleton={<ProfileSectionSkeleton posters={4} />}>
               <ProfileCurrent profile={profile} />
             </AsyncSection>
-            <AsyncSection reloadKey={`split-${profile.uuid}`} skeleton={<ProfileSectionSkeleton posters={0} />}>
-              <ProfileSplit profile={profile} />
-            </AsyncSection>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <AsyncSection reloadKey={`taste-${profile.uuid}`} skeleton={<ProfileSectionSkeleton posters={0} />}>
+                <ProfileTaste profile={profile} />
+              </AsyncSection>
+              <AsyncSection reloadKey={`split-${profile.uuid}`} skeleton={<ProfileSectionSkeleton posters={0} />}>
+                <ProfileSplit profile={profile} />
+              </AsyncSection>
+            </div>
           </>
         )}
         <AsyncSection reloadKey={`lists-${profile.uuid}-${profile.relation}`} skeleton={<ProfileSectionSkeleton posters={5} />}>

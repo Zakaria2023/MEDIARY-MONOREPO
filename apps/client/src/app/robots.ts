@@ -20,6 +20,7 @@ const PRIVATE_PATHS = [
   "/diary",
   "/stats",
   "/feed",
+  "/compare",
   "/design",
   "/sso-callback",
   // The internal address of a profile; the public one is /@username.
