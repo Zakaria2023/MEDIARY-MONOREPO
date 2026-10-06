@@ -21,6 +21,7 @@ const PRIVATE_PATHS = [
   "/stats",
   "/feed",
   "/design",
+  "/sso-callback",
 ];
 
 const robots = async (): Promise<MetadataRoute.Robots> => {

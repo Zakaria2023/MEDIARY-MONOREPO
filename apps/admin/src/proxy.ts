@@ -14,6 +14,7 @@ import { buildCsp, createNonce, NOINDEX_HEADER } from "security-headers";
  */
 const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
+  "/forgot-password",
   "/no-access",
   // Vercel's cron has no session; the route checks CRON_SECRET itself.
   "/api/cron/(.*)",

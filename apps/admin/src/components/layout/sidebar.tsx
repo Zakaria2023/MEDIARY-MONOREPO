@@ -1,8 +1,10 @@
-import { UserButton } from "@clerk/nextjs";
+import { UserMenu } from "auth";
+import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { AuthUser } from "services";
 import { USER_ROLE_LABELS } from "@/db/label";
 import { Logo } from "@/components/layout/logo";
+import { PUBLIC_SITE_URL } from "@/lib/site";
 import { NAV_ITEMS } from "@/components/layout/nav-items";
 import { NavLink } from "@/components/layout/nav-link";
 
@@ -28,7 +30,15 @@ export const Sidebar = ({ user }: SidebarProps) => (
       ))}
     </nav>
     <div className="flex items-center gap-3 border-t border-hairline px-4 py-4">
-      <UserButton />
+      <UserMenu
+          name={user.displayName}
+          detail={user.email}
+          imageUrl={user.imageUrl}
+          signOutRedirect="/sign-in"
+          align="start"
+          direction="up"
+          links={[{ label: "Open Mediary", href: PUBLIC_SITE_URL, icon: <ExternalLink size={16} /> }]}
+        />
       <div className="flex min-w-0 flex-col">
         <span className="line-clamp-1 text-sm font-medium text-ink">
           {user.displayName}

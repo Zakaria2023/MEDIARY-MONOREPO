@@ -76,8 +76,8 @@ export const BulkImportForm = ({ sources }: BulkImportFormProps) => {
 
       {isPending && (
         <p className="text-sm text-muted">
-          Importing. A page of twenty takes a few seconds for TMDB and longer for IGDB,
-          which allows four requests a second.
+          Importing. A page of twenty takes a few seconds for movies and TV, and longer for
+          games, whose source allows only a few requests a second.
         </p>
       )}
       <FormError message={state.error} />

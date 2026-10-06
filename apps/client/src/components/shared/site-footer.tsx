@@ -1,16 +1,13 @@
-import Image from "next/image";
 import Link from "next/link";
-import { allAttributions } from "services";
 import { launchMediaTypes } from "@/db/enum";
 import { MEDIA_TYPE_PLURAL_LABELS } from "@/db/label";
 import { Logo } from "@/components/shared/logo";
 import { SITE_TAGLINE } from "@/lib/seo";
 
 /**
- * The foot of every public page: the mark, a link to each medium's page (the
- * site's main internal links, which crawlers follow), and the attribution
- * every catalog provider requires. Attribution is read from the adapters,
- * so a new provider brings its own line and nothing here changes.
+ * The foot of every public page: the mark and a link to each medium's page,
+ * the site's main internal links, which crawlers follow. No third-party
+ * service is named here or anywhere on screen (CLAUDE.md).
  */
 export const SiteFooter = () => (
   <footer className="mt-16 border-t border-hairline">
@@ -44,25 +41,7 @@ export const SiteFooter = () => (
         </nav>
       </div>
 
-      <div className="flex flex-col gap-4 border-t border-hairline pt-8">
-        <span className="text-xs font-medium uppercase tracking-wide text-faint">Data sources</span>
-        <ul className="flex flex-col gap-3">
-          {allAttributions().map((attribution) => (
-            <li key={attribution.provider} className="flex flex-wrap items-center gap-3 text-xs text-muted">
-              <a href={attribution.url} target="_blank" rel="noreferrer" aria-label={attribution.name}>
-                {attribution.logoPath ? (
-                  <Image src={attribution.logoPath} alt={attribution.name} width={96} height={12} />
-                ) : (
-                  <span className="font-medium text-secondary">{attribution.name}</span>
-                )}
-              </a>
-              <span>{attribution.text}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <p className="text-xs text-faint">© {new Date().getFullYear()} Mediary</p>
+      <p className="border-t border-hairline pt-8 text-xs text-faint">© {new Date().getFullYear()} Mediary</p>
     </div>
   </footer>
 );

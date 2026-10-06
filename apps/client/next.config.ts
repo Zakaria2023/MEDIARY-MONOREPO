@@ -38,6 +38,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "images.igdb.com" },
       { protocol: "https", hostname: "s4.anilist.co" },
       { protocol: "https", hostname: "*.r2.dev" },
+      // Profile pictures from the identity service.
+      { protocol: "https", hostname: "img.clerk.com" },
     ],
     // The candidate widths a srcset is built from, cut back from Next's
     // defaults: every width is a separate resize and a CDN entry, and a poster
@@ -49,6 +51,7 @@ const nextConfig: NextConfig = {
     externalDir: true,
   },
   transpilePackages: [
+    "auth",
     "security-headers",
     "rate-limit",
     "services",

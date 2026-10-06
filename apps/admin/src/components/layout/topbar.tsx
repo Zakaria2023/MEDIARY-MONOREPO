@@ -1,7 +1,9 @@
-import { UserButton } from "@clerk/nextjs";
+import { UserMenu } from "auth";
+import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { AuthUser } from "services";
 import { Logo } from "@/components/layout/logo";
+import { PUBLIC_SITE_URL } from "@/lib/site";
 import { NAV_ITEMS } from "@/components/layout/nav-items";
 import { NavLink } from "@/components/layout/nav-link";
 
@@ -26,7 +28,13 @@ export const Topbar = ({ user }: TopbarProps) => (
     </nav>
     <div className="ms-auto flex items-center gap-2">
       <span className="line-clamp-1 text-sm text-muted">{user.displayName}</span>
-      <UserButton />
+      <UserMenu
+          name={user.displayName}
+          detail={user.email}
+          imageUrl={user.imageUrl}
+          signOutRedirect="/sign-in"
+          links={[{ label: "Open Mediary", href: PUBLIC_SITE_URL, icon: <ExternalLink size={16} /> }]}
+        />
     </div>
   </header>
 );
