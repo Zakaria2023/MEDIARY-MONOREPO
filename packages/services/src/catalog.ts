@@ -1,0 +1,526 @@
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gt,
+  ilike,
+  inArray,
+  lte,
+  ne,
+  or,
+  SQL,
+  sql,
+} from "drizzle-orm";
+import { buildPaginatedResult, PaginatedResult, resolvePagination } from "utils";
+import { db } from "../../../db";
+import { MediaType, Provider } from "../../../db/enum";
+import { Genres, MediaGenres, SelectGenres } from "../../../db/schema/genres";
+import {
+  AnimeDetails,
+  GameDetails,
+  MovieDetails,
+  SelectAnimeDetails,
+  SelectGameDetails,
+  SelectMovieDetails,
+  SelectTvDetails,
+  TvDetails,
+} from "../../../db/schema/media-details";
+import {
+  MediaExternalRefs,
+  SelectMediaExternalRefs,
+} from "../../../db/schema/media-external-refs";
+import { MediaImages } from "../../../db/schema/media-images";
+import { MediaTitles, SelectMediaTitles } from "../../../db/schema/media-titles";
+import { Media, SelectMedia } from "../../../db/schema/media";
+import { GamePlatforms, Platforms, SelectPlatforms } from "../../../db/schema/platforms";
+
+/** A title as a poster card shows it: everything a grid or a rail needs. */
+export type CatalogCard = Pick<
+  SelectMedia,
+  | "uuid"
+  | "slug"
+  | "mediaType"
+  | "canonicalTitle"
+  | "releaseYear"
+  | "coverUrl"
+  | "dominantColor"
+  | "providerScore"
+>;
+
+export type CatalogGenre = Pick<SelectGenres, "slug" | "name">;
+
+export type CatalogGenreCount = CatalogGenre & {
+  titleCount: number;
+};
+
+export type CatalogRef = Pick<
+  SelectMediaExternalRefs,
+  "provider" | "externalId" | "externalUrl"
+>;
+
+export type CatalogPlatform = Pick<SelectPlatforms, "slug" | "name" | "abbreviation">;
+
+export type CatalogAltTitle = Pick<SelectMediaTitles, "title" | "titleType" | "language">;
+
+/** The medium's own facts, tagged so a page can switch on `kind`. */
+export type CatalogDetails =
+  | ({ kind: "movie" } & Omit<SelectMovieDetails, "id" | "mediaUuid">)
+  | ({ kind: "tv" } & Omit<SelectTvDetails, "id" | "mediaUuid">)
+  | ({ kind: "game" } & Omit<SelectGameDetails, "id" | "mediaUuid">)
+  | ({ kind: "anime" } & Omit<SelectAnimeDetails, "id" | "mediaUuid">);
+
+/** Everything a title's public page renders. */
+export type CatalogTitle = CatalogCard &
+  Pick<
+    SelectMedia,
+    | "description"
+    | "releaseDate"
+    | "endDate"
+    | "status"
+    | "popularity"
+    | "updatedAt"
+    | "lastSyncedAt"
+    | "lockedFields"
+    | "createdAt"
+  > & {
+    backdropUrl: string | null;
+    titles: CatalogAltTitle[];
+    genres: CatalogGenre[];
+    refs: CatalogRef[];
+    platforms: CatalogPlatform[];
+    details: CatalogDetails | null;
+  };
+
+/** How a discovery grid is ordered. */
+export type CatalogSort = "trending" | "top" | "new" | "upcoming";
+
+export type ListCatalogParams = {
+  mediaType?: MediaType;
+  sort: CatalogSort;
+  genre?: string;
+  page?: number | string;
+  pageSize?: number;
+};
+
+export type SearchCatalogParams = {
+  query: string;
+  mediaType?: MediaType;
+  page?: number | string;
+  pageSize?: number;
+};
+
+/** A page of search hits, plus how many each medium has for the filter tabs. */
+export type CatalogSearchResult = PaginatedResult<CatalogCard> & {
+  countsByType: Partial<Record<MediaType, number>>;
+};
+
+/** An admin catalog row: a card plus where it came from and when. */
+export type AdminCatalogRow = CatalogCard &
+  Pick<SelectMedia, "lastSyncedAt" | "status"> & {
+    providers: Provider[];
+  };
+
+export type AdminCatalogParams = {
+  query?: string;
+  mediaType?: MediaType;
+  page?: number | string;
+};
+
+export type SitemapTitle = Pick<SelectMedia, "mediaType" | "slug" | "updatedAt">;
+
+const CARD_COLUMNS = {
+  uuid: Media.uuid,
+  slug: Media.slug,
+  mediaType: Media.mediaType,
+  canonicalTitle: Media.canonicalTitle,
+  releaseYear: Media.releaseYear,
+  coverUrl: Media.coverUrl,
+  dominantColor: Media.dominantColor,
+  providerScore: Media.providerScore,
+};
+
+/** Shortest query worth running; a single letter matches half the catalog. */
+const MIN_QUERY_LENGTH = 2;
+
+/** The sitemap protocol's ceiling for one file. */
+const SITEMAP_LIMIT = 45000;
+
+const today = (): string => new Date().toISOString().slice(0, 10);
+
+/** `%` and `_` typed into a search box are text, not wildcards. */
+const escapeLike = (value: string): string => value.replace(/[\\%_]/g, (char) => `\\${char}`);
+
+/** Adult titles never appear on the public site. */
+const isPublic = eq(Media.adult, false);
+
+const SORTS: Record<CatalogSort, { where: () => SQL | undefined; orderBy: SQL[] }> = {
+  trending: {
+    where: () => undefined,
+    orderBy: [desc(Media.popularity), asc(Media.id)],
+  },
+  top: {
+    where: () => sql`${Media.providerScore} is not null`,
+    orderBy: [desc(Media.providerScore), desc(Media.popularity), asc(Media.id)],
+  },
+  new: {
+    where: () => lte(Media.releaseDate, today()),
+    orderBy: [desc(Media.releaseDate), desc(Media.popularity), asc(Media.id)],
+  },
+  upcoming: {
+    where: () => gt(Media.releaseDate, today()),
+    orderBy: [asc(Media.releaseDate), desc(Media.popularity), asc(Media.id)],
+  },
+};
+
+/** Titles in a genre, as a subquery condition. */
+const inGenre = (genreSlug: string): SQL =>
+  inArray(
+    Media.uuid,
+    db
+      .select({ uuid: MediaGenres.mediaUuid })
+      .from(MediaGenres)
+      .innerJoin(Genres, eq(Genres.id, MediaGenres.genreId))
+      .where(eq(Genres.slug, genreSlug)),
+  );
+
+/**
+ * A discovery grid: one medium or all of them, ordered for a rail or a page
+ * of explore, optionally narrowed to a genre. Public titles only.
+ */
+export const listCatalog = async ({
+  mediaType,
+  sort,
+  genre,
+  page,
+  pageSize,
+}: ListCatalogParams): Promise<PaginatedResult<CatalogCard>> => {
+  const bounds = resolvePagination(page, pageSize);
+  const where = and(
+    isPublic,
+    mediaType ? eq(Media.mediaType, mediaType) : undefined,
+    genre ? inGenre(genre) : undefined,
+    SORTS[sort].where(),
+  );
+  const [items, [total]] = await Promise.all([
+    db
+      .select(CARD_COLUMNS)
+      .from(Media)
+      .where(where)
+      .orderBy(...SORTS[sort].orderBy)
+      .limit(bounds.pageSize)
+      .offset(bounds.offset),
+    db.select({ value: count() }).from(Media).where(where),
+  ]);
+  return buildPaginatedResult(items, total?.value ?? 0, bounds.page, bounds.pageSize);
+};
+
+/**
+ * The titles whose names match a query, as a subquery: the best similarity
+ * any of a title's names reaches. Matches a substring anywhere in a name
+ * (ILIKE) or a close spelling (trigram `%`), both served by the trigram
+ * index on MediaTitles.title.
+ */
+const matchedTitles = (query: string) =>
+  db
+    .select({
+      mediaUuid: MediaTitles.mediaUuid,
+      score: sql<number>`max(greatest(similarity(${MediaTitles.title}, ${query}), word_similarity(${query}, ${MediaTitles.title})))`.as(
+        "score",
+      ),
+      exact: sql<boolean>`bool_or(lower(${MediaTitles.title}) = lower(${query}))`.as("exact"),
+    })
+    .from(MediaTitles)
+    .where(
+      or(
+        ilike(MediaTitles.title, `%${escapeLike(query)}%`),
+        sql`${MediaTitles.title} % ${query}`,
+      ),
+    )
+    .groupBy(MediaTitles.mediaUuid)
+    .as("matched");
+
+/**
+ * UNIVERSAL SEARCH over the local catalog, every name a title goes by. An
+ * exact name comes first, then the closest spellings, then the most popular.
+ * Never calls a provider: the public site only ever reads PostgreSQL.
+ */
+export const searchCatalog = async ({
+  query,
+  mediaType,
+  page,
+  pageSize,
+}: SearchCatalogParams): Promise<CatalogSearchResult> => {
+  const bounds = resolvePagination(page, pageSize);
+  const trimmed = query.trim();
+  if (trimmed.length < MIN_QUERY_LENGTH) {
+    return { ...buildPaginatedResult([], 0, 1, bounds.pageSize), countsByType: {} };
+  }
+  const matched = matchedTitles(trimmed);
+  const where = and(isPublic, mediaType ? eq(Media.mediaType, mediaType) : undefined);
+
+  const [items, counts] = await Promise.all([
+    db
+      .select(CARD_COLUMNS)
+      .from(matched)
+      .innerJoin(Media, eq(Media.uuid, matched.mediaUuid))
+      .where(where)
+      .orderBy(desc(matched.exact), desc(matched.score), desc(Media.popularity), asc(Media.id))
+      .limit(bounds.pageSize)
+      .offset(bounds.offset),
+    db
+      .select({ mediaType: Media.mediaType, value: count() })
+      .from(matched)
+      .innerJoin(Media, eq(Media.uuid, matched.mediaUuid))
+      .where(isPublic)
+      .groupBy(Media.mediaType),
+  ]);
+
+  const countsByType: Partial<Record<MediaType, number>> = Object.fromEntries(
+    counts.map((row) => [row.mediaType, row.value]),
+  );
+  const total = mediaType
+    ? (countsByType[mediaType] ?? 0)
+    : counts.reduce((sum, row) => sum + row.value, 0);
+  return {
+    ...buildPaginatedResult(items, total, bounds.page, bounds.pageSize),
+    countsByType,
+  };
+};
+
+/** The header's instant results: the top few matches across every medium. */
+export const quickSearchCatalog = async (query: string, limit = 8): Promise<CatalogCard[]> =>
+  (await searchCatalog({ query, pageSize: limit })).items;
+
+/** Genres that have at least one public title, most used first. */
+export const listCatalogGenres = async (mediaType?: MediaType): Promise<CatalogGenreCount[]> => {
+  const titleCount = count(MediaGenres.mediaUuid);
+  return db
+    .select({ slug: Genres.slug, name: Genres.name, titleCount })
+    .from(Genres)
+    .innerJoin(MediaGenres, eq(MediaGenres.genreId, Genres.id))
+    .innerJoin(Media, eq(Media.uuid, MediaGenres.mediaUuid))
+    .where(and(isPublic, mediaType ? eq(Media.mediaType, mediaType) : undefined))
+    .groupBy(Genres.id)
+    .orderBy(desc(titleCount), asc(Genres.name));
+};
+
+const detailsFor = async (
+  mediaType: MediaType,
+  mediaUuid: string,
+): Promise<CatalogDetails | null> => {
+  if (mediaType === "movie") {
+    const [row] = await db.select().from(MovieDetails).where(eq(MovieDetails.mediaUuid, mediaUuid));
+    if (!row) {
+      return null;
+    }
+    const { id: _id, mediaUuid: _mediaUuid, ...values } = row;
+    return { kind: "movie", ...values };
+  }
+  if (mediaType === "tv") {
+    const [row] = await db.select().from(TvDetails).where(eq(TvDetails.mediaUuid, mediaUuid));
+    if (!row) {
+      return null;
+    }
+    const { id: _id, mediaUuid: _mediaUuid, ...values } = row;
+    return { kind: "tv", ...values };
+  }
+  if (mediaType === "game") {
+    const [row] = await db.select().from(GameDetails).where(eq(GameDetails.mediaUuid, mediaUuid));
+    if (!row) {
+      return null;
+    }
+    const { id: _id, mediaUuid: _mediaUuid, ...values } = row;
+    return { kind: "game", ...values };
+  }
+  if (mediaType === "anime") {
+    const [row] = await db.select().from(AnimeDetails).where(eq(AnimeDetails.mediaUuid, mediaUuid));
+    if (!row) {
+      return null;
+    }
+    const { id: _id, mediaUuid: _mediaUuid, ...values } = row;
+    return { kind: "anime", ...values };
+  }
+  return null;
+};
+
+/** The satellites of one Media row, assembled into the page's shape. */
+const assembleTitle = async (media: SelectMedia): Promise<CatalogTitle> => {
+  const [titles, genres, refs, platforms, backdrop, details] = await Promise.all([
+    db
+      .select({
+        title: MediaTitles.title,
+        titleType: MediaTitles.titleType,
+        language: MediaTitles.language,
+      })
+      .from(MediaTitles)
+      .where(eq(MediaTitles.mediaUuid, media.uuid)),
+    db
+      .select({ slug: Genres.slug, name: Genres.name })
+      .from(MediaGenres)
+      .innerJoin(Genres, eq(Genres.id, MediaGenres.genreId))
+      .where(eq(MediaGenres.mediaUuid, media.uuid))
+      .orderBy(asc(MediaGenres.position)),
+    db
+      .select({
+        provider: MediaExternalRefs.provider,
+        externalId: MediaExternalRefs.externalId,
+        externalUrl: MediaExternalRefs.externalUrl,
+      })
+      .from(MediaExternalRefs)
+      .where(eq(MediaExternalRefs.mediaUuid, media.uuid))
+      .orderBy(asc(MediaExternalRefs.firstSeenAt)),
+    db
+      .select({
+        slug: Platforms.slug,
+        name: Platforms.name,
+        abbreviation: Platforms.abbreviation,
+      })
+      .from(GamePlatforms)
+      .innerJoin(Platforms, eq(Platforms.id, GamePlatforms.platformId))
+      .where(eq(GamePlatforms.mediaUuid, media.uuid))
+      .orderBy(asc(Platforms.position), asc(Platforms.name)),
+    db
+      .select({ url: MediaImages.url })
+      .from(MediaImages)
+      .where(and(eq(MediaImages.mediaUuid, media.uuid), eq(MediaImages.imageType, "backdrop")))
+      .orderBy(asc(MediaImages.position))
+      .limit(1),
+    detailsFor(media.mediaType, media.uuid),
+  ]);
+
+  return {
+    uuid: media.uuid,
+    slug: media.slug,
+    mediaType: media.mediaType,
+    canonicalTitle: media.canonicalTitle,
+    releaseYear: media.releaseYear,
+    coverUrl: media.coverUrl,
+    dominantColor: media.dominantColor,
+    providerScore: media.providerScore,
+    description: media.description,
+    releaseDate: media.releaseDate,
+    endDate: media.endDate,
+    status: media.status,
+    popularity: media.popularity,
+    updatedAt: media.updatedAt,
+    lastSyncedAt: media.lastSyncedAt,
+    lockedFields: media.lockedFields,
+    createdAt: media.createdAt,
+    backdropUrl: backdrop[0]?.url ?? null,
+    titles,
+    genres,
+    refs,
+    platforms,
+    details,
+  };
+};
+
+/** A title's public page, by its URL. Null for an unknown or adult title. */
+export const getCatalogTitle = async (
+  mediaType: MediaType,
+  slug: string,
+): Promise<CatalogTitle | null> => {
+  const [media] = await db
+    .select()
+    .from(Media)
+    .where(and(eq(Media.mediaType, mediaType), eq(Media.slug, slug), isPublic));
+  return media ? assembleTitle(media) : null;
+};
+
+/** A title by uuid for the admin, adult titles included. */
+export const getAdminCatalogTitle = async (uuid: string): Promise<CatalogTitle | null> => {
+  const [media] = await db.select().from(Media).where(eq(Media.uuid, uuid));
+  return media ? assembleTitle(media) : null;
+};
+
+/**
+ * "More like this": the same medium, ranked by how many genres it shares
+ * with the title, then by popularity.
+ */
+export const listRelatedTitles = async (
+  mediaUuid: string,
+  mediaType: MediaType,
+  limit = 12,
+): Promise<CatalogCard[]> => {
+  const shared = count(MediaGenres.genreId);
+  const genreIds = db
+    .select({ id: MediaGenres.genreId })
+    .from(MediaGenres)
+    .where(eq(MediaGenres.mediaUuid, mediaUuid));
+  return db
+    .select(CARD_COLUMNS)
+    .from(MediaGenres)
+    .innerJoin(Media, eq(Media.uuid, MediaGenres.mediaUuid))
+    .where(
+      and(
+        isPublic,
+        eq(Media.mediaType, mediaType),
+        ne(Media.uuid, mediaUuid),
+        inArray(MediaGenres.genreId, genreIds),
+      ),
+    )
+    .groupBy(Media.id)
+    .orderBy(desc(shared), desc(Media.popularity))
+    .limit(limit);
+};
+
+/** Every public title's URL parts for the sitemap, most recently changed first. */
+export const listSitemapTitles = async (): Promise<SitemapTitle[]> =>
+  db
+    .select({ mediaType: Media.mediaType, slug: Media.slug, updatedAt: Media.updatedAt })
+    .from(Media)
+    .where(isPublic)
+    .orderBy(desc(Media.updatedAt))
+    .limit(SITEMAP_LIMIT);
+
+/** How many titles each medium has, for the admin overview. */
+export const countCatalogByType = async (): Promise<Partial<Record<MediaType, number>>> => {
+  const rows = await db
+    .select({ mediaType: Media.mediaType, value: count() })
+    .from(Media)
+    .groupBy(Media.mediaType);
+  return Object.fromEntries(rows.map((row) => [row.mediaType, row.value]));
+};
+
+/** The admin's catalog list: search by any name, filter by medium, newest sync first. */
+export const listAdminCatalog = async ({
+  query,
+  mediaType,
+  page,
+}: AdminCatalogParams): Promise<PaginatedResult<AdminCatalogRow>> => {
+  const bounds = resolvePagination(page, 30);
+  const trimmed = query?.trim() ?? "";
+  const nameMatch =
+    trimmed.length > 0
+      ? inArray(
+          Media.uuid,
+          db
+            .select({ uuid: MediaTitles.mediaUuid })
+            .from(MediaTitles)
+            .where(ilike(MediaTitles.title, `%${escapeLike(trimmed)}%`)),
+        )
+      : undefined;
+  const where = and(mediaType ? eq(Media.mediaType, mediaType) : undefined, nameMatch);
+  const providers = sql<Provider[]>`coalesce(array_agg(distinct ${MediaExternalRefs.provider}::text) filter (where ${MediaExternalRefs.provider} is not null), '{}'::text[])`;
+
+  const [items, [total]] = await Promise.all([
+    db
+      .select({
+        ...CARD_COLUMNS,
+        lastSyncedAt: Media.lastSyncedAt,
+        status: Media.status,
+        providers,
+      })
+      .from(Media)
+      .leftJoin(MediaExternalRefs, eq(MediaExternalRefs.mediaUuid, Media.uuid))
+      .where(where)
+      .groupBy(Media.id)
+      .orderBy(sql`${Media.lastSyncedAt} desc nulls last`, asc(Media.id))
+      .limit(bounds.pageSize)
+      .offset(bounds.offset),
+    db.select({ value: count() }).from(Media).where(where),
+  ]);
+  return buildPaginatedResult(items, total?.value ?? 0, bounds.page, bounds.pageSize);
+};

@@ -47,6 +47,20 @@ const main = async () => {
   await client.query(`CREATE DATABASE "${TARGET}"`);
   await client.end();
 
+  // The trigram index on MediaTitles needs pg_trgm before push can create
+  // it, exactly as `pnpm db:push` enables it on the live database first.
+  const target = new Client({
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT),
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: TARGET,
+    ssl: { rejectUnauthorized: false },
+  });
+  await target.connect();
+  await target.query(`CREATE EXTENSION IF NOT EXISTS "pg_trgm"`);
+  await target.end();
+
   const push = spawnSync("pnpm", ["exec", "drizzle-kit", "push", "--force"], {
     stdio: "inherit",
     shell: true,
