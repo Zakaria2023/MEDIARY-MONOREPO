@@ -18,3 +18,12 @@ export { ValidationError, NotFoundError } from "./errors";
 
 export { STAFF_ROLES, isStaffRole, isAdminRole } from "./roles";
 export type { StaffRole } from "./roles";
+
+export {
+  applyTick,
+  clampProgress,
+  entryChange,
+  settleEntry,
+  todayIn,
+} from "./tracking-rules";
+export type { EntryChange, EntryState } from "./tracking-rules";
