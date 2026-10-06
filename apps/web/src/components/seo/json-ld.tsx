@@ -1,20 +1,19 @@
 type JsonLdProps = {
   data: Record<string, unknown>;
-  nonce?: string;
 };
 
 /**
  * A JSON-LD block. The data is serialized with `<` escaped so a title
- * containing "</script>" cannot close the tag; a structured-data script is
- * never executed, so it needs no nonce for CSP, but one is accepted for
- * hosts that scan every script tag.
+ * containing "</script>" cannot close the tag. It carries no nonce: a
+ * structured-data script is never executed, so CSP does not govern it, and
+ * browsers hide a nonce attribute from the DOM once a policy is enforced,
+ * which made React report a hydration mismatch on every page.
  */
-export const JsonLd = ({ data, nonce }: JsonLdProps) => (
+export const JsonLd = ({ data }: JsonLdProps) => (
   <script
     type="application/ld+json"
-    nonce={nonce}
     dangerouslySetInnerHTML={{
-      __html: JSON.stringify(data).replace(/</g, "\\u003c"),
+      __html: JSON.stringify(data).replace(/</g, "\u003c"),
     }}
   />
 );

@@ -135,7 +135,7 @@ const RootLayout = async ({ children }: Props) => {
         <body className="flex min-h-full flex-col bg-page font-sans text-ink">
           {/* Site-wide identity: every page inherits it, and per-page nodes
               reference these by @id rather than repeating them. */}
-          <JsonLd data={graph([organizationNode(), webSiteNode()])} nonce={nonce} />
+          <JsonLd data={graph([organizationNode(), webSiteNode()])} />
           {children}
         </body>
       </html>
