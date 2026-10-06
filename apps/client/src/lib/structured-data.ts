@@ -1,6 +1,15 @@
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { CatalogCard, CatalogTitle } from "services";
+import { catalogImageUrl } from "utils";
+import { absoluteUrl, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { titlePath } from "@/lib/title-path";
 
 type JsonLdNode = Record<string, unknown> & { "@type": string; "@id"?: string };
+
+/** One step of a breadcrumb trail. */
+type Crumb = {
+  name: string;
+  path: string;
+};
 
 /**
  * Site-wide identity in schema.org terms, inherited by every page. Per-page
@@ -39,4 +48,133 @@ export const webSiteNode = (): JsonLdNode => ({
 export const graph = (nodes: JsonLdNode[]) => ({
   "@context": "https://schema.org",
   "@graph": nodes,
+});
+
+/** The poster at a size worth handing a crawler. */
+const posterImage = (coverUrl: string | null): string | undefined =>
+  coverUrl ? catalogImageUrl(coverUrl, 780) : undefined;
+
+/** The schema.org type a title is: anime is a series unless it is a film. */
+const schemaType = (title: CatalogTitle): string => {
+  if (title.mediaType === "movie") {
+    return "Movie";
+  }
+  if (title.mediaType === "game") {
+    return "VideoGame";
+  }
+  if (title.details?.kind === "anime" && title.details.format === "movie") {
+    return "Movie";
+  }
+  return "TVSeries";
+};
+
+/** What only the title's medium says about it, in schema.org terms. */
+const mediumFields = (title: CatalogTitle): Record<string, unknown> => {
+  const { details } = title;
+  if (details?.kind === "movie") {
+    return {
+      ...(details.director && { director: { "@type": "Person", name: details.director } }),
+      ...(details.runtime && { duration: `PT${details.runtime}M` }),
+      ...(details.certification && { contentRating: details.certification }),
+    };
+  }
+  if (details?.kind === "tv") {
+    return {
+      ...(details.seasonCount && { numberOfSeasons: details.seasonCount }),
+      ...(details.episodeCount && { numberOfEpisodes: details.episodeCount }),
+      ...(title.releaseDate && { startDate: title.releaseDate }),
+      ...(title.endDate && { endDate: title.endDate }),
+    };
+  }
+  if (details?.kind === "game") {
+    return {
+      applicationCategory: "Game",
+      ...(title.platforms.length > 0 && {
+        gamePlatform: title.platforms.map((platform) => platform.name),
+      }),
+      ...(details.developer && { author: { "@type": "Organization", name: details.developer } }),
+      ...(details.publisher && { publisher: { "@type": "Organization", name: details.publisher } }),
+      ...(details.multiplayer !== null && {
+        playMode: details.multiplayer ? "MultiPlayer" : "SinglePlayer",
+      }),
+    };
+  }
+  if (details?.kind === "anime") {
+    return {
+      ...(details.episodeCount && { numberOfEpisodes: details.episodeCount }),
+      ...(details.studio && {
+        productionCompany: { "@type": "Organization", name: details.studio },
+      }),
+    };
+  }
+  return {};
+};
+
+/**
+ * A title as schema.org sees it: the work itself, on its page, inside the
+ * site. Third-party scores are deliberately left out: Google treats a
+ * rating a site did not collect from its own users as misleading markup.
+ */
+export const titleNodes = (title: CatalogTitle, crumbs: Crumb[]): JsonLdNode[] => {
+  const url = absoluteUrl(titlePath(title));
+  const sameAs = title.refs.flatMap((ref) => (ref.externalUrl ? [ref.externalUrl] : []));
+  const breadcrumbId = `${url}#breadcrumb`;
+
+  return [
+    {
+      "@type": "WebPage",
+      "@id": url,
+      url,
+      name: title.canonicalTitle,
+      isPartOf: { "@id": WEBSITE_ID },
+      mainEntity: { "@id": `${url}#title` },
+      breadcrumb: { "@id": breadcrumbId },
+      ...(title.updatedAt && { dateModified: title.updatedAt.toISOString() }),
+    },
+    {
+      "@type": schemaType(title),
+      "@id": `${url}#title`,
+      name: title.canonicalTitle,
+      url,
+      ...(title.description && { description: title.description }),
+      ...(posterImage(title.coverUrl) && { image: posterImage(title.coverUrl) }),
+      ...(title.releaseDate && { datePublished: title.releaseDate }),
+      ...(title.genres.length > 0 && { genre: title.genres.map((genre) => genre.name) }),
+      ...(title.titles.length > 1 && {
+        alternateName: title.titles
+          .filter((entry) => entry.title !== title.canonicalTitle)
+          .map((entry) => entry.title),
+      }),
+      ...(sameAs.length > 0 && { sameAs }),
+      ...mediumFields(title),
+    },
+    breadcrumbNode(breadcrumbId, crumbs),
+  ];
+};
+
+/** A breadcrumb trail, each step an absolute URL. */
+export const breadcrumbNode = (id: string, crumbs: Crumb[]): JsonLdNode => ({
+  "@type": "BreadcrumbList",
+  "@id": id,
+  itemListElement: crumbs.map((crumb, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name: crumb.name,
+    item: absoluteUrl(crumb.path),
+  })),
+});
+
+/** A discovery page's grid, as an ordered list of links to its titles. */
+export const itemListNode = (path: string, name: string, cards: CatalogCard[]): JsonLdNode => ({
+  "@type": "ItemList",
+  "@id": `${absoluteUrl(path)}#list`,
+  name,
+  itemListOrder: "https://schema.org/ItemListOrderDescending",
+  numberOfItems: cards.length,
+  itemListElement: cards.map((card, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    url: absoluteUrl(titlePath(card)),
+    name: card.canonicalTitle,
+  })),
 });

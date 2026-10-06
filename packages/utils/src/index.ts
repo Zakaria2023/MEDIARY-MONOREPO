@@ -3,6 +3,9 @@
 // `server-only`. Something that needs the request belongs in the app's
 // `src/lib/server/`.
 
+export * from "./catalog-image";
+export * from "./filter-href";
+
 /**
  * What a searched, paginated list is asked for: the other half of
  * PaginatedResult. All three are optional because all three come off the URL,
@@ -175,6 +178,33 @@ export const clampScore = (value: number | null | undefined): number | null => {
     return null;
   }
   return Math.round(Math.min(10, Math.max(0, value)) * 10) / 10;
+};
+
+/** Minutes as a runtime reads: "45 min", "2h 28m". Null for an unknown one. */
+export const formatRuntime = (minutes: number | null | undefined): string | null => {
+  if (!minutes || minutes <= 0) {
+    return null;
+  }
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`;
+};
+
+/**
+ * Text cut to at most `max` characters on a word boundary, with an ellipsis
+ * when anything was cut: a synopsis turned into a meta description.
+ */
+export const excerpt = (text: string, max: number): string => {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= max) {
+    return clean;
+  }
+  const cut = clean.slice(0, max - 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).replace(/[\s,;:.-]+$/, "")}…`;
 };
 
 /** Hours as a person reads them: "44h", "1,204h". */

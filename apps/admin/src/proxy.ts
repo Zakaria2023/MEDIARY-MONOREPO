@@ -10,9 +10,14 @@ import { buildCsp, createNonce, NOINDEX_HEADER } from "security-headers";
 
 /**
  * Where the role gate sends a signed-in non-staff account is public, or the
- * gate would gate its own landing page.
+ * gate would gate its own landing page. So is the cron route, below.
  */
-const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/no-access"]);
+const isPublicRoute = createRouteMatcher([
+  "/sign-in(.*)",
+  "/no-access",
+  // Vercel's cron has no session; the route checks CRON_SECRET itself.
+  "/api/cron/(.*)",
+]);
 
 const isApi = createRouteMatcher(["/api/(.*)"]);
 

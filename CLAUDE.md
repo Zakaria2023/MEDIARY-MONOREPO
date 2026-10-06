@@ -286,7 +286,7 @@ SEO is a core of the product, with the design. Every public route pays for its p
 
 - Never add route-level `loading.tsx` files. Show loading state with `<Suspense>` boundaries **inside** the page, wrapping only the async, data-dependent part, with a static skeleton as the `fallback`.
 - Give the `<Suspense>` a `key` derived from the relevant search params so changing a filter re-shows the fallback while the new data streams in — the fast, param-independent chrome stays mounted outside the boundary.
-- Pair the `<Suspense>` with an error boundary so a thrown fetch shows a retry UI instead of erroring the whole route. Use the shared `<AsyncSection reloadKey={...}>` which bundles both.
+- Pair the `<Suspense>` with an error boundary so a thrown fetch shows a retry UI instead of erroring the whole route. Use `<AsyncSection reloadKey={...} skeleton={...}>` from `ui`, which bundles both.
 - Skeletons match the shape of what they replace: a poster grid skeleton is a grid of 2:3 boxes, not a list of bars.
 
 ## Form Submissions
@@ -399,10 +399,14 @@ SEO is a core of the product, with the design. Every public route pays for its p
 
 ## Catalog Providers
 
-- Every provider (TMDB, IGDB, AniList, later Open Library and MusicBrainz) implements the same `MediaProvider` interface in `packages/services/src/providers/`: `search`, `getById`, `getPopular`, `getTrending`, `normalize`, `mapExternalIds`, `getImages`. Credentials and rate-limit handling stay inside the adapter.
-- Nothing outside `providers/` imports a provider SDK or reads a provider-shaped object. The normalized shape is Mediary's `Media` row plus its titles, refs, images, genres and tags.
-- Never call a provider on a page view. The catalog is synced into PostgreSQL and refreshed by background jobs; a search that finds nothing locally may supplement from a provider and then normalizes the chosen item in.
-- Store only what the provider's terms permit. Image URLs are stored for providers that allow hotlinking under attribution; bytes are copied only where terms allow. Attribution text is data-driven, never hard-coded in a component.
+- Every catalog source implements the same `MediaProvider` contract in `packages/services/src/providers/types.ts`: `search`, `getById`, `getList` (trending, popular, upcoming), `isConfigured`, and the `attribution` it requires. Normalizing, mapping external ids and choosing images all happen inside the adapter, which hands back one `NormalizedMedia`; nothing outside `providers/` ever sees what a provider sent. Responses are parsed with zod, so a changed field fails loudly instead of leaking a bad shape.
+- Adapters live in `providers/` (`tmdb.ts` for movies and TV, `igdb.ts` for games) and are listed once in `providers/registry.ts`. Anime has no adapter until the owner picks its source; AniList is ruled out by its terms (`docs/catalog-providers.md`).
+- A provider whose ids are only unique per kind folds the kind into the external id (`movie:550`, `tv:1399`), so the database's unique `(provider, external_id)` holds without a third column.
+- Credentials and rate limits stay inside the adapter. Every request goes through `providerFetch` with that provider's `createThrottle` gate, which retries a 429 after the provider's `Retry-After` and a 5xx with backoff.
+- `ingestNormalizedMedia` is the one writer: it upserts by external mapping inside one transaction, locks the matched refs, picks a slug once and never changes it, and leaves every field or section named in `Media.lockedFields` alone. A lost race ends in a UNIQUE violation that rolls back and retries.
+- Genres map onto Mediary's one vocabulary in `providers/vocabulary.ts`; a provider genre with no entry is dropped, never invented. Popularity is put on one 0 to 100 scale across providers, with the raw signals kept beside it.
+- Never call a provider on a public page view. The public site reads PostgreSQL only. Providers are called from the admin's Imports screen, its Refresh button, and the daily cron (`/api/cron/catalog` in `apps/admin`, guarded by `CRON_SECRET`).
+- Store only what the provider's terms permit. Image URLs are stored for providers that allow hotlinking under attribution, and rendered through `CatalogImage`/`Poster` from `ui`, whose loader asks the provider's CDN for the size the slot needs instead of re-encoding through Next's optimizer. Attribution is data on the adapter, rendered by the footer and the title page; never hard-coded in a component.
 - Before any provider goes to production, re-check its terms, attribution rules, image rights and rate limits. They change.
 
 ## Design Tokens
@@ -434,7 +438,7 @@ One or two accents per screen. The spectrum belongs to the logo and the five gra
 | `/`                     | Marketing when signed out, home when signed in |
 | `/explore`              | Cross-media discovery hub                   |
 | `/explore/[type]`       | One medium's discovery page                 |
-| `/search?q=`            | Universal search with type filters          |
+| `/search?q=`            | Universal search with type filters (noindex) |
 | `/[type]/[slug]`        | Canonical media detail page                 |
 | `/library`              | The signed-in user's library                |
 | `/library/[type]`       | Filtered to one medium                      |
@@ -453,8 +457,12 @@ The table above is `apps/client`. `apps/admin` has its own routes, added with th
 | Route         | Purpose                                                    |
 | ------------- | ---------------------------------------------------------- |
 | `/`           | Overview: members, staff, catalog size                     |
+| `/catalog`    | Every title, searchable by any name, filterable by medium |
+| `/catalog/[uuid]` | One title: facts, names, sources, locks, refresh       |
+| `/imports`    | Provider status, search and import, bulk list imports      |
 | `/sign-in`    | Staff sign-in (Clerk, no sign-up)                          |
 | `/no-access`  | Where a signed-in account without a staff role lands       |
+| `/api/cron/catalog` | The daily sync, called by Vercel cron with `CRON_SECRET` |
 
 ## Roadmap
 

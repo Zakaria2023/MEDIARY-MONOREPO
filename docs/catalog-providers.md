@@ -5,6 +5,14 @@ to be re-checked immediately before the adapter goes to production, because
 terms, quotas and pricing change; the blueprint says so and this page is
 where the check is recorded.
 
+## Status of the adapters (2026-10-06)
+
+| Provider | Adapter | Verified |
+| -------- | ------- | -------- |
+| TMDB     | Built: movies and TV | Live against the API; imports, refresh and search tested end to end. |
+| IGDB     | Built: games | Unit-tested against the documented v4 shape only. Not yet called live: the Twitch credentials are not configured. Run one import as soon as they are. |
+| Anime    | Not built | Waiting on the owner's choice of source; see below. |
+
 ## The matrix
 
 | Provider | Media         | Auth                                        | Rate limit                                                  | Commercial use                                                                                                    | Data and images                                                                                                      | Verdict for Mediary |

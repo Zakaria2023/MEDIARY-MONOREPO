@@ -32,6 +32,7 @@
         "TMDB_READ_ACCESS_TOKEN",
         "TWITCH_CLIENT_ID",
         "TWITCH_CLIENT_SECRET",
+        "CRON_SECRET",
         "MAL_CLIENT_ID"
       ]
     },

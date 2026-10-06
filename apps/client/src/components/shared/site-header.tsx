@@ -2,6 +2,7 @@ import { UserButton } from "@clerk/nextjs";
 import { Settings } from "lucide-react";
 import Link from "next/link";
 import { AuthUser } from "services";
+import { SearchPalette } from "@/components/search/search-palette";
 import { Logo } from "@/components/shared/logo";
 
 type SiteHeaderProps = {
@@ -10,20 +11,33 @@ type SiteHeaderProps = {
 };
 
 /**
- * The real header, as far as Step 1 takes it: the mark, and either the
- * sign-in links or Clerk's user menu beside a settings link. The viewer is
- * passed in rather than read here because Clerk's <SignedIn> helpers are
- * client-only in this version and the header is a server component. The
- * full app shell with the four destinations arrives with the screens it
- * navigates to; until then the prototype under /design is where that lives.
+ * The header: the mark, Explore, search everywhere, and either the sign-in
+ * links or Clerk's user menu beside a settings link. The viewer is passed in
+ * because Clerk's <SignedIn> helpers are client-only in this version and the
+ * header is a server component. Library and the Add button join it with the
+ * tracking step.
  */
 export const SiteHeader = ({ user }: SiteHeaderProps) => (
   <header className="sticky top-0 z-40 border-b border-hairline bg-page/80 backdrop-blur-md">
-    <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-5 sm:px-8">
-      <Link href="/" aria-label="Mediary home">
-        <Logo />
+    <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-5 sm:gap-4 sm:px-8">
+      <Link href="/" aria-label="Mediary home" className="shrink-0">
+        <span className="hidden sm:block">
+          <Logo />
+        </span>
+        <span className="sm:hidden">
+          <Logo wordmark={false} />
+        </span>
       </Link>
+      <nav aria-label="Primary" className="flex items-center">
+        <Link
+          href="/explore"
+          className="flex h-9 items-center rounded-control px-3 text-sm font-medium text-muted transition-colors hover:bg-hover hover:text-ink"
+        >
+          Explore
+        </Link>
+      </nav>
       <div className="ms-auto flex items-center gap-2">
+        <SearchPalette />
         {user ? (
           <>
             <Link
@@ -39,7 +53,7 @@ export const SiteHeader = ({ user }: SiteHeaderProps) => (
           <>
             <Link
               href="/sign-in"
-              className="flex h-9 items-center rounded-control px-3 text-sm font-medium text-muted transition-colors hover:bg-hover hover:text-ink"
+              className="hidden h-9 items-center rounded-control px-3 text-sm font-medium text-muted transition-colors hover:bg-hover hover:text-ink sm:flex"
             >
               Sign in
             </Link>
@@ -47,7 +61,8 @@ export const SiteHeader = ({ user }: SiteHeaderProps) => (
               href="/sign-up"
               className="flex h-9 items-center rounded-control bg-action-gradient px-3.5 text-sm font-medium text-white"
             >
-              Create your Mediary
+              <span className="sm:hidden">Join</span>
+              <span className="hidden sm:inline">Create your Mediary</span>
             </Link>
           </>
         )}
