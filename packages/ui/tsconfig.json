@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    // Node types are here for ONE test: theme-tokens.test.ts reads the app's
+    // globals.css off disk, because the bug it guards against is an absent CSS
+    // declaration and there is nothing to render that would reveal it. The
+    // components in this package are browser code and must stay that way: a
+    // `node:` import in anything but a *.test.ts file is a mistake.
+    "types": ["node"],
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules"]
+}
