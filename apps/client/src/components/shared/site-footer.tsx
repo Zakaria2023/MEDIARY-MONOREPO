@@ -36,7 +36,8 @@ const MEMBER_COLUMN: FooterColumn = {
   links: [
     { label: "Home", href: "/" },
     { label: "Library", href: "/library" },
-    { label: "Search", href: "/search" },
+    { label: "Lists", href: "/lists" },
+    { label: "Feed", href: "/feed" },
     { label: "Settings", href: "/settings/profile" },
   ],
 };

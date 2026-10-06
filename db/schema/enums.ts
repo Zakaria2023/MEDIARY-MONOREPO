@@ -1,5 +1,6 @@
 import { pgEnum } from "drizzle-orm/pg-core";
 import {
+  activityKinds,
   animeFormats,
   favoriteKinds,
   imageTypes,
@@ -48,3 +49,5 @@ export const tagCategoryEnum = pgEnum("tag_category", tagCategories);
 export const trackingStatusEnum = pgEnum("tracking_status", trackingStatuses);
 export const progressUnitEnum = pgEnum("progress_unit", progressUnits);
 export const favoriteKindEnum = pgEnum("favorite_kind", favoriteKinds);
+
+export const activityKindEnum = pgEnum("activity_kind", activityKinds);

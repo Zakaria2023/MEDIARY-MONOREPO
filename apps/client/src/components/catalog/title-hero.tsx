@@ -1,8 +1,9 @@
 import { Plus, Star } from "lucide-react";
 import Link from "next/link";
-import { AuthUser, CatalogTitle, TitleTracking } from "services";
+import { AuthUser, CatalogTitle, ListChoice, TitleTracking } from "services";
 import { Badge, CatalogImage, Poster } from "ui";
 import { MEDIA_STATUS_LABELS, MEDIA_TYPE_LABELS } from "@/db/label";
+import { AddToListButton } from "@/components/lists/add-to-list-button";
 import { TrackButton } from "@/components/tracking/track-button";
 
 type TitleHeroProps = {
@@ -10,6 +11,8 @@ type TitleHeroProps = {
   viewer: AuthUser | null;
   /** The title as the sheet needs it, with the viewer's entry; null for a visitor. */
   tracking: TitleTracking | null;
+  /** The viewer's lists and whether this title is on each; empty for a visitor. */
+  listChoices: ListChoice[];
 };
 
 /**
@@ -19,7 +22,7 @@ type TitleHeroProps = {
  * runs. A visitor without an account is offered one; a member gets the
  * track button, which is the Add sheet's door.
  */
-export const TitleHero = ({ title, viewer, tracking }: TitleHeroProps) => {
+export const TitleHero = ({ title, viewer, tracking, listChoices }: TitleHeroProps) => {
   const original = title.titles.find(
     (entry) => entry.titleType === "native" && entry.title !== title.canonicalTitle,
   );
@@ -81,7 +84,10 @@ export const TitleHero = ({ title, viewer, tracking }: TitleHeroProps) => {
           </div>
 
           {viewer && tracking && (
-            <TrackButton target={tracking.target} initialEntry={tracking.entry} />
+            <div className="flex flex-wrap items-end gap-2">
+              <TrackButton target={tracking.target} initialEntry={tracking.entry} />
+              <AddToListButton mediaUuid={title.uuid} initial={listChoices} />
+            </div>
           )}
 
           {!viewer && (

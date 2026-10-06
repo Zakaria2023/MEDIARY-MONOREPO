@@ -1,4 +1,5 @@
 import {
+  ActivityKind,
   AnimeFormat,
   ImageType,
   MediaStatus,
@@ -222,4 +223,18 @@ export const DEFAULT_PROGRESS_UNIT: Record<MediaType, ProgressUnit> = {
   book: "pages",
   music: "plays",
   podcast: "episodes",
+};
+
+/**
+ * The verb an activity line uses: "Ahmad started Frieren". One word per kind,
+ * read the same in the feed and on a profile.
+ */
+export const ACTIVITY_VERBS: Record<ActivityKind, string> = {
+  started: "started",
+  completed: "finished",
+  rated: "rated",
+  reviewed: "reviewed",
+  favorited: "added to favorites",
+  listed: "added to a list",
+  followed: "followed",
 };

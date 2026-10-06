@@ -8,6 +8,7 @@ import { ProfileCountsSkeleton } from "@/components/profile/profile-counts-skele
 import { ProfileCurrent } from "@/components/profile/profile-current";
 import { ProfileFavorites } from "@/components/profile/profile-favorites";
 import { ProfileHeader } from "@/components/profile/profile-header";
+import { ProfileLists } from "@/components/profile/profile-lists";
 import { ProfileSectionSkeleton } from "@/components/profile/profile-section-skeleton";
 import { ProfileSplit } from "@/components/profile/profile-split";
 import { DiaryLinesSkeleton } from "@/components/diary/diary-lines-skeleton";
@@ -76,6 +77,9 @@ const ProfilePage = async ({ params }: Props) => {
             </AsyncSection>
           </>
         )}
+        <AsyncSection reloadKey={`lists-${profile.uuid}-${profile.relation}`} skeleton={<ProfileSectionSkeleton posters={5} />}>
+          <ProfileLists profile={profile} />
+        </AsyncSection>
         {profile.access.activity && (
           <AsyncSection reloadKey={`activity-${profile.uuid}`} skeleton={<DiaryLinesSkeleton rows={5} />}>
             <ProfileActivity profile={profile} />

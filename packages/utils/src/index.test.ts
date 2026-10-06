@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   clampScore,
   fail,
+  formatRelativeTime,
   formatTrackedTime,
   isValidUsername,
   paginate,
@@ -118,5 +119,18 @@ describe("formatTrackedTime", () => {
     expect(formatTrackedTime(45)).toBe("45 min");
     expect(formatTrackedTime(90)).toBe("2h");
     expect(formatTrackedTime(72_240)).toBe("1,204h");
+  });
+});
+
+describe("formatRelativeTime", () => {
+  const now = new Date("2026-10-06T12:00:00Z");
+
+  it("shortens recent moments and dates the rest", () => {
+    expect(formatRelativeTime(new Date("2026-10-06T11:59:40Z"), now)).toBe("now");
+    expect(formatRelativeTime(new Date("2026-10-06T11:45:00Z"), now)).toBe("15m");
+    expect(formatRelativeTime(new Date("2026-10-06T09:00:00Z"), now)).toBe("3h");
+    expect(formatRelativeTime(new Date("2026-10-04T12:00:00Z"), now)).toBe("2d");
+    expect(formatRelativeTime(new Date("2026-09-15T12:00:00Z"), now)).toBe("3w");
+    expect(formatRelativeTime(new Date("2026-06-01T12:00:00Z"), now)).toBe("1 Jun 2026");
   });
 });

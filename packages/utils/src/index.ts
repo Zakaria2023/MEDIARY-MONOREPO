@@ -169,6 +169,35 @@ export const formatDate = (value: Date | string | null): string => {
       });
 };
 
+/**
+ * How long ago a moment was, in the shortest words that still read: "now",
+ * "5m", "3h", "2d", "4w", then the date. For a feed line, where the time is
+ * the least important thing on it.
+ */
+export const formatRelativeTime = (value: Date, now: Date = new Date()): string => {
+  const seconds = Math.max(0, Math.round((now.getTime() - value.getTime()) / 1000));
+  if (seconds < 60) {
+    return "now";
+  }
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) {
+    return `${minutes}m`;
+  }
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) {
+    return `${hours}h`;
+  }
+  const days = Math.round(hours / 24);
+  if (days < 7) {
+    return `${days}d`;
+  }
+  const weeks = Math.round(days / 7);
+  if (weeks < 5) {
+    return `${weeks}w`;
+  }
+  return formatDate(value);
+};
+
 /** The four-digit year out of an ISO date string, or null. */
 export const yearOf = (isoDate: string | null | undefined): number | null => {
   if (!isoDate) {

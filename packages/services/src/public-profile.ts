@@ -6,6 +6,7 @@ import { UserMedia } from "../../../db/schema/user-media";
 import { SelectUserSettings, UserSettings } from "../../../db/schema/user-settings";
 import { SelectUsers, Users } from "../../../db/schema/users";
 import { CatalogCard } from "./catalog";
+import { getFollowCounts, isBlockedEitherWay, isFollowing } from "./follows";
 import { trackedMinutes } from "./stats";
 import { canView, ViewerRelation } from "./visibility";
 
@@ -32,11 +33,13 @@ export type ProfileAccess = {
   activity: boolean;
 };
 
-/** The three numbers under a profile's name. */
+/** The numbers under a profile's name. */
 export type ProfileCounts = {
   titles: number;
   completed: number;
   hours: number;
+  followers: number;
+  following: number;
 };
 
 /** A title on a profile's favorites strip, with the owner's score. */
@@ -66,9 +69,8 @@ const accessFor = (settings: AccessSettings, relation: ViewerRelation): ProfileA
 
 /**
  * A profile by handle, with what the viewer may see of it. Null when there
- * is no such handle or the account is not active. The relation is owner or
- * stranger until follows exist; a follower is a stranger for now, which
- * errs toward showing less.
+ * is no such handle, the account is not active, or a block stands between
+ * the two people: a blocked viewer is told nothing, not even "private".
  */
 export const getPublicProfile = async (
   username: string,
@@ -97,7 +99,10 @@ export const getPublicProfile = async (
   if (!row || !row.username || row.status !== "active") {
     return null;
   }
-  const relation: ViewerRelation = viewerUuid === row.uuid ? "owner" : "stranger";
+  const relation = await relationOf(row.uuid, viewerUuid);
+  if (relation === null) {
+    return null;
+  }
   const { status: _status, profileVisibility, libraryVisibility, activityVisibility, ...profile } = row;
 
   return {
@@ -108,20 +113,36 @@ export const getPublicProfile = async (
   };
 };
 
-/** Titles tracked, titles finished, and hours, estimated the way the stats page does. */
+/** The viewer's standing with a profile's owner, or null across a block. */
+const relationOf = async (ownerUuid: string, viewerUuid: string | null): Promise<ViewerRelation | null> => {
+  if (!viewerUuid) {
+    return "stranger";
+  }
+  if (viewerUuid === ownerUuid) {
+    return "owner";
+  }
+  if (await isBlockedEitherWay(ownerUuid, viewerUuid)) {
+    return null;
+  }
+  return (await isFollowing(viewerUuid, ownerUuid)) ? "follower" : "stranger";
+};
+
+/** Titles, completions, hours estimated the way the stats page does, and the follow counts. */
 export const getProfileCounts = async (userUuid: string): Promise<ProfileCounts> => {
-  const [titles, completed, minutes] = await Promise.all([
+  const [titles, completed, minutes, follows] = await Promise.all([
     db.select({ value: count() }).from(UserMedia).where(eq(UserMedia.userUuid, userUuid)),
     db
       .select({ value: count() })
       .from(UserMedia)
       .where(and(eq(UserMedia.userUuid, userUuid), eq(UserMedia.status, "completed"))),
     trackedMinutes(userUuid),
+    getFollowCounts(userUuid),
   ]);
   return {
     titles: titles[0]?.value ?? 0,
     completed: completed[0]?.value ?? 0,
     hours: Math.round(minutes / 60),
+    ...follows,
   };
 };
 

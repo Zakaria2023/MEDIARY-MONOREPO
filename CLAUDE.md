@@ -436,6 +436,14 @@ SEO is a core of the product, with the design. Every public route pays for its p
 - The stats page is one `getUserStats` call. Time tracked is an estimate from progress and the title's own durations, with the fallbacks in `stats.ts`; a constant inside a SQL `CASE` is written with `literal()`, because Postgres cannot type a bare parameter there.
 - The `(app)` layout owns the header and footer for every private screen; a private section's own layout adds only its inner frame.
 
+## Reviews, Lists, Follows And The Feed
+
+- **A feed line is written by the service that did the thing, in its transaction**, through `recordActivity` (`packages/services/src/activities.ts`), and only when the actor's `ActivityPrefs` allow that kind; a switched-off kind is never written, so nothing has to be hidden later. The actor's `activityVisibility` is applied when the feed is read, so tightening it hides the past too. A block in either direction hides everything.
+- **One review per (user, title)**, by UNIQUE; a rewrite edits it. The review keeps the library score it was written with. Reviews and Mediary's own aggregate rating go out as structured data on the title page (`communityNodes`), which is what earns stars under a search result; only reviews the viewer may read are listed, and a review's visibility falls back to its author's activity default.
+- **A list's slug is unique across the site**, because its address is `/lists/[slug]` and a public list is indexed; a taken name gets a counter. The owner's lists page is `/lists` under `(app)`, the public page `/lists/[slug]` under `(site)`. Who may see a list is `canView` on its own visibility, with the viewer's relation to the owner.
+- **Following is idempotent** by the `(follower, following)` UNIQUE; a refused second insert is swallowed. A follow is refused for oneself, an inactive account, or across a block. `relation` on a profile is now `owner`, `follower` or `stranger`, and a blocked viewer gets a 404, not "private".
+- Every social action lives beside the page that offers it: reviews and add-to-list in `app/(site)/[type]/[slug]/actions.ts`, follow in `app/(site)/profile/[username]/actions.ts`, list editing in `app/(site)/lists/[slug]/actions.ts`, list creation in `app/(app)/lists/actions.ts`.
+
 ## Design Tokens
 
 The brand palette from the blueprint, as `globals.css` tokens. The app is dark-mode-first; a light theme is added once the dark system is complete, as a `.light` override of the same tokens.
@@ -472,7 +480,7 @@ One or two accents per screen. The spectrum belongs to the logo and the five gra
 | `/diary`                | Chronological progress log                  |
 | `/stats`                | Cross-media statistics                      |
 | `/feed`                 | Following activity                          |
-| `/lists`, `/lists/[slug]` | Custom lists                              |
+| `/lists`, `/lists/[slug]` | Your lists (private); one list's public page |
 | `/compare/[username]`   | Taste Match                                 |
 | `/@[username]`          | Public profile (page lives at `/profile/[username]`, rewritten) |
 | `/settings/*`           | Account, profile, privacy, imports, appearance |

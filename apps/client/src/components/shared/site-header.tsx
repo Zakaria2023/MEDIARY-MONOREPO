@@ -1,5 +1,5 @@
 import { UserMenu } from "auth";
-import { BarChart3, BookMarked, NotebookPen, Settings, UserRound } from "lucide-react";
+import { BarChart3, BookMarked, ListChecks, NotebookPen, Settings, UserRound } from "lucide-react";
 import Link from "next/link";
 import { AuthUser } from "services";
 import { SearchPalette } from "@/components/search/search-palette";
@@ -43,6 +43,14 @@ export const SiteHeader = ({ user }: SiteHeaderProps) => (
             Library
           </Link>
         )}
+        {user && (
+          <Link
+            href="/feed"
+            className="hidden h-9 items-center rounded-control px-3 text-sm font-medium text-muted transition-colors hover:bg-hover hover:text-ink sm:flex"
+          >
+            Feed
+          </Link>
+        )}
       </nav>
       <div className="ms-auto flex items-center gap-2">
         <SearchPalette />
@@ -57,6 +65,7 @@ export const SiteHeader = ({ user }: SiteHeaderProps) => (
                 ? [{ label: "Profile", href: profilePath(user.username), icon: <UserRound size={16} /> }]
                 : []),
               { label: "Library", href: "/library", icon: <BookMarked size={16} /> },
+              { label: "Lists", href: "/lists", icon: <ListChecks size={16} /> },
               { label: "Diary", href: "/diary", icon: <NotebookPen size={16} /> },
               { label: "Stats", href: "/stats", icon: <BarChart3 size={16} /> },
               { label: "Settings", href: "/settings/profile", icon: <Settings size={16} /> },
