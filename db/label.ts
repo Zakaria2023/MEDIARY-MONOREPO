@@ -9,6 +9,8 @@ import {
   MediaType,
   ProgressUnit,
   Provider,
+  ReportReason,
+  ReportStatus,
   Season,
   TitleType,
   TrackingStatus,
@@ -264,4 +266,17 @@ export const IMPORT_OUTCOME_LABELS: Record<ImportOutcome, string> = {
   unmatched: "Not in the catalog yet",
   created: "Added to your library",
   skipped: "Already in your library",
+};
+
+export const REPORT_REASON_LABELS: Record<ReportReason, string> = {
+  spam: "Spam or advertising",
+  abuse: "Harassment or hate",
+  spoilers: "Unmarked spoilers",
+  other: "Something else",
+};
+
+export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
+  open: "Open",
+  dismissed: "Dismissed",
+  actioned: "Review removed",
 };

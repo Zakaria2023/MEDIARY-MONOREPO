@@ -17,6 +17,7 @@ export * from "./lists";
 export * from "./profiles";
 export * from "./providers/registry";
 export * from "./public-profile";
+export * from "./reports";
 export * from "./reviews";
 export * from "./social-user";
 export type {

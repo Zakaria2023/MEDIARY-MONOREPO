@@ -457,6 +457,12 @@ SEO is a core of the product, with the design. Every public route pays for its p
 - `/compare/[username]` is private and honors the other person's `tasteComparison` setting (everyone, followers, nobody) and blocks; `CompareRefused` says which. Comparing with oneself is a 404.
 - **Share cards are drawn by `src/lib/server/share-card.tsx`**, one frame for every card, in the image renderer's flexbox subset. A public card is a route's `opengraph-image.tsx` (a profile's); a private one is a `route.ts` under the page that offers it (`/compare/[username]/card`, `/stats/recap`), which checks the caller itself and is the image-endpoint exception to "no Route Handlers". A share card is one of the gradient's permitted places.
 
+## Moderation And Members
+
+- A member flags a review through `reportReview`; one report per (review, reporter) by UNIQUE, never one's own review. The report copies the author and an excerpt so the record outlives the review. Staff handle the queue at the admin's `/reports`: dismissing needs `requireStaff`, removing the review needs `requireAdmin`, and removing closes every open report about that review as actioned before the delete.
+- The admin's `/members` lists every member; a role change or a suspension needs `requireAdmin`, and an admin can never change their own role or status: the last admin must not lock everyone out.
+- The Step 0 design prototypes (`/design`, `lib/design/mock.ts`, the mock components) were removed in beta hardening; the real components they were drawn for are the product.
+
 ## Design Tokens
 
 The brand palette from the blueprint, as `globals.css` tokens. The app is dark-mode-first; a light theme is added once the dark system is complete, as a `.light` override of the same tokens.
@@ -508,6 +514,8 @@ The table above is `apps/client`. `apps/admin` has its own routes, added with th
 | `/catalog`    | Every title, searchable by any name, filterable by medium |
 | `/catalog/[uuid]` | One title: facts, names, sources, locks, refresh       |
 | `/imports`    | Provider status, search and import, bulk list imports      |
+| `/members`    | Every member: search, role (admin only), suspend           |
+| `/reports`    | Open review reports: dismiss (staff) or remove the review (admin) |
 | `/sign-in`    | Staff sign-in (Clerk, no sign-up)                          |
 | `/no-access`  | Where a signed-in account without a staff role lands       |
 | `/api/cron/catalog` | The daily sync, called by Vercel cron with `CRON_SECRET` |

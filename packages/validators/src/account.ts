@@ -42,6 +42,16 @@ export const profileSchema = z.object({
 
 const visibility = z.enum(["public", "followers", "private"]);
 
+/** Which kinds of activity go to the feed; every switch on by default. */
+export const activityPrefsSchema = z.object({
+  started: z.boolean(),
+  completed: z.boolean(),
+  rated: z.boolean(),
+  reviewed: z.boolean(),
+  favorited: z.boolean(),
+  listed: z.boolean(),
+});
+
 /** The privacy settings page. */
 export const privacySchema = z.object({
   profileVisibility: visibility,
@@ -50,4 +60,5 @@ export const privacySchema = z.object({
   tasteComparison: z.enum(["everyone", "followers", "nobody"]),
   hideSpoilers: z.boolean(),
   showAdultContent: z.boolean(),
+  activityPrefs: activityPrefsSchema,
 });

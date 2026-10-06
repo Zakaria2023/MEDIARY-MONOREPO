@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { MobileTabBar } from "@/components/shared/mobile-tab-bar";
 import { SiteFooter } from "@/components/shared/site-footer";
 import { SiteHeader } from "@/components/shared/site-header";
 import { getCurrentUser } from "@/lib/auth";
@@ -18,8 +19,9 @@ const SiteLayout = async ({ children }: Props) => {
   return (
     <>
       <SiteHeader user={user} />
-      <div className="flex flex-1 flex-col">{children}</div>
+      <div className={`flex flex-1 flex-col ${user?.username ? "pb-14 sm:pb-0" : ""}`}>{children}</div>
       <SiteFooter user={user} />
+      {user?.username && <MobileTabBar username={user.username} />}
     </>
   );
 };

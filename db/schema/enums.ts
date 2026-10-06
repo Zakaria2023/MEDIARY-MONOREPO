@@ -11,6 +11,8 @@ import {
   mediaTypes,
   progressUnits,
   providers,
+  reportReasons,
+  reportStatuses,
   seasons,
   tagCategories,
   tasteComparisonSettings,
@@ -58,3 +60,6 @@ export const activityKindEnum = pgEnum("activity_kind", activityKinds);
 export const importSourceEnum = pgEnum("import_source", importSources);
 export const importStatusEnum = pgEnum("import_status", importStatuses);
 export const importOutcomeEnum = pgEnum("import_outcome", importOutcomes);
+
+export const reportReasonEnum = pgEnum("report_reason", reportReasons);
+export const reportStatusEnum = pgEnum("report_status", reportStatuses);
