@@ -1,0 +1,410 @@
+@import "tailwindcss";
+@source "../../../../packages/ui/src";
+
+/* Light is an override of the dark defaults, applied when <html> carries
+   .light. Dark is the product; see the theme block below. */
+@custom-variant light (&:where(.light, .light *));
+
+/* Fonts are files in the repo (src/fonts), loaded through next/font/local
+   (see app/layout.tsx), which emits the --font-* variables below onto <html>.
+   Self-hosted, so no request leaves for Google and a build cannot fail on a
+   font download. `inline` so the generated utilities resolve the chain at use
+   time rather than baking in a literal. */
+@theme inline {
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-sora), var(--font-manrope), sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+
+@theme {
+  /* ---- DARK IS THE PRODUCT ----
+
+     Mediary is dark-mode-first: the canvas is near-black, the artwork is the
+     color, and the interface itself is grey with ONE accent per context. The
+     logo owns the blue-violet-magenta spectrum; the screens borrow it in four
+     named places (hero, selected state, share cards, Taste DNA) and nowhere
+     else. A rainbow dashboard is what the trackers this replaces look like. */
+
+  /* ---- Surfaces ---- */
+  --color-page: #090a10;
+  --color-surface: #11131c;
+  --color-surface-2: #171a26;
+  /* Always-opaque panel for portaled menus and sheets. Distinct from
+     --color-surface, which must stay usable behind a floating menu. */
+  --color-overlay: #1a1e2b;
+  --color-hover: rgba(255, 255, 255, 0.05);
+  --color-pressed: rgba(255, 255, 255, 0.09);
+  /* What a modal lays over the page it covers. Black in both themes; a scrim
+     darkens, it never tints. */
+  --color-scrim: rgba(0, 0, 0, 0.7);
+
+  /* ---- Text ---- */
+  --color-ink: #f7f8fc;
+  --color-secondary: #c9cdd9;
+  --color-muted: #a9afbf;
+  --color-faint: #6e7489;
+  --color-placeholder: #5a6075;
+
+  /* ---- Borders ----
+     These carry the whole job of separating one thing from another; nothing
+     uses a shadow for that. */
+  --color-hairline: rgba(255, 255, 255, 0.08);
+  --color-hairline-soft: rgba(255, 255, 255, 0.05);
+  --color-hairline-strong: rgba(255, 255, 255, 0.14);
+
+  /* ---- Brand ----
+     Indigo is the button. Blue is the focus ring, the link, the selected
+     control. The other three appear rarely and mean something when they do. */
+  --color-primary: #4057ff;
+  --color-primary-hover: #5468ff;
+  --color-primary-tint: rgba(64, 87, 255, 0.16);
+  --color-accent: #1697ff;
+  --color-accent-hover: #3aa8ff;
+  --color-accent-tint: rgba(22, 151, 255, 0.14);
+  --color-violet: #7b2cff;
+  --color-violet-tint: rgba(123, 44, 255, 0.16);
+  --color-magenta: #d815ff;
+  --color-magenta-tint: rgba(216, 21, 255, 0.14);
+  --color-pink: #ff2c8a;
+  --color-pink-tint: rgba(255, 44, 138, 0.14);
+
+  /* ---- Status ----
+     Lifted well clear of the near-black page so each reads at 4.5:1 as text. */
+  --color-success: #3ddc97;
+  --color-success-tint: rgba(61, 220, 151, 0.14);
+  --color-warning: #f5b14c;
+  --color-warning-tint: rgba(245, 177, 76, 0.16);
+  --color-danger: #ff5c6c;
+  --color-danger-tint: rgba(255, 92, 108, 0.16);
+  --color-info: #1697ff;
+  --color-info-tint: rgba(22, 151, 255, 0.14);
+
+  /* ---- Tracking status ----
+     One color per lifecycle state, the same for every medium, so a chip on a
+     game and a chip on a film say "completed" the same way. */
+  --color-status-progress: #1697ff;
+  --color-status-completed: #3ddc97;
+  --color-status-paused: #f5b14c;
+  --color-status-dropped: #ff5c6c;
+  --color-status-planned: #a9afbf;
+
+  /* ---- Shape ----
+     Medium radii, consistent rather than excessive. A poster and a card share
+     one; a control, a chip and an input share the other. */
+  --radius-card: 14px;
+  --radius-control: 10px;
+  --radius-chip: 999px;
+
+  /* ---- Artwork ratios ---- */
+  --aspect-poster: 2 / 3;
+  --aspect-backdrop: 16 / 9;
+  --aspect-card: 4 / 3;
+
+  /* ---- Motion ----
+     Under 250ms for anything inside a page; page-level transitions may go to
+     400. The spring is for the one moment that should feel physical (a sheet
+     arriving); everything else decelerates and stops. */
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-quad: cubic-bezier(0.4, 0, 1, 1);
+  --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
+
+  --animate-fade-in: fade-in 160ms var(--ease-out-quint) both;
+  --animate-rise: rise 220ms var(--ease-out-quint) both;
+  --animate-sheet-in: sheet-in 240ms var(--ease-out-quint) both;
+  --animate-sheet-out: sheet-out 160ms var(--ease-in-quad) forwards;
+  --animate-dialog-in: dialog-in 200ms var(--ease-out-quint) both;
+  --animate-scrim-in: scrim-in 200ms ease-out both;
+  --animate-scrim-out: scrim-out 160ms ease-in forwards;
+  --animate-menu-in: menu-in 140ms var(--ease-out-quint) both;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-float: float 7s ease-in-out infinite;
+}
+
+/* ---- THE BRAND GRADIENT ----
+
+   One definition, four permitted uses: the landing hero, a selected or active
+   state, a share card, and the Taste DNA visualization. The utilities below
+   are the only way a component reaches it; `bg-linear-to-*` and inline
+   gradients are not used anywhere in the product. */
+:root {
+  --gradient-brand: linear-gradient(
+    135deg,
+    #1697ff 0%,
+    #4057ff 35%,
+    #7b2cff 70%,
+    #d815ff 100%
+  );
+  --gradient-brand-soft: linear-gradient(
+    135deg,
+    rgba(22, 151, 255, 0.22) 0%,
+    rgba(64, 87, 255, 0.18) 40%,
+    rgba(123, 44, 255, 0.16) 75%,
+    rgba(216, 21, 255, 0.12) 100%
+  );
+
+  /* The parts of a control we do not draw: the caret, the autofill wash, the
+     date picker. With `dark`, the browser paints them for a dark page. */
+  color-scheme: dark;
+  background-color: var(--color-page);
+  color: var(--color-ink);
+}
+
+@utility bg-brand-gradient {
+  background-image: var(--gradient-brand);
+}
+
+@utility bg-brand-gradient-soft {
+  background-image: var(--gradient-brand-soft);
+}
+
+@utility text-brand-gradient {
+  background-image: var(--gradient-brand);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+/* THE FADE UNDER A BACKDROP. Not a brand moment: a transparent-to-page run
+   that makes a title legible over artwork, used on the detail hero and the
+   profile banner. It is the one gradient that is about reading, not looking. */
+@utility bg-backdrop-fade {
+  background-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    var(--color-page) 100%
+  );
+}
+
+/* A hairline ring on a selected poster, in the accent, drawn outside the box
+   so the artwork keeps its full size. */
+@utility ring-selected {
+  box-shadow:
+    0 0 0 2px var(--color-page),
+    0 0 0 4px var(--color-accent);
+}
+
+/* ---- Light theme ----
+   Added once the dark system is complete. The block exists now so every
+   component is written against tokens that can flip, and the theme-tokens
+   test stays honest about what each theme defines. */
+.light {
+  --color-page: #f7f8fc;
+  --color-surface: #ffffff;
+  --color-surface-2: #f0f2f8;
+  --color-overlay: #ffffff;
+  --color-hover: rgba(9, 10, 16, 0.04);
+  --color-pressed: rgba(9, 10, 16, 0.08);
+  --color-scrim: rgba(0, 0, 0, 0.55);
+
+  --color-ink: #0f1119;
+  --color-secondary: #3a3f52;
+  --color-muted: #5c6275;
+  --color-faint: #8a90a3;
+  --color-placeholder: #a3a8b8;
+
+  --color-hairline: rgba(9, 10, 16, 0.1);
+  --color-hairline-soft: rgba(9, 10, 16, 0.06);
+  --color-hairline-strong: rgba(9, 10, 16, 0.16);
+
+  --color-primary-hover: #3448e6;
+  --color-accent-hover: #0f82e0;
+
+  --color-success: #178f5e;
+  --color-warning: #a86b00;
+  --color-danger: #d92d3a;
+  --color-info: #0f6fc0;
+  --color-status-progress: #0f6fc0;
+  --color-status-completed: #178f5e;
+  --color-status-paused: #a86b00;
+  --color-status-dropped: #d92d3a;
+  --color-status-planned: #5c6275;
+
+  color-scheme: light;
+}
+
+/* ---- Keyframes ---- */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* The add/update sheet: from the bottom on a phone, from the end edge on a
+   desktop. The component chooses the keyframe by breakpoint. */
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheet-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scrim-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* A skeleton's sweep. A moving highlight reads as "coming", a static grey
+   box reads as "broken". */
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* ---- REDUCED MOTION IS A PRODUCT RULE ----
+   Every animation above collapses to its end state. Opacity changes stay
+   because a thing appearing is information; a thing sliding is decoration. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---- Base ---- */
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+}
+
+/* Headings and large numbers in the display face. */
+.font-display {
+  letter-spacing: -0.01em;
+}
+
+/* Numbers that sit in a column (scores, hours, episode counts) line up. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The poster skeleton and every other loading box. */
+.skeleton {
+  background-color: var(--color-surface-2);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-hover) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}
+
+/* Slim themed scrollbar for panes that scroll inside the page. */
+.scrollbar-slim {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-faint) transparent;
+}
+
+.scrollbar-slim::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.scrollbar-slim::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-slim::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background-color: var(--color-faint);
+}
+
+/* A rail that scrolls sideways with no visible bar: the cards sliced by the
+   viewport edge already say it scrolls. */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Focus is visible, in the accent, on anything a keyboard can reach. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-control);
+}
