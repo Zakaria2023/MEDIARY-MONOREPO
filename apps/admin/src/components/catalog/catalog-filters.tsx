@@ -1,9 +1,9 @@
 import { Search } from "lucide-react";
 import Link from "next/link";
 import { Input } from "ui";
+import { filterHref } from "utils";
 import { launchMediaTypes, MediaType } from "@/db/enum";
 import { MEDIA_TYPE_PLURAL_LABELS } from "@/db/label";
-import { filterHref } from "@/lib/filter-href";
 
 type CatalogFiltersProps = {
   query: string;

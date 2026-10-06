@@ -1,10 +1,10 @@
 import { Library, SearchX } from "lucide-react";
 import Link from "next/link";
 import { listAdminCatalog } from "services";
+import { Pagination } from "ui";
+import { filterHref } from "utils";
 import { MediaType } from "@/db/enum";
 import { CatalogRow } from "@/components/catalog/catalog-row";
-import { Pagination } from "@/components/shared/pagination";
-import { filterHref } from "@/lib/filter-href";
 
 type CatalogListProps = {
   query: string;

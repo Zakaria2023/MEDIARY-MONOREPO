@@ -4,6 +4,7 @@
 // `src/lib/server/`.
 
 export * from "./catalog-image";
+export * from "./filter-href";
 
 /**
  * What a searched, paginated list is asked for: the other half of
@@ -190,6 +191,20 @@ export const formatRuntime = (minutes: number | null | undefined): string | null
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
   return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`;
+};
+
+/**
+ * Text cut to at most `max` characters on a word boundary, with an ellipsis
+ * when anything was cut: a synopsis turned into a meta description.
+ */
+export const excerpt = (text: string, max: number): string => {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= max) {
+    return clean;
+  }
+  const cut = clean.slice(0, max - 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).replace(/[\s,;:.-]+$/, "")}…`;
 };
 
 /** Hours as a person reads them: "44h", "1,204h". */

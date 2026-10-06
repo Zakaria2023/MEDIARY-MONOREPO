@@ -10,6 +10,7 @@ export * from "./dropdown";
 export * from "./error-boundary";
 export * from "./form-error";
 export * from "./input";
+export * from "./pagination";
 export * from "./poster";
 export * from "./section-error-state";
 export * from "./sheet";
