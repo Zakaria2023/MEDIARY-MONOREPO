@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ReactNode } from "react";
 import { DiaryKind, DiaryLine as DiaryLineData } from "services";
 import { Poster } from "ui";
+import { MEDIA_TYPE_LABELS } from "@/db/label";
 import { diaryDetail, diaryMoment } from "@/lib/diary-copy";
 import { titlePath } from "@/lib/title-path";
 
@@ -35,30 +36,28 @@ const KIND_CLASSES: Record<DiaryKind, string> = {
 };
 
 /**
- * One line: when, what happened, and the title it happened to, with its
- * poster. The whole line is a link to the title.
+ * One moment as a card: the poster, what happened to it as a badge, the
+ * title, the medium and the detail, and when. The whole card is a link to
+ * the title.
  */
 export const DiaryLine = ({ line, timezone, showDate }: DiaryLineProps) => (
-  <li className="group relative grid grid-cols-[56px_auto_1fr] items-center gap-3 border-b border-hairline-soft py-3 last:border-b-0">
-    <Link
-      href={titlePath(line.title)}
-      aria-label={`Open ${line.title.canonicalTitle}`}
-      className="absolute inset-0 z-10"
-    />
-    <time dateTime={line.eventAt.toISOString()} className="tabular text-xs text-faint">
-      {diaryMoment(line.eventAt, timezone, showDate)}
-    </time>
-    <span className={`flex h-7 w-7 items-center justify-center rounded-chip ${KIND_CLASSES[line.kind]}`}>
-      {KIND_ICON[line.kind]}
-    </span>
-    <div className="flex min-w-0 items-center gap-3">
-      <div className="w-7 shrink-0">
-        <Poster src={line.title.coverUrl} alt="" sizes="28px" dominantColor={line.title.dominantColor} />
-      </div>
-      <div className="flex min-w-0 flex-col">
-        <span className="line-clamp-1 text-sm text-ink">{line.title.canonicalTitle}</span>
-        <span className="line-clamp-1 text-xs text-muted">{diaryDetail(line)}</span>
-      </div>
+  <li className="group relative flex gap-3 rounded-card border border-hairline bg-surface p-3 transition-colors hover:border-hairline-strong">
+    <Link href={titlePath(line.title)} aria-label={`Open ${line.title.canonicalTitle}`} className="absolute inset-0 z-10 rounded-card" />
+    <div className="relative w-14 shrink-0">
+      <Poster src={line.title.coverUrl} alt="" sizes="56px" dominantColor={line.title.dominantColor} />
+      <span
+        className={`absolute -end-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-chip border border-surface ${KIND_CLASSES[line.kind]}`}
+      >
+        {KIND_ICON[line.kind]}
+      </span>
+    </div>
+    <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <span className="line-clamp-1 text-sm font-medium text-ink">{line.title.canonicalTitle}</span>
+      <span className="text-xs text-faint">{MEDIA_TYPE_LABELS[line.title.mediaType]}</span>
+      <span className="line-clamp-2 text-xs text-secondary">{diaryDetail(line)}</span>
+      <time dateTime={line.eventAt.toISOString()} className="tabular mt-auto pt-1 text-xs text-faint">
+        {diaryMoment(line.eventAt, timezone, showDate)}
+      </time>
     </div>
   </li>
 );

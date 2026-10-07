@@ -432,6 +432,7 @@ SEO is a core of the product, with the design. Every public route pays for its p
 
 - **The profile URL is `/@username` and nothing else.** A folder beginning with `@` is a parallel-route slot to the App Router, so the page lives at `app/(site)/profile/[username]` and `next.config.ts` rewrites `/@:username` onto it and redirects `/profile/:username` back out. `profilePath` in `src/lib/profile-path.ts` is the only place the address is built; `/profile/` is in `PRIVATE_PATHS`.
 - **Visibility is decided in the query.** `getPublicProfile` returns the viewer's `relation` (owner or stranger until follows exist) and an `access` object from the owner's settings through `canView` (`packages/services/src/visibility.ts`, pure). A section the viewer may not see is not fetched; the page never hides something it already loaded. A private profile renders `PrivateProfile`, noindex.
+- **A profile's library is read through `listLibraryFor` and `getLibraryCountsFor`** with the viewer's relation; each entry's own visibility wins over the library's default, decided in the query. The profile's "By medium" section is one list per medium in its own status words, every count a link to those cards at `/@username/[medium]?status=`; the owner's cards open the sheet, a visitor's open the title. Diary moments are cards in a grid, on the diary and on the profile alike.
 - The diary is read from `ProgressEvents` only (`services/diary.ts`); `diaryKind` names a line from its fields and is pure. Days are drawn in the owner's `UserSettings.timezone`, never the server's.
 - The stats page is one `getUserStats` call. Time tracked is an estimate from progress and the title's own durations, with the fallbacks in `stats.ts`; a constant inside a SQL `CASE` is written with `literal()`, because Postgres cannot type a bare parameter there.
 - The `(app)` layout owns the header and footer for every private screen; a private section's own layout adds only its inner frame.
@@ -523,6 +524,7 @@ One or two accents per screen. The spectrum belongs to the logo and the five gra
 | `/lists`, `/lists/[slug]` | Your lists (private); one list's public page |
 | `/compare/[username]`   | Taste Match                                 |
 | `/@[username]`          | Public profile (page lives at `/profile/[username]`, rewritten) |
+| `/@[username]/library`, `/@[username]/anime` … | Someone's titles as cards, all media or one, `?status=` in the medium's words (page at `/profile/[username]/[section]`, rewritten; noindex) |
 | `/settings/*`           | Account, profile, privacy, imports, appearance |
 
 `[type]` is always one of `mediaTypes` in `db/enum.ts`; a slug is unique per type, not globally.

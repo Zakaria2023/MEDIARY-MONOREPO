@@ -14,6 +14,7 @@ import { ActivityPrefs } from "../../../db/types";
 import { recordActivity } from "./activities";
 import { isUniqueViolation } from "./db-result";
 import { NotFoundError, ValidationError } from "./errors";
+import { ViewerRelation } from "./visibility";
 import {
   applyTick,
   progressLimitsFor,
@@ -557,7 +558,14 @@ export const getLibraryCounts = async (
     .innerJoin(Media, eq(Media.uuid, UserMedia.mediaUuid))
     .where(eq(UserMedia.userUuid, userUuid))
     .groupBy(Media.mediaType, UserMedia.status);
+  return tallyCounts(rows, mediaType);
+};
 
+/** Grouped rows into the counts a tab bar or a breakdown reads. */
+const tallyCounts = (
+  rows: { mediaType: MediaType; status: TrackingStatus; entries: number }[],
+  mediaType: MediaType | undefined,
+): LibraryCounts => {
   const counts: LibraryCounts = {
     all: 0,
     byType: {},
@@ -581,4 +589,70 @@ export const getLibraryCounts = async (
     counts.byTypeStatus[row.mediaType] = medium;
   }
   return counts;
+};
+
+/** What a viewer may see of someone's library: everything as the owner, else by each entry's visibility or the library's default. */
+type ViewerParams = {
+  ownerUuid: string;
+  relation: ViewerRelation;
+};
+
+/**
+ * The entries a viewer may see: every one for the owner; for a follower,
+ * those public or for followers; for a stranger, the public ones. An
+ * entry's own visibility wins over the library's default. Decided here,
+ * in the query, as every privacy rule is.
+ */
+const visibleEntries = ({ ownerUuid, relation }: ViewerParams): SQL => {
+  const own = eq(UserMedia.userUuid, ownerUuid);
+  if (relation === "owner") {
+    return own;
+  }
+  const effective = sql`coalesce(${UserMedia.visibility}, (select ${UserSettings.libraryVisibility} from ${UserSettings} where ${UserSettings.userUuid} = ${UserMedia.userUuid}))`;
+  const allowed = relation === "follower" ? sql`${effective} in ('public', 'followers')` : sql`${effective} = 'public'`;
+  return sql`${own} and ${allowed}`;
+};
+
+/**
+ * SOMEONE'S LIBRARY AS A VIEWER MAY SEE IT: the public profile's cards,
+ * one medium or all, one status or all, most recently touched first. The
+ * owner sees everything through the same door.
+ */
+export const listLibraryFor = async (
+  viewer: ViewerParams,
+  { mediaType, status, page, pageSize = LIBRARY_PAGE_SIZE }: Omit<ListLibraryParams, "sort">,
+): Promise<PaginatedResult<LibraryItem>> => {
+  const where = and(
+    visibleEntries(viewer),
+    mediaType ? eq(Media.mediaType, mediaType) : undefined,
+    status ? eq(UserMedia.status, status) : undefined,
+  );
+  return paginate({ page, pageSize }, async ({ limit, offset }) => {
+    const [rows, totals] = await Promise.all([
+      db
+        .select({ entry: ENTRY_COLUMNS, title: TARGET_COLUMNS })
+        .from(UserMedia)
+        .innerJoin(Media, eq(Media.uuid, UserMedia.mediaUuid))
+        .where(where)
+        .orderBy(...LIBRARY_ORDER.updated, asc(UserMedia.id))
+        .limit(limit)
+        .offset(offset),
+      db.select({ value: count() }).from(UserMedia).innerJoin(Media, eq(Media.uuid, UserMedia.mediaUuid)).where(where),
+    ]);
+    return {
+      items: rows.map((row) => ({ entry: row.entry, title: toTarget(row.title) })),
+      total: totals[0]?.value ?? 0,
+    };
+  });
+};
+
+/** The counts of someone's library as a viewer may see it, by medium and status. */
+export const getLibraryCountsFor = async (viewer: ViewerParams, mediaType?: MediaType): Promise<LibraryCounts> => {
+  const rows = await db
+    .select({ mediaType: Media.mediaType, status: UserMedia.status, entries: count() })
+    .from(UserMedia)
+    .innerJoin(Media, eq(Media.uuid, UserMedia.mediaUuid))
+    .where(visibleEntries(viewer))
+    .groupBy(Media.mediaType, UserMedia.status);
+  return tallyCounts(rows, mediaType);
 };

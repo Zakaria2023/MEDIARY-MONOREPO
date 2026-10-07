@@ -33,9 +33,13 @@ const nextConfig: NextConfig = {
   // route slot to the App Router, so the page lives at /profile/[username]
   // and the public address is rewritten onto it; the internal address
   // redirects back out so there is one URL for a profile, as SEO wants.
-  rewrites: async () => [{ source: "/@:username", destination: "/profile/:username" }],
+  rewrites: async () => [
+    { source: "/@:username", destination: "/profile/:username" },
+    { source: "/@:username/:section", destination: "/profile/:username/:section" },
+  ],
   redirects: async () => [
     { source: "/profile/:username", destination: "/@:username", permanent: true },
+    { source: "/profile/:username/:section", destination: "/@:username/:section", permanent: true },
   ],
   images: {
     // Where catalog artwork is served from. Provider CDNs are listed by host

@@ -7,7 +7,7 @@ type ProfileActivityProps = {
   profile: PublicProfile;
 };
 
-/** The latest lines of the owner's diary. The owner gets a link to the whole of it. */
+/** The latest moments of the owner's diary, as cards. The owner gets a link to the whole of it. */
 export const ProfileActivity = async ({ profile }: ProfileActivityProps) => {
   const [lines, timezone] = await Promise.all([
     listRecentActivity(profile.uuid),
@@ -29,9 +29,7 @@ export const ProfileActivity = async ({ profile }: ProfileActivityProps) => {
           ) : undefined
         }
       />
-      <div className="rounded-card border border-hairline bg-surface px-4">
-        <DiaryLines lines={lines} timezone={timezone} showDate />
-      </div>
+      <DiaryLines lines={lines} timezone={timezone} showDate />
     </section>
   );
 };
