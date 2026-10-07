@@ -233,7 +233,7 @@ export const parseMalXml = (text: string): ParsedImportItem[] => {
   if (!/<myanimelist[\s>]/i.test(text)) {
     throw new ImportParseError("This is not a MyAnimeList export. Export your list as XML and try that file.");
   }
-  const blocks = text.match(/<(anime|manga)>[\s\S]*?<\/>/g) ?? [];
+  const blocks = text.match(/<(anime|manga)>[\s\S]*?<\/\1>/g) ?? [];
   const items: ParsedImportItem[] = [];
   for (const block of blocks.slice(0, MAX_IMPORT_ITEMS)) {
     const manga = block.startsWith("<manga>");
