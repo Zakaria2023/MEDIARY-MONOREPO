@@ -4,6 +4,7 @@ import { MediaType, TrackingStatus } from "../../../db/enum";
 import { Genres, MediaGenres } from "../../../db/schema/genres";
 import { AnimeDetails, MovieDetails, MusicDetails, TvDetails } from "../../../db/schema/media-details";
 import { Media } from "../../../db/schema/media";
+import { Platforms } from "../../../db/schema/platforms";
 import { ProgressEvents } from "../../../db/schema/progress-events";
 import { UserMedia } from "../../../db/schema/user-media";
 import { UserSettings } from "../../../db/schema/user-settings";
@@ -26,6 +27,45 @@ export type GenreCount = {
   count: number;
 };
 
+/** How many games are tracked on each platform. */
+export type PlatformCount = {
+  name: string;
+  count: number;
+};
+
+/** One medium's own dashboard line. */
+export type MediumStats = {
+  mediaType: MediaType;
+  tracked: number;
+  completed: number;
+  minutes: number;
+  /** Null until something of the medium is rated. */
+  averageScore: number | null;
+  /** Dropped out of everything started, 0-100; null before anything started. */
+  dropRate: number | null;
+};
+
+/** Rewatches, replays and rereads. */
+export type Replays = {
+  /** Titles gone through more than once. */
+  titles: number;
+  /** Extra times altogether. */
+  times: number;
+};
+
+/** The last seven days, for the home. */
+export type WeeklySnapshot = {
+  /** Minutes logged in the week, estimated from the progress logged. */
+  minutes: number;
+  completions: number;
+  /** Titles hearted in the week. */
+  favorites: number;
+  /** Days in a row with something logged, ending today or yesterday. */
+  streak: number;
+  /** Progress moments logged in the week. */
+  moments: number;
+};
+
 /** Everything the stats page shows. */
 export type UserStats = {
   trackedMinutes: number;
@@ -41,6 +81,11 @@ export type UserStats = {
   ratingDistribution: number[];
   topGenres: GenreCount[];
   mediaSplit: MediaSplit[];
+  /** Games by platform, most first. */
+  platforms: PlatformCount[];
+  /** Every medium with something tracked, most time first. */
+  byMedium: MediumStats[];
+  replays: Replays;
 };
 
 /** How many months the completions chart shows. */
@@ -141,7 +186,7 @@ export const getUserStats = async (userUuid: string, now: Date = new Date()): Pr
   const timezone = settings?.timezone ?? "UTC";
   const monthOf = sql<string>`to_char(${ProgressEvents.eventAt} at time zone ${timezone}, 'YYYY-MM')`;
 
-  const [split, statusRows, scoreRows, monthlyRows, genreRows] = await Promise.all([
+  const [split, statusRows, scoreRows, monthlyRows, genreRows, platformRows, mediumRows, replayRows] = await Promise.all([
     getMediaSplit(userUuid),
     db
       .select({ status: UserMedia.status, entries: count() })
@@ -178,6 +223,34 @@ export const getUserStats = async (userUuid: string, now: Date = new Date()): Pr
       .groupBy(Genres.name)
       .orderBy(desc(count()), Genres.name)
       .limit(TOP_GENRES_LIMIT),
+    db
+      .select({ name: Platforms.name, entries: count() })
+      .from(UserMedia)
+      .innerJoin(Platforms, eq(Platforms.id, UserMedia.platformId))
+      .where(eq(UserMedia.userUuid, userUuid))
+      .groupBy(Platforms.name)
+      .orderBy(desc(count()), Platforms.name)
+      .limit(TOP_PLATFORMS_LIMIT),
+    db
+      .select({
+        mediaType: Media.mediaType,
+        tracked: count(),
+        completed: sql<number>`count(*) filter (where ${UserMedia.status} = 'completed')::int`,
+        started: sql<number>`count(*) filter (where ${UserMedia.status} <> 'planned')::int`,
+        dropped: sql<number>`count(*) filter (where ${UserMedia.status} = 'dropped')::int`,
+        averageScore: sql<number | null>`round(avg(${UserMedia.score})::numeric, 1)::float`,
+      })
+      .from(UserMedia)
+      .innerJoin(Media, eq(Media.uuid, UserMedia.mediaUuid))
+      .where(eq(UserMedia.userUuid, userUuid))
+      .groupBy(Media.mediaType),
+    db
+      .select({
+        titles: count(),
+        times: sql<number>`coalesce(sum(${UserMedia.repeatCount}), 0)::int`,
+      })
+      .from(UserMedia)
+      .where(and(eq(UserMedia.userUuid, userUuid), sql`${UserMedia.repeatCount} > 0`)),
   ]);
 
   const byStatus: Record<TrackingStatus, number> = {
@@ -220,5 +293,91 @@ export const getUserStats = async (userUuid: string, now: Date = new Date()): Pr
     ratingDistribution,
     topGenres: genreRows.map((row) => ({ name: row.name, count: row.entries })),
     mediaSplit: split,
+    platforms: platformRows.map((row) => ({ name: row.name, count: row.entries })),
+    byMedium: mediumRows
+      .map((row) => ({
+        mediaType: row.mediaType,
+        tracked: row.tracked,
+        completed: row.completed,
+        minutes: split.find((entry) => entry.mediaType === row.mediaType)?.minutes ?? 0,
+        averageScore: row.averageScore,
+        dropRate: row.started > 0 ? Math.round((row.dropped / row.started) * 100) : null,
+      }))
+      .sort((a, b) => b.minutes - a.minutes || b.tracked - a.tracked),
+    replays: { titles: replayRows[0]?.titles ?? 0, times: replayRows[0]?.times ?? 0 },
+  };
+};
+
+/** How many platforms the stats page lists. */
+const TOP_PLATFORMS_LIMIT = 8;
+
+/** The day a moment falls on, YYYY-MM-DD, in a zone. */
+const dayIn = (moment: Date, timezone: string): string =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(moment);
+
+/** The day before a YYYY-MM-DD, as YYYY-MM-DD. */
+const dayBefore = (day: string): string => new Date(new Date(`${day}T12:00:00Z`).getTime() - 86_400_000).toISOString().slice(0, 10);
+
+/**
+ * THE WEEK IN NUMBERS, for the home: minutes logged (every progress
+ * moment's delta at the title's own length, like the time tracked), what
+ * was finished, what was hearted, how many days in a row something was
+ * logged. Days are the person's, not the server's.
+ */
+export const getWeeklySnapshot = async (userUuid: string, now: Date = new Date()): Promise<WeeklySnapshot> => {
+  const [settings] = await db.select({ timezone: UserSettings.timezone }).from(UserSettings).where(eq(UserSettings.userUuid, userUuid));
+  const timezone = settings?.timezone ?? "UTC";
+  const since = new Date(now.getTime() - 7 * 86_400_000);
+  const streakSince = new Date(now.getTime() - 60 * 86_400_000);
+  const deltaMinutes = sql<number>`case ${ProgressEvents.unit}
+  when 'hours' then ${ProgressEvents.delta} * 60
+  when 'episodes' then ${ProgressEvents.delta} * coalesce(${AnimeDetails.episodeDuration}, ${TvDetails.episodeDuration}, case ${Media.mediaType} when 'anime' then ${literal(FALLBACK_EPISODE_MINUTES.anime)} else ${literal(FALLBACK_EPISODE_MINUTES.tv)} end)
+  when 'percent' then ${ProgressEvents.delta} / 100.0 * coalesce(${MovieDetails.runtime}, ${literal(FALLBACK_RUNTIME_MINUTES)})
+  when 'plays' then ${ProgressEvents.delta} * coalesce(${MusicDetails.durationMinutes}, ${literal(FALLBACK_RECORD_MINUTES)})
+  when 'chapters' then ${ProgressEvents.delta} * ${literal(CHAPTER_MINUTES)}
+  when 'volumes' then ${ProgressEvents.delta} * ${literal(VOLUME_MINUTES)}
+  when 'pages' then ${ProgressEvents.delta} * ${literal(PAGE_MINUTES)}
+  else 0 end`;
+
+  const [week, favorites, days] = await Promise.all([
+    db
+      .select({
+        minutes: sql<number>`coalesce(sum(case when ${ProgressEvents.delta} > 0 then ${deltaMinutes} else 0 end), 0)::float`,
+        completions: sql<number>`count(*) filter (where ${ProgressEvents.status} = 'completed')::int`,
+        moments: count(),
+      })
+      .from(ProgressEvents)
+      .innerJoin(UserMedia, eq(UserMedia.uuid, ProgressEvents.userMediaUuid))
+      .innerJoin(Media, eq(Media.uuid, UserMedia.mediaUuid))
+      .leftJoin(AnimeDetails, eq(AnimeDetails.mediaUuid, Media.uuid))
+      .leftJoin(TvDetails, eq(TvDetails.mediaUuid, Media.uuid))
+      .leftJoin(MovieDetails, eq(MovieDetails.mediaUuid, Media.uuid))
+      .leftJoin(MusicDetails, eq(MusicDetails.mediaUuid, Media.uuid))
+      .where(and(eq(ProgressEvents.userUuid, userUuid), gte(ProgressEvents.eventAt, since))),
+    db
+      .select({ value: count() })
+      .from(UserMedia)
+      .where(and(eq(UserMedia.userUuid, userUuid), eq(UserMedia.favorite, true), gte(UserMedia.updatedAt, since))),
+    db
+      .selectDistinct({ day: sql<string>`to_char(${ProgressEvents.eventAt} at time zone ${timezone}, 'YYYY-MM-DD')` })
+      .from(ProgressEvents)
+      .where(and(eq(ProgressEvents.userUuid, userUuid), gte(ProgressEvents.eventAt, streakSince))),
+  ]);
+
+  const logged = new Set(days.map((row) => row.day));
+  const today = dayIn(now, timezone);
+  let cursor = logged.has(today) ? today : dayBefore(today);
+  let streak = 0;
+  while (logged.has(cursor)) {
+    streak += 1;
+    cursor = dayBefore(cursor);
+  }
+
+  return {
+    minutes: Math.round(week[0]?.minutes ?? 0),
+    completions: week[0]?.completions ?? 0,
+    favorites: favorites[0]?.value ?? 0,
+    streak,
+    moments: week[0]?.moments ?? 0,
   };
 };

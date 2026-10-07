@@ -1,14 +1,20 @@
+type MonthKey = "anime" | "game" | "movie" | "tv" | "music" | "manga" | "book";
+
 type MonthlyChartProps = {
-  months: { month: string; anime: number; game: number; movie: number; tv: number; music: number }[];
+  months: ({ month: string } & Record<MonthKey, number>)[];
 };
 
-const SERIES: { key: "anime" | "game" | "movie" | "tv" | "music"; label: string; color: string }[] = [
+const SERIES: { key: MonthKey; label: string; color: string }[] = [
   { key: "anime", label: "Anime", color: "bg-accent" },
   { key: "game", label: "Games", color: "bg-violet" },
   { key: "movie", label: "Movies", color: "bg-magenta" },
   { key: "tv", label: "TV", color: "bg-pink" },
   { key: "music", label: "Music", color: "bg-primary" },
+  { key: "manga", label: "Manga", color: "bg-success" },
+  { key: "book", label: "Books", color: "bg-warning" },
 ];
+
+const totalOf = (entry: Record<MonthKey, number>): number => SERIES.reduce((sum, series) => sum + entry[series.key], 0);
 
 /**
  * Completions per month, stacked by medium. Plain divs rather than a chart
@@ -16,13 +22,13 @@ const SERIES: { key: "anime" | "game" | "movie" | "tv" | "music"; label: string;
  * one for them.
  */
 export const MonthlyChart = ({ months }: MonthlyChartProps) => {
-  const max = Math.max(1, ...months.map((m) => m.anime + m.game + m.movie + m.tv + m.music));
+  const max = Math.max(1, ...months.map((entry) => totalOf(entry)));
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex h-44 items-end gap-2 sm:gap-3">
         {months.map((entry) => {
-          const total = entry.anime + entry.game + entry.movie + entry.tv + entry.music;
+          const total = totalOf(entry);
           return (
             <div key={entry.month} className="flex flex-1 flex-col items-center gap-2">
               <div

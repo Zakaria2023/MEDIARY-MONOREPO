@@ -10,6 +10,7 @@ import { FriendsPanel } from "@/components/home/friends-panel";
 import { HomeBrowse } from "@/components/home/home-browse";
 import { HomeRails } from "@/components/home/home-rails";
 import { RecommendationRail } from "@/components/recommendations/recommendation-rail";
+import { WeeklySnapshot } from "@/components/home/weekly-snapshot";
 import { getCurrentUser } from "@/lib/auth";
 
 /**
@@ -76,6 +77,11 @@ const HomePage = async () => {
           </>
         )}
       </div>
+      {user && (
+        <AsyncSection reloadKey={`week-${user.uuid}`} skeleton={<div className="mx-auto h-24 w-full max-w-7xl px-5 sm:px-8" />}>
+          <WeeklySnapshot userUuid={user.uuid} />
+        </AsyncSection>
+      )}
       {user && (
         <div className="mx-auto w-full max-w-7xl">
           <AsyncSection reloadKey={`continue-${user.uuid}`} skeleton={<ContinueRailSkeleton />}>

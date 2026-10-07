@@ -1,4 +1,4 @@
-import { Clock, Percent, Star, Trophy } from "lucide-react";
+import { Clock, Percent, Repeat, Star, Trophy } from "lucide-react";
 import { getUserStats } from "services";
 import { formatCount, formatTrackedTime } from "utils";
 import { CatalogEmptyState } from "@/components/catalog/catalog-empty-state";
@@ -7,6 +7,8 @@ import { SectionHeading } from "@/components/shared/section-heading";
 import { StatTile } from "@/components/shared/stat-tile";
 import { GenreBars } from "@/components/stats/genre-bars";
 import { MediaSplitBars } from "@/components/stats/media-split-bars";
+import { MediumTable } from "@/components/stats/medium-table";
+import { PlatformBars } from "@/components/stats/platform-bars";
 import { MonthlyChart } from "@/components/stats/monthly-chart";
 
 type StatsOverviewProps = {
@@ -75,6 +77,8 @@ export const StatsOverview = async ({ userUuid }: StatsOverviewProps) => {
             movie: entry.byType.movie ?? 0,
             tv: entry.byType.tv ?? 0,
             music: entry.byType.music ?? 0,
+            manga: entry.byType.manga ?? 0,
+            book: entry.byType.book ?? 0,
           }))}
         />
       </section>
@@ -95,6 +99,25 @@ export const StatsOverview = async ({ userUuid }: StatsOverviewProps) => {
         <SectionHeading title="Media split" description="Share of tracked time, estimated from your progress." />
         <MediaSplitBars split={stats.mediaSplit} />
       </section>
+
+      <section className="flex flex-col gap-4 rounded-card border border-hairline bg-surface p-5">
+        <SectionHeading title="By medium" description="Each medium's own numbers." />
+        <MediumTable rows={stats.byMedium} />
+      </section>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="flex flex-col gap-4 rounded-card border border-hairline bg-surface p-5">
+          <SectionHeading title="Platforms" description="Where your games are played." />
+          <PlatformBars platforms={stats.platforms} />
+        </section>
+        <section className="flex flex-col gap-4 rounded-card border border-hairline bg-surface p-5">
+          <SectionHeading title="Again and again" description="Rewatches, replays and rereads." />
+          <div className="grid grid-cols-2 gap-3">
+            <StatTile label="Titles revisited" value={formatCount(stats.replays.titles)} detail="Gone through more than once" icon={<Repeat size={15} />} />
+            <StatTile label="Extra times" value={formatCount(stats.replays.times)} detail="Repeats added up" icon={<Repeat size={15} />} />
+          </div>
+        </section>
+      </div>
     </div>
   );
 };
