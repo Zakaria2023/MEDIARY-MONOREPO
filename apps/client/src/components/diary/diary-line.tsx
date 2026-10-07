@@ -44,7 +44,7 @@ export const DiaryLine = ({ line, timezone, showDate }: DiaryLineProps) => (
   <li className="group relative flex gap-3 rounded-card border border-hairline bg-surface p-3 transition-colors hover:border-hairline-strong">
     <Link href={titlePath(line.title)} aria-label={`Open ${line.title.canonicalTitle}`} className="absolute inset-0 z-10 rounded-card" />
     <div className="relative w-14 shrink-0">
-      <Poster src={line.title.coverUrl} alt="" sizes="56px" dominantColor={line.title.dominantColor} />
+      <Poster src={line.title.coverUrl} alt="" sizes="56px" radius="control" dominantColor={line.title.dominantColor} />
       <span
         className={`absolute -end-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-chip border border-surface ${KIND_CLASSES[line.kind]}`}
       >

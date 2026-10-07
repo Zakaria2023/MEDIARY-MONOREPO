@@ -47,7 +47,7 @@ export const LibraryRow = ({ item, showType }: LibraryRowProps) => {
         className="absolute inset-0 z-10"
       />
       <div className="w-10">
-        <Poster src={title.coverUrl} alt="" sizes="40px" dominantColor={title.dominantColor} />
+        <Poster src={title.coverUrl} alt="" sizes="40px" radius="control" dominantColor={title.dominantColor} />
       </div>
       <div className="flex min-w-0 flex-col gap-0.5">
         <h3 className="line-clamp-1 text-sm font-medium text-ink">{title.canonicalTitle}</h3>

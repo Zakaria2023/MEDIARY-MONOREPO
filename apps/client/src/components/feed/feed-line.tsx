@@ -59,7 +59,7 @@ export const FeedLine = ({ item }: FeedLineProps) => {
       </p>
       {item.title && (
         <div className="w-7 shrink-0">
-          <Poster src={item.title.coverUrl} alt="" sizes="28px" dominantColor={item.title.dominantColor} />
+          <Poster src={item.title.coverUrl} alt="" sizes="28px" radius="control" dominantColor={item.title.dominantColor} />
         </div>
       )}
       <time dateTime={item.createdAt.toISOString()} className="tabular w-8 shrink-0 text-end text-xs text-faint">

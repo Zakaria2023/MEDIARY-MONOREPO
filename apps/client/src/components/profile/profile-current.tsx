@@ -38,7 +38,7 @@ export const ProfileCurrent = async ({ profile }: ProfileCurrentProps) => {
                 className="absolute inset-0 z-10 rounded-card"
               />
               <div className="w-16 shrink-0">
-                <Poster src={title.coverUrl} alt="" sizes="64px" dominantColor={title.dominantColor} />
+                <Poster src={title.coverUrl} alt="" sizes="64px" radius="control" dominantColor={title.dominantColor} />
               </div>
               <div className="flex min-w-0 flex-1 flex-col justify-between gap-2">
                 <div className="flex flex-col gap-1">

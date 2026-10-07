@@ -77,7 +77,7 @@ export const EntrySheet = ({
               <Poster
                 src={target.coverUrl}
                 alt=""
-                sizes="44px"
+                sizes="44px" radius="control"
                 dominantColor={target.dominantColor}
               />
             </div>

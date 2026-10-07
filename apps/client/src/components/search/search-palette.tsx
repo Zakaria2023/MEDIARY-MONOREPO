@@ -141,7 +141,7 @@ export const SearchPalette = () => {
                           }`}
                         >
                           <div className="w-8 shrink-0">
-                            <Poster src={title.coverUrl} alt={title.canonicalTitle} sizes="32px" dominantColor={title.dominantColor} />
+                            <Poster src={title.coverUrl} alt={title.canonicalTitle} sizes="32px" radius="control" dominantColor={title.dominantColor} />
                           </div>
                           <div className="flex min-w-0 flex-col">
                             <span className="line-clamp-1 text-sm font-medium text-ink">{title.canonicalTitle}</span>

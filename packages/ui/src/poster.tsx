@@ -9,6 +9,8 @@ type PosterProps = {
   /** Painted while the image loads, when the catalog knows one. */
   dominantColor?: string | null;
   priority?: boolean;
+  /** The corner: a card's on a grid or a hero, a control's on a small poster beside a line of text, where the card radius would round it into a blob. */
+  radius?: "card" | "control";
   className?: string;
 };
 
@@ -25,10 +27,11 @@ export const Poster = ({
   sizes,
   dominantColor,
   priority = false,
+  radius = "card",
   className = "",
 }: PosterProps) => (
   <div
-    className={`relative aspect-poster w-full overflow-hidden rounded-card ring-1 ring-hairline ${className}`}
+    className={`relative aspect-poster w-full overflow-hidden ${radius === "card" ? "rounded-card" : "rounded-control"} ring-1 ring-hairline ${className}`}
     style={dominantColor ? { backgroundColor: dominantColor } : undefined}
   >
     {src ? (
@@ -37,7 +40,7 @@ export const Poster = ({
       <div
         role="img"
         aria-label={alt}
-        className="flex h-full w-full items-center justify-center rounded-card border border-dashed border-hairline-strong text-faint"
+        className={`flex h-full w-full items-center justify-center border border-dashed border-hairline-strong text-faint ${radius === "card" ? "rounded-card" : "rounded-control"}`}
       >
         <ImageOff size={20} />
       </div>
