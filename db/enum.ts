@@ -243,6 +243,18 @@ export const activityKinds = [
 
 export type ActivityKind = (typeof activityKinds)[number];
 
+/**
+ * What a notification tells a person someone did to them: followed them,
+ * liked their review or feed line, replied under one.
+ */
+export const notificationKinds = [
+  "followed",
+  "liked",
+  "replied",
+] as const satisfies readonly string[];
+
+export type NotificationKind = (typeof notificationKinds)[number];
+
 // ---------------------------------------------------------------------------
 // Imports
 // ---------------------------------------------------------------------------

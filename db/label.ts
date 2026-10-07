@@ -1,5 +1,6 @@
 import {
   ActivityKind,
+  NotificationKind,
   AnimeFormat,
   ImageType,
   ImportOutcome,
@@ -290,4 +291,14 @@ export const RELEASE_TYPE_LABELS: Record<ReleaseType, string> = {
   live: "Live",
   soundtrack: "Soundtrack",
   other: "Release",
+};
+
+/**
+ * What a notification says someone did: "Sara followed you", "Sara liked
+ * your review", "Sara replied to your line". The object follows the verb.
+ */
+export const NOTIFICATION_VERBS: Record<NotificationKind, string> = {
+  followed: "followed you",
+  liked: "liked your",
+  replied: "replied to your",
 };

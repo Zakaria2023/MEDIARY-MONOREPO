@@ -2,6 +2,7 @@ import { and, count, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../../db";
 import { Reactions } from "../../../db/schema/reactions";
 import { isUniqueViolation } from "./db-result";
+import { notify } from "./notifications";
 import { reachSubject, SocialSubject, subjectColumns } from "./social-reach";
 
 /** How a subject's reactions read to one viewer: how many, and whether theirs is among them. */
@@ -47,7 +48,10 @@ export const toggleReaction = async (userUuid: string, subject: SocialSubject): 
     .returning({ id: Reactions.id });
   if (removed.length === 0) {
     try {
-      await db.insert(Reactions).values({ userUuid, ...subjectColumns(subject) });
+      await db.transaction(async (tx) => {
+        await tx.insert(Reactions).values({ userUuid, ...subjectColumns(subject) });
+        await notify(tx, { userUuid: reached.authorUuid, actorUuid: userUuid, kind: "liked", ...subjectColumns(subject) });
+      });
     } catch (error) {
       if (!isUniqueViolation(error)) {
         throw error;

@@ -9,6 +9,7 @@ import {
   importStatuses,
   mediaStatuses,
   mediaTypes,
+  notificationKinds,
   progressUnits,
   providers,
   releaseTypes,
@@ -58,6 +59,7 @@ export const progressUnitEnum = pgEnum("progress_unit", progressUnits);
 export const favoriteKindEnum = pgEnum("favorite_kind", favoriteKinds);
 
 export const activityKindEnum = pgEnum("activity_kind", activityKinds);
+export const notificationKindEnum = pgEnum("notification_kind", notificationKinds);
 
 export const importSourceEnum = pgEnum("import_source", importSources);
 export const importStatusEnum = pgEnum("import_status", importStatuses);

@@ -1,7 +1,9 @@
 import { UserMenu } from "auth";
-import { BarChart3, BookMarked, ListChecks, NotebookPen, Settings, UserRound } from "lucide-react";
+import { BarChart3, Bell, BookMarked, ListChecks, NotebookPen, Settings, UserRound } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 import { AuthUser } from "services";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { SearchPalette } from "@/components/search/search-palette";
 import { Logo } from "@/components/shared/logo";
 import { profilePath } from "@/lib/profile-path";
@@ -54,6 +56,21 @@ export const SiteHeader = ({ user }: SiteHeaderProps) => (
       </nav>
       <div className="ms-auto flex items-center gap-2">
         <SearchPalette />
+        {user && (
+          <Suspense
+            fallback={
+              <Link
+                href="/notifications"
+                aria-label="Notifications"
+                className="flex h-9 w-9 items-center justify-center rounded-control text-muted transition-colors hover:bg-hover hover:text-ink"
+              >
+                <Bell size={18} />
+              </Link>
+            }
+          >
+            <NotificationBell userUuid={user.uuid} />
+          </Suspense>
+        )}
         {user ? (
           <UserMenu
             name={user.displayName}
@@ -64,6 +81,7 @@ export const SiteHeader = ({ user }: SiteHeaderProps) => (
               ...(user.username
                 ? [{ label: "Profile", href: profilePath(user.username), icon: <UserRound size={16} /> }]
                 : []),
+              { label: "Notifications", href: "/notifications", icon: <Bell size={16} /> },
               { label: "Library", href: "/library", icon: <BookMarked size={16} /> },
               { label: "Lists", href: "/lists", icon: <ListChecks size={16} /> },
               { label: "Diary", href: "/diary", icon: <NotebookPen size={16} /> },

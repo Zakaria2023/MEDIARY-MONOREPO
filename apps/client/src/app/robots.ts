@@ -20,6 +20,7 @@ const PRIVATE_PATHS = [
   "/diary",
   "/stats",
   "/feed",
+  "/notifications",
   "/compare",
   "/design",
   "/sso-callback",

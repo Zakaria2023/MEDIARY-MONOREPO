@@ -11,7 +11,8 @@ What stands between the code on `main` and a public beta. Each line names who de
 - **Twitch keys** (`TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`) so the game adapter can run; it has never been exercised live.
 - **The anime source is Kitsu** since 2026-10-07 (`docs/catalog-providers.md`); re-read its terms before launch like every other source's.
 - **The webhook secret** (`CLERK_WEBHOOK_SIGNING_SECRET`) and the webhook endpoint in the identity service's dashboard, so account changes land without the on-demand sync.
-- **Vercel crons.** `apps/admin/vercel.json` schedules the daily catalog sync; `CRON_SECRET` must be set in the project.
+- **Vercel crons.** `apps/admin/vercel.json` schedules the daily catalog sync and the Monday digest; `CRON_SECRET` must be set in the project.
+- **The email sender** (`RESEND_API_KEY`, `EMAIL_FROM`) for the weekly digest; without them the digest cron sends nothing and says so.
 
 ## Judgment calls to confirm
 
@@ -23,6 +24,7 @@ What stands between the code on `main` and a public beta. Each line names who de
 - Kitsu is the anime catalog; bulk imports offer a highest-rated list and a start page, and ingest three titles at a time.
 - Likes and replies on reviews and feed lines.
 - "For you" recommendations on the home and in every hub, each pick explained by a loved title.
+- Notifications (follows, likes, replies) with the bell in the header, and the weekly email digest behind the Monday cron.
 
 ## Done in hardening
 
@@ -34,6 +36,5 @@ What stands between the code on `main` and a public beta. Each line names who de
 
 ## Still ahead, by design
 
-- Notifications and the email digest.
 - The light theme.
 - `apps/api` for a mobile client.

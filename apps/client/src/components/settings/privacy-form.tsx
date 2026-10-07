@@ -121,6 +121,16 @@ export const PrivacyForm = ({ settings }: PrivacyFormProps) => {
         <Checkbox label="Show adult titles in explore and search" {...register("showAdultContent")} />
       </div>
 
+      <div className="flex flex-col gap-3 border-t border-hairline pt-5">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm font-medium text-ink">Email</span>
+          <span className="text-sm text-muted">
+            Once a week: what reached you, what you are in the middle of, what friends did, and a few picks. Only when there is something to say.
+          </span>
+        </div>
+        <Checkbox label="Send me the weekly email" {...register("emailDigest")} />
+      </div>
+
       <FormError message={state.error} />
 
       <div className="flex items-center justify-end gap-3 border-t border-hairline pt-5">
