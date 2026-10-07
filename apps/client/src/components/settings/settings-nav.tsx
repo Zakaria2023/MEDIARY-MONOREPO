@@ -11,6 +11,7 @@ type Section = {
 const SECTIONS: Section[] = [
   { href: "/settings/profile", label: "Profile" },
   { href: "/settings/privacy", label: "Privacy" },
+  { href: "/settings/appearance", label: "Appearance" },
   { href: "/settings/imports", label: "Imports" },
   { href: "/settings/account", label: "Account" },
 ];

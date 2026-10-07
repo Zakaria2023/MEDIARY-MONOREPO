@@ -25,6 +25,7 @@ What stands between the code on `main` and a public beta. Each line names who de
 - Likes and replies on reviews and feed lines.
 - "For you" recommendations on the home and in every hub, each pick explained by a loved title.
 - Notifications (follows, likes, replies) with the bell in the header, and the weekly email digest behind the Monday cron.
+- The light theme and "match my device", with a reduce-motion switch, at /settings/appearance.
 
 ## Done in hardening
 
@@ -36,5 +37,4 @@ What stands between the code on `main` and a public beta. Each line names who de
 
 ## Still ahead, by design
 
-- The light theme.
 - `apps/api` for a mobile client.

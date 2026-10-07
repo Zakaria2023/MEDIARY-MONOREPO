@@ -484,7 +484,7 @@ SEO is a core of the product, with the design. Every public route pays for its p
 
 ## Design Tokens
 
-The brand palette from the blueprint, as `globals.css` tokens. The app is dark-mode-first; a light theme is added once the dark system is complete, as a `.light` override of the same tokens.
+The brand palette from the blueprint, as `globals.css` tokens. The app is dark-mode-first; the light theme is the `.light` override of the same tokens at the bottom of `globals.css`, so no component knows which theme is on. The choice lives on `Profiles.themePrefs` and in the `mediary-theme` cookie the root layout reads (`src/lib/server/theme.ts`); "match my device" puts `.system` on `<html>` and the nonced `ThemeScript` adds `.light` when the device prefers it, before the first paint. `.reduce-motion` is the person's own switch beside the media query. The appearance page is `/settings/appearance`.
 
 | Token                     | Value     | Usage                                         |
 | ------------------------- | --------- | --------------------------------------------- |
