@@ -89,7 +89,7 @@ SEO is a core of the product, with the design. Every public route pays for its p
 
 ## Testing
 
-- Two suites. `pnpm test` is the fast, offline one (`*.test.ts`) — pure functions, no credentials needed. `pnpm test:integration` (`*.integration.test.ts`) runs against a real PostgreSQL; run `pnpm test:db:setup` once first to build `${DB_NAME}_test` on the same Aiven service.
+- Three suites. `pnpm test` is the fast, offline one (`*.test.ts`) — pure functions, no credentials needed. `pnpm test:integration` (`*.integration.test.ts`) runs against a real PostgreSQL; run `pnpm test:db:setup` once first to build `${DB_NAME}_test` on the same Aiven service. `pnpm test:e2e` (`e2e/*.spec.ts`, Playwright) walks the public site in a real browser, desktop and phone, against the client on port 3000 (started if none is running) or `E2E_BASE_URL`; it runs three workers because the app's pool is three connections. Signed-in flows are not driven there; they need an account on the identity service.
 - Put a test in the integration suite when the thing being checked is a property of the **database** and a mocked one would agree with either answer: a UNIQUE constraint, a foreign key, transaction isolation, a row lock.
 - Every path that reads, decides, then writes needs a locking read (`.for("update")`) and, wherever a business key exists, a UNIQUE constraint behind it. Prefer the database refusing over a code path remembering to check. The `(user, media)` pair on `UserMedia` is the first of these.
 - A concurrency test written as two calls fired with `Promise.all` proves nothing. Hold the rows deliberately with a second connection. Before trusting any test of a fix, take the fix out and watch it fail.

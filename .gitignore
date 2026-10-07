@@ -34,3 +34,7 @@ next-env.d.ts
 
 # drizzle-kit scratch output. This repo uses db:push, not migration files.
 drizzle/
+
+# Playwright
+playwright-report/
+test-results/

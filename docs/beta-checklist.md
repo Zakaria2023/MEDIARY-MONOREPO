@@ -12,6 +12,9 @@ What stands between the code on `main` and a public beta. Each line names who de
 - **The anime source is Kitsu** since 2026-10-07 (`docs/catalog-providers.md`); re-read its terms before launch like every other source's.
 - **The webhook secret** (`CLERK_WEBHOOK_SIGNING_SECRET`) and the webhook endpoint in the identity service's dashboard, so account changes land without the on-demand sync.
 - **Vercel crons.** `apps/admin/vercel.json` schedules the daily catalog sync; `CRON_SECRET` must be set in the project.
+- **An error monitor and an analytics client.** Both seams are empty (`docs/runbooks.md`, Monitoring); pick the providers and wire them, named nowhere on screen.
+- **Read the legal drafts.** `/terms` and `/privacy` are drafts written from the product's own rules, not legal advice; have them read before the site is public. `/support` writes to `support@` on the site's domain, which must exist.
+- **Visual regression.** The end-to-end suite checks what renders, not how it looks. Screenshot comparison needs a stable deployment to compare against; add it on top of `e2e/` once a preview URL is fixed.
 
 ## Judgment calls to confirm
 
@@ -26,6 +29,9 @@ What stands between the code on `main` and a public beta. Each line names who de
 - Notifications (follows, likes, replies) with the bell in the header. No email of Mediary's own, by the owner's decision.
 - The light theme and "match my device", with a reduce-motion switch, at /settings/appearance.
 - Manga (Kitsu) and books (Open Library) as media of their own, with hubs at /manga and /books, their facets, tracking in chapters and pages, and loaded catalogs.
+- CSV export of the library and the diary; blocking and muting; diary editing; pinned and ranked lists; a featured review; milestones; `/@user/reviews`; platforms and replays in the stats; the week in numbers on the home; share cards for favorites, milestones and reviews; score and year filters on every hub; reports on replies, lists and profiles with an audit log of staff actions.
+- Terms, privacy, support and credits pages, linked from the footer; the credits page is the one screen that names the catalog sources.
+- An end-to-end suite (`pnpm test:e2e`) over the public site, desktop and phone, and `docs/runbooks.md` for whoever runs the site.
 
 ## Done in hardening
 
