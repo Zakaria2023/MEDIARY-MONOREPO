@@ -16,7 +16,7 @@ export const LegalPage = ({ title, intro, updated, children }: LegalPageProps) =
       <p className="text-base text-muted">{intro}</p>
       <p className="text-xs text-faint">Last updated {updated}</p>
     </header>
-    <div className="flex flex-col gap-6 text-sm leading-relaxed text-secondary [&_h2]:font-display [&_h2]:text-lg [&_h2]:text-ink [&_ul]:list-disc [&_ul]:ps-5 [&_li]:mt-1 [&_a]:text-accent">
+    <div className="flex flex-col gap-6 text-sm leading-relaxed text-secondary [&_h2]:font-display [&_h2]:text-lg [&_h2]:text-ink [&_ul]:list-disc [&_ul]:ps-5 [&_li]:mt-1 [&_a]:text-accent [&_strong]:font-medium [&_strong]:text-ink">
       {children}
     </div>
   </main>

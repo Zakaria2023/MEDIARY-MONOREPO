@@ -1,12 +1,10 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage } from "@/components/shared/legal-page";
-import { pageMetadata, SITE_URL } from "@/lib/seo";
+import { pageMetadata } from "@/lib/seo";
+import { SUPPORT_EMAIL } from "@/lib/support-email";
 
 const UPDATED = "7 October 2026";
-
-/** Where a person writes to. The address is the site's own domain. */
-const SUPPORT_EMAIL = `support@${new URL(SITE_URL).hostname}`;
 
 export const metadata: Metadata = pageMetadata({
   title: "Support",
