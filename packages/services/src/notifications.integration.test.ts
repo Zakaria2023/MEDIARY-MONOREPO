@@ -7,7 +7,6 @@ import { Profiles } from "../../../db/schema/profiles";
 import { UserSettings } from "../../../db/schema/user-settings";
 import { Users } from "../../../db/schema/users";
 import { addComment } from "./comments";
-import { buildDigest, listDigestRecipients } from "./digest";
 import { followUser } from "./follows";
 import { countUnreadNotifications, listNotifications, markAllNotificationsRead } from "./notifications";
 import { toggleReaction } from "./reactions";
@@ -49,7 +48,7 @@ const review = (mediaUuid: string) => ({
   visibility: null,
 });
 
-describe("notifications and the digest", () => {
+describe("notifications", () => {
   let fixture: Fixture;
 
   beforeEach(async () => {
@@ -100,13 +99,5 @@ describe("notifications and the digest", () => {
     expect((await listNotifications(fixture.ahmad)).items[0]).toMatchObject({ kind: "liked", subject: "activity" });
     await db.delete(Activities).where(eq(Activities.uuid, line.uuid));
     expect(await countUnreadNotifications(fixture.ahmad)).toBe(0);
-  });
-
-  it("builds a digest for whoever left the weekly email on and has an address", async () => {
-    expect(await listDigestRecipients()).toEqual([{ userUuid: fixture.ahmad, email: "ahmad@example.com" }]);
-    await followUser(fixture.sara, fixture.ahmad);
-    const digest = await buildDigest(fixture.ahmad);
-    expect(digest).toMatchObject({ displayName: "Ahmad", unreadCount: 1 });
-    expect(digest?.notifications.map((item) => item.kind)).toEqual(["followed"]);
   });
 });

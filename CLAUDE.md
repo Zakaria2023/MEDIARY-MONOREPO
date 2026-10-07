@@ -450,11 +450,10 @@ SEO is a core of the product, with the design. Every public route pays for its p
 - A reply may be removed by its writer or by the author of what it sits under. Threads are flat and load when opened, through a Server Action, never a Route Handler.
 - The actions for both subjects live once, in `app/(app)/feed/actions.ts`; the shared `ResponseBar` (`components/social/`) sits under every review card and feed line, counts readable signed out, the heart and the thread for members.
 
-## Notifications And The Weekly Email
+## Notifications
 
 - **A notification is written by the service that did the thing, in its transaction**, through `notify` (`packages/services/src/notifications.ts`): a follow, a like on a review or feed line, a reply under one. Never to oneself, and one per (recipient, actor, kind, subject) by a UNIQUE declared NULLS NOT DISTINCT, so a like taken back and given again does not pile up; a reply carries its comment and is its own line. The subject going takes the line with it.
-- `/notifications` is private; opening it marks everything read through the action, and the header's bell carries the unread count. In-app notifications have no switches; the one email switch is `emailDigest` on the privacy page.
-- **The weekly email is built by `buildDigest` and drawn by `renderDigestEmail`** (`digest-email.ts`, no database, unit-tested): what reached the person, what they are in the middle of, what friends did, a few picks; only Mediary is named in it, and nothing is sent when there is nothing to say. `sendEmail` (`email.ts`) holds the sender's key and From address; without them the digest cron answers that the email service is not set up, in those words. The cron is `/api/cron/digest` in `apps/admin`, Mondays, behind `CRON_SECRET` like the catalog sync.
+- `/notifications` is private; opening it marks everything read through the action, and the header's bell carries the unread count. In-app notifications have no switches. **Mediary sends no email of its own** (the owner's decision of 2026-10-07); the identity service's codes are the only mail a member gets, and `UserSettings.emailDigest` stays unused until that changes.
 
 ## Imports
 
@@ -541,7 +540,6 @@ The table above is `apps/client`. `apps/admin` has its own routes, added with th
 | `/sign-in`    | Staff sign-in (Clerk, no sign-up)                          |
 | `/no-access`  | Where a signed-in account without a staff role lands       |
 | `/api/cron/catalog` | The daily sync, called by Vercel cron with `CRON_SECRET` |
-| `/api/cron/digest` | The weekly email, Mondays, same secret; sends nothing without a sender configured |
 
 ## Roadmap
 

@@ -1,8 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "ignoreCommand": "npx turbo-ignore",
-  "crons": [
-    { "path": "/api/cron/catalog", "schedule": "0 4 * * *" },
-    { "path": "/api/cron/digest", "schedule": "0 8 * * 1" }
-  ]
+  "crons": [{ "path": "/api/cron/catalog", "schedule": "0 4 * * *" }]
 }

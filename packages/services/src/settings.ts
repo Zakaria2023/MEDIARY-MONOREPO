@@ -27,7 +27,6 @@ export type PrivacySettings = Pick<
   | "tasteComparison"
   | "hideSpoilers"
   | "showAdultContent"
-  | "emailDigest"
 > & {
   activityPrefs: ActivityPrefs;
 };
@@ -43,7 +42,6 @@ export const getPrivacySettings = async (
       tasteComparison: UserSettings.tasteComparison,
       hideSpoilers: UserSettings.hideSpoilers,
       showAdultContent: UserSettings.showAdultContent,
-      emailDigest: UserSettings.emailDigest,
       activityPrefs: UserSettings.activityPrefs,
     })
     .from(UserSettings)
