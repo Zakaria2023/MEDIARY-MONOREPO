@@ -12,6 +12,7 @@ export * from "./diary";
 export * from "./diary-rules";
 export * from "./db-result";
 export * from "./errors";
+export * from "./export";
 export * from "./follows";
 export * from "./import-parsers";
 export * from "./imports";
@@ -24,6 +25,7 @@ export * from "./reactions";
 export * from "./recommendations";
 export * from "./reports";
 export * from "./reviews";
+export * from "./social-controls";
 export * from "./social-reach";
 export * from "./social-user";
 export type {

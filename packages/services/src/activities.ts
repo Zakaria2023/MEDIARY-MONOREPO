@@ -8,6 +8,7 @@ import { Activities, SelectActivities } from "../../../db/schema/activities";
 import { Blocks } from "../../../db/schema/blocks";
 import { CustomLists, SelectCustomLists } from "../../../db/schema/custom-lists";
 import { Follows } from "../../../db/schema/follows";
+import { Mutes } from "../../../db/schema/mutes";
 import { Media } from "../../../db/schema/media";
 import { Reviews, SelectReviews } from "../../../db/schema/reviews";
 import { UserSettings } from "../../../db/schema/user-settings";
@@ -86,13 +87,14 @@ const TargetUsers = alias(Users, "target_users");
 const followedBy = (viewerUuid: string) =>
   db.select({ uuid: Follows.followingUuid }).from(Follows).where(eq(Follows.followerUuid, viewerUuid));
 
-/** Anyone in a block with the viewer, either way round. */
+/** Anyone in a block with the viewer, either way round, and anyone the viewer muted. */
 const blockedWith = (viewerUuid: string) =>
   db
     .select({ uuid: Blocks.blockerUuid })
     .from(Blocks)
     .where(eq(Blocks.blockedUuid, viewerUuid))
-    .union(db.select({ uuid: Blocks.blockedUuid }).from(Blocks).where(eq(Blocks.blockerUuid, viewerUuid)));
+    .union(db.select({ uuid: Blocks.blockedUuid }).from(Blocks).where(eq(Blocks.blockerUuid, viewerUuid)))
+    .union(db.select({ uuid: Mutes.mutedUuid }).from(Mutes).where(eq(Mutes.muterUuid, viewerUuid)));
 
 /**
  * THE FEED: what the people the viewer follows did, newest first, plus the

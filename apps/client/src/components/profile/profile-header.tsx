@@ -1,14 +1,17 @@
 import { CalendarDays, Link2, MapPin, Settings, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { ReactNode } from "react";
-import { AuthUser, PublicProfile } from "services";
+import { AuthUser, PublicProfile, SocialStanding } from "services";
 import { formatDate } from "utils";
 import { FollowButton } from "@/components/profile/follow-button";
+import { ProfileControls } from "@/components/profile/profile-controls";
 import { UserAvatar } from "@/components/profile/user-avatar";
 
 type ProfileHeaderProps = {
   profile: PublicProfile;
   viewer: AuthUser | null;
+  /** How the viewer has set this person, for a signed-in visitor. */
+  standing: SocialStanding | null;
   /** The counts, streamed in under the bio. */
   children: ReactNode;
 };
@@ -19,7 +22,7 @@ type ProfileHeaderProps = {
  * gets a way to their settings; a signed-in visitor gets Follow and
  * Compare taste, the gradient on Compare because it is the growth loop.
  */
-export const ProfileHeader = ({ profile, viewer, children }: ProfileHeaderProps) => {
+export const ProfileHeader = ({ profile, viewer, standing, children }: ProfileHeaderProps) => {
   const isOwner = viewer?.uuid === profile.uuid;
 
   return (
@@ -39,6 +42,7 @@ export const ProfileHeader = ({ profile, viewer, children }: ProfileHeaderProps)
           ) : (
             viewer && (
               <div className="flex items-center gap-2">
+                <ProfileControls userUuid={profile.uuid} displayName={profile.displayName} initialMuted={standing?.muted ?? false} />
                 <FollowButton userUuid={profile.uuid} initialFollowing={profile.relation === "follower"} />
                 <Link
                   href={`/compare/${profile.username}`}

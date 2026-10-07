@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { progressUnits, TrackingStatus, trackingStatuses, visibilities } from "../../../db/enum";
 
+export type DiaryEditInput = z.infer<typeof diaryEditSchema>;
+export type DiaryTargetInput = z.infer<typeof diaryTargetSchema>;
 export type UpsertEntryInput = z.infer<typeof upsertEntrySchema>;
 export type ProgressTickInput = z.infer<typeof progressTickSchema>;
 export type RemoveEntryInput = z.infer<typeof removeEntrySchema>;
@@ -86,3 +88,15 @@ export const parseLibraryView = (value: unknown): LibraryViewParam => {
   const parsed = z.enum(libraryViews).safeParse(value);
   return parsed.success ? parsed.data : "rows";
 };
+
+/** A diary moment, corrected: the day it happened and the note. */
+export const diaryEditSchema = z.object({
+  eventUuid: z.uuid(),
+  day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a day"),
+  note: z.string().trim().max(500, "Keep the note under 500 characters"),
+});
+
+/** One diary moment, for removing it. */
+export const diaryTargetSchema = z.object({
+  eventUuid: z.uuid(),
+});

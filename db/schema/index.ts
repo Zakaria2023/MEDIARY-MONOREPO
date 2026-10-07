@@ -5,6 +5,7 @@ export * from "./users";
 export * from "./profiles";
 export * from "./user-settings";
 export * from "./blocks";
+export * from "./mutes";
 export * from "./media";
 export * from "./media-titles";
 export * from "./media-external-refs";

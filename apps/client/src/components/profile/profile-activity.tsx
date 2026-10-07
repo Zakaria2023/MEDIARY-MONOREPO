@@ -29,7 +29,7 @@ export const ProfileActivity = async ({ profile }: ProfileActivityProps) => {
           ) : undefined
         }
       />
-      <DiaryLines lines={lines} timezone={timezone} showDate />
+      <DiaryLines lines={lines} timezone={timezone} showDate editable={profile.relation === "owner"} />
     </section>
   );
 };

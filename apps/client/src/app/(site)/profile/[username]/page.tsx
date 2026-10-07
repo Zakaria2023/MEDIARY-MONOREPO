@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getSocialStanding } from "services";
 import { AsyncSection } from "ui";
 import { PrivateProfile } from "@/components/profile/private-profile";
 import { ProfileActivity } from "@/components/profile/profile-activity";
@@ -52,6 +53,7 @@ const ProfilePage = async ({ params }: Props) => {
     notFound();
   }
   const viewer = await getCurrentUser();
+  const standing = viewer && viewer.uuid !== profile.uuid ? await getSocialStanding(viewer.uuid, profile.uuid) : null;
 
   if (!profile.access.profile) {
     return <PrivateProfile profile={profile} />;
@@ -59,7 +61,7 @@ const ProfilePage = async ({ params }: Props) => {
 
   return (
     <main className="flex flex-col">
-      <ProfileHeader profile={profile} viewer={viewer}>
+      <ProfileHeader profile={profile} viewer={viewer} standing={standing}>
         <AsyncSection reloadKey={profile.uuid} skeleton={<ProfileCountsSkeleton />}>
           <ProfileCounts profile={profile} />
         </AsyncSection>

@@ -1,4 +1,5 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
+import { DiaryEditInput } from "validators";
 import { paginate, PaginatedResult } from "utils";
 import { db } from "../../../db";
 import { Media } from "../../../db/schema/media";
@@ -6,6 +7,7 @@ import { ProgressEvents, SelectProgressEvents } from "../../../db/schema/progres
 import { UserMedia } from "../../../db/schema/user-media";
 import { CatalogCard } from "./catalog";
 import { diaryKind, DiaryKind } from "./diary-rules";
+import { NotFoundError } from "./errors";
 
 /** One line of the diary: an event and the title it happened to. */
 export type DiaryLine = Pick<
@@ -77,4 +79,34 @@ export const listDiary = async (
 export const listRecentActivity = async (userUuid: string, limit = 8): Promise<DiaryLine[]> => {
   const rows = await diaryQuery(userUuid).limit(limit);
   return rows.map((row) => ({ ...row, kind: diaryKind(row) }));
+};
+
+/**
+ * CORRECTS A MOMENT: the day it happened and the note. What changed (the
+ * progress, the status, the score) is history and stays; a moment that
+ * was wrong altogether is removed instead. Only the owner's own.
+ */
+export const updateDiaryLine = async (userUuid: string, input: DiaryEditInput): Promise<void> => {
+  const updated = await db
+    .update(ProgressEvents)
+    .set({
+      eventAt: new Date(`${input.day}T12:00:00Z`),
+      note: input.note || null,
+    })
+    .where(and(eq(ProgressEvents.uuid, input.eventUuid), eq(ProgressEvents.userUuid, userUuid)))
+    .returning({ uuid: ProgressEvents.uuid });
+  if (updated.length === 0) {
+    throw new NotFoundError("That moment could not be found");
+  }
+};
+
+/** Removes a moment from the diary. The entry's current state is not touched. */
+export const deleteDiaryLine = async (userUuid: string, eventUuid: string): Promise<void> => {
+  const removed = await db
+    .delete(ProgressEvents)
+    .where(and(eq(ProgressEvents.uuid, eventUuid), eq(ProgressEvents.userUuid, userUuid)))
+    .returning({ uuid: ProgressEvents.uuid });
+  if (removed.length === 0) {
+    throw new NotFoundError("That moment could not be found");
+  }
 };

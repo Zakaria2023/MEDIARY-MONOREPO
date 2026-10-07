@@ -4,6 +4,7 @@ import { ReactNode } from "react";
 import { DiaryKind, DiaryLine as DiaryLineData } from "services";
 import { Poster } from "ui";
 import { MEDIA_TYPE_LABELS } from "@/db/label";
+import { DiaryLineEditor } from "@/components/diary/diary-line-editor";
 import { diaryDetail, diaryMoment } from "@/lib/diary-copy";
 import { titlePath } from "@/lib/title-path";
 
@@ -11,6 +12,8 @@ type DiaryLineProps = {
   line: DiaryLineData;
   timezone: string;
   showDate: boolean;
+  /** The owner may correct the day and the note, or remove the moment. */
+  editable: boolean;
 };
 
 const KIND_ICON: Record<DiaryKind, ReactNode> = {
@@ -40,9 +43,10 @@ const KIND_CLASSES: Record<DiaryKind, string> = {
  * title, the medium and the detail, and when. The whole card is a link to
  * the title.
  */
-export const DiaryLine = ({ line, timezone, showDate }: DiaryLineProps) => (
+export const DiaryLine = ({ line, timezone, showDate, editable }: DiaryLineProps) => (
   <li className="group relative flex gap-3 rounded-card border border-hairline bg-surface p-3 transition-colors hover:border-hairline-strong">
     <Link href={titlePath(line.title)} aria-label={`Open ${line.title.canonicalTitle}`} className="absolute inset-0 z-10 rounded-card" />
+    {editable && <DiaryLineEditor line={line} timezone={timezone} />}
     <div className="relative w-14 shrink-0">
       <Poster src={line.title.coverUrl} alt="" sizes="56px" radius="control" dominantColor={line.title.dominantColor} />
       <span

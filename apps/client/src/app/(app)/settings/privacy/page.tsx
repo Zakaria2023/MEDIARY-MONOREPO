@@ -1,6 +1,7 @@
 import { Metadata } from "next";
-import { getPrivacySettings } from "services";
+import { getPrivacySettings, listSocialControls } from "services";
 import { PrivacyForm } from "@/components/settings/privacy-form";
+import { SocialControlsList } from "@/components/settings/social-controls-list";
 import { requireOnboardedUser } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -9,9 +10,14 @@ export const metadata: Metadata = {
 
 const PrivacySettingsPage = async () => {
   const user = await requireOnboardedUser();
-  const settings = await getPrivacySettings(user.uuid);
+  const [settings, controls] = await Promise.all([getPrivacySettings(user.uuid), listSocialControls(user.uuid)]);
 
-  return <PrivacyForm settings={settings} />;
+  return (
+    <div className="flex flex-col gap-6">
+      <PrivacyForm settings={settings} />
+      <SocialControlsList initial={controls} />
+    </div>
+  );
 };
 
 export default PrivacySettingsPage;

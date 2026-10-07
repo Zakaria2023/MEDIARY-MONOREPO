@@ -7,6 +7,7 @@ export type ListInput = z.infer<typeof listSchema>;
 export type ListTargetInput = z.infer<typeof listTargetSchema>;
 export type ListItemInput = z.infer<typeof listItemSchema>;
 export type FollowInput = z.infer<typeof followSchema>;
+export type UserTargetInput = z.infer<typeof userTargetSchema>;
 export type SocialSubjectInput = z.infer<typeof socialSubjectSchema>;
 export type CommentInput = z.infer<typeof commentSchema>;
 export type DeleteCommentInput = z.infer<typeof deleteCommentSchema>;
@@ -78,4 +79,9 @@ export const commentSchema = z
 
 export const deleteCommentSchema = z.object({
   commentUuid: z.uuid(),
+});
+
+/** Another account, for blocking or muting it. */
+export const userTargetSchema = z.object({
+  userUuid: z.uuid(),
 });

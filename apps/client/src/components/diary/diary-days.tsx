@@ -35,7 +35,7 @@ export const DiaryDays = ({ lines, timezone }: DiaryDaysProps) => (
         <h2 className="text-xs font-medium uppercase tracking-wide text-faint">
           {diaryDayHeading(day.day)}
         </h2>
-        <DiaryLines lines={day.lines} timezone={timezone} />
+        <DiaryLines lines={day.lines} timezone={timezone} editable />
       </section>
     ))}
   </div>
