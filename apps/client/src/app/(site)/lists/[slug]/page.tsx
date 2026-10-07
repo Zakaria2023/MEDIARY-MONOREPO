@@ -51,7 +51,7 @@ const ListPage = async ({ params }: Props) => {
       ) : (
         <>
           <ListHeader list={list} />
-          <ListItems items={list.items} />
+          <ListItems items={list.items} ranked={list.ranked} />
         </>
       )}
     </main>

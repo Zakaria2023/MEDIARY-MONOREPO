@@ -1,5 +1,6 @@
 import { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import {
+  boolean,
   index,
   integer,
   pgTable,
@@ -34,6 +35,8 @@ export const CustomLists = pgTable(
     name: varchar("name", { length: 80 }).notNull(),
     description: text("description"),
     visibility: visibilityEnum("visibility").default("public").notNull(),
+    // A ranked list numbers its titles and the owner orders them; an unranked one is a set.
+    ranked: boolean("ranked").default(false).notNull(),
     // Set when the owner pins it to the top of their profile; null otherwise.
     pinnedAt: timestamp("pinned_at", { withTimezone: true }),
 

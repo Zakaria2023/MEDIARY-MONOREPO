@@ -29,7 +29,7 @@ export const useAddToList = ({ mediaUuid, initial }: AddToListOptions) => {
   const [isToggling, startToggle] = useTransition();
   const newList = useForm<ListInput>({
     resolver: zodResolver(listSchema),
-    defaultValues: { name: "", description: "", visibility: "public" },
+    defaultValues: { name: "", description: "", visibility: "public", ranked: false },
   });
   const [state, dispatch, isCreating] = useActionState(
     async (previous: ListChoiceActionResult, input: ListInput) => {
@@ -37,7 +37,7 @@ export const useAddToList = ({ mediaUuid, initial }: AddToListOptions) => {
       if (result.choice) {
         const created = result.choice;
         setChoices((current) => [created, ...current]);
-        newList.reset({ name: "", description: "", visibility: "public" });
+        newList.reset({ name: "", description: "", visibility: "public", ranked: false });
       }
       return result;
     },

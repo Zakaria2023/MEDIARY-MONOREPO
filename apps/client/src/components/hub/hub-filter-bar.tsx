@@ -3,7 +3,7 @@ import { listCatalogGenres, listHubFacetOptions } from "services";
 import { catalogSorts } from "validators";
 import { SORT_LABELS } from "@/lib/explore-copy";
 import { HUB_COPY } from "@/lib/hub-copy";
-import { hubHref, HubQuery } from "@/lib/hub-query";
+import { hubHref, HubQuery, recentYears, SCORE_STEPS } from "@/lib/hub-query";
 
 type HubFilterBarProps = {
   query: HubQuery;
@@ -52,6 +52,25 @@ export const HubFilterBar = async ({ query }: HubFilterBarProps) => {
       count: option.titleCount,
     })),
   ];
+  const scoreChips: Chip[] = [
+    { key: "any", label: "Any score", href: at({ score: undefined }), active: query.score === undefined },
+    ...SCORE_STEPS.map((step) => ({
+      key: String(step),
+      label: `${step}+`,
+      href: at({ score: step }),
+      active: query.score === step,
+    })),
+  ];
+  const yearChips: Chip[] = [
+    { key: "any", label: "Any year", href: at({ year: undefined }), active: !query.year },
+    ...recentYears().map((year) => ({
+      key: String(year),
+      label: String(year),
+      href: at({ year: String(year) }),
+      active: query.year === String(year),
+    })),
+    { key: "older", label: "Older", href: at({ year: "older" }), active: query.year === "older" },
+  ];
   const genreChips: Chip[] = [
     { key: "all", label: "All genres", href: at({ genre: undefined }), active: !query.genre },
     ...genres.map((genre) => ({
@@ -88,6 +107,22 @@ export const HubFilterBar = async ({ query }: HubFilterBarProps) => {
           ))}
         </nav>
       )}
+      <div className="flex flex-wrap gap-x-6 gap-y-2">
+        <nav aria-label="Score" className="scrollbar-none flex items-center gap-2 overflow-x-auto pb-1">
+          {scoreChips.map((chip) => (
+            <Link key={chip.key} href={chip.href} aria-current={chip.active ? "page" : undefined} className={chipClass(chip.active)}>
+              {chip.label}
+            </Link>
+          ))}
+        </nav>
+        <nav aria-label="Year" className="scrollbar-none flex items-center gap-2 overflow-x-auto pb-1">
+          {yearChips.map((chip) => (
+            <Link key={chip.key} href={chip.href} aria-current={chip.active ? "page" : undefined} className={chipClass(chip.active)}>
+              {chip.label}
+            </Link>
+          ))}
+        </nav>
+      </div>
       {genres.length > 0 && (
         <nav aria-label="Genres" className="scrollbar-none -mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1">
           {genreChips.map((chip) => (

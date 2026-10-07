@@ -127,11 +127,20 @@ export type HubFacetOption = {
   titleCount: number;
 };
 
+/** A span of release years, either end open. */
+export type YearSpan = {
+  from?: number;
+  to?: number;
+};
+
 export type ListCatalogParams = {
   mediaType?: MediaType;
   sort: CatalogSort;
   genre?: string;
   facet?: HubFacet;
+  /** Only titles the source community scores at least this, out of ten. */
+  minScore?: number;
+  years?: YearSpan;
   page?: number | string;
   pageSize?: number;
 };
@@ -281,6 +290,8 @@ export const listCatalog = async ({
   sort,
   genre,
   facet,
+  minScore,
+  years,
   page,
   pageSize,
 }: ListCatalogParams): Promise<PaginatedResult<CatalogCard>> => {
@@ -290,6 +301,9 @@ export const listCatalog = async ({
     mediaType ? eq(Media.mediaType, mediaType) : undefined,
     genre ? inGenre(genre) : undefined,
     facet ? facetCondition(facet) : undefined,
+    minScore !== undefined ? gte(Media.providerScore, minScore) : undefined,
+    years?.from !== undefined ? gte(Media.releaseYear, years.from) : undefined,
+    years?.to !== undefined ? lte(Media.releaseYear, years.to) : undefined,
     SORTS[sort].where(),
   );
   const [items, [total]] = await Promise.all([

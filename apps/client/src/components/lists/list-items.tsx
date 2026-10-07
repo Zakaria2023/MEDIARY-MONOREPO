@@ -5,13 +5,18 @@ import { ListItemCard } from "@/components/lists/list-item-card";
 
 type ListItemsProps = {
   items: ListItem[];
+  /** A ranked list numbers its titles. */
+  ranked: boolean;
   /** The owner's remove, when the viewer owns the list. */
   onRemove?: (mediaUuid: string) => void;
   isRemoving?: boolean;
+  /** The owner's up and down, on a ranked list. */
+  onMove?: (mediaUuid: string, direction: "up" | "down") => void;
+  isMoving?: boolean;
 };
 
 /** The titles on a list, in the owner's order, or a sentence for an empty one. */
-export const ListItems = ({ items, onRemove, isRemoving = false }: ListItemsProps) =>
+export const ListItems = ({ items, ranked, onRemove, isRemoving = false, onMove, isMoving = false }: ListItemsProps) =>
   items.length === 0 ? (
     <CatalogEmptyState
       heading="Nothing on this list yet"
@@ -28,9 +33,13 @@ export const ListItems = ({ items, onRemove, isRemoving = false }: ListItemsProp
         <ListItemCard
           key={item.uuid}
           item={item}
-          position={index + 1}
+          position={ranked ? index + 1 : null}
           onRemove={onRemove}
           isRemoving={isRemoving}
+          onMove={ranked ? onMove : undefined}
+          isMoving={isMoving}
+          first={index === 0}
+          last={index === items.length - 1}
         />
       ))}
     </div>

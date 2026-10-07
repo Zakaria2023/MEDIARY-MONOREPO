@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { ListDetail } from "services";
 import { ActionResult } from "utils";
 import { ListInput, listSchema } from "validators";
-import { deleteListAction, EditListInput, removeListItemAction, updateListAction } from "./actions";
+import { deleteListAction, EditListInput, moveListItemAction, removeListItemAction, updateListAction } from "./actions";
 
 /**
  * The owner's tools on a list page: the edit dialog, deletion, and taking a
@@ -17,6 +17,9 @@ export const useListEditor = (list: ListDetail) => {
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [removedUuids, setRemovedUuids] = useState<string[]>([]);
+  const [order, setOrder] = useState(list.items);
+  const [moveError, setMoveError] = useState<string | null>(null);
+  const [isMoving, startMove] = useTransition();
   const [removeError, setRemoveError] = useState<string | null>(null);
   const [isDeleting, startDelete] = useTransition();
   const [isRemoving, startRemove] = useTransition();
@@ -39,6 +42,7 @@ export const useListEditor = (list: ListDetail) => {
       name: list.name,
       description: list.description ?? "",
       visibility: list.visibility,
+      ranked: list.ranked,
     },
   });
 
@@ -69,9 +73,37 @@ export const useListEditor = (list: ListDetail) => {
     });
   };
 
+  /** One place up or down, shown at once and undone on a refusal. */
+  const onMoveItem = (mediaUuid: string, direction: "up" | "down") => {
+    const before = order;
+    const index = before.findIndex((item) => item.uuid === mediaUuid);
+    const target = direction === "up" ? index - 1 : index + 1;
+    if (index === -1 || target < 0 || target >= before.length) {
+      return;
+    }
+    const next = [...before];
+    const [moved] = next.splice(index, 1);
+    if (!moved) {
+      return;
+    }
+    next.splice(target, 0, moved);
+    setOrder(next);
+    setMoveError(null);
+    startMove(async () => {
+      const result = await moveListItemAction({ listUuid: list.uuid, mediaUuid, direction });
+      if (!result.success) {
+        setOrder(before);
+        setMoveError(result.error ?? "Could not move this title");
+      }
+    });
+  };
+
   return {
     editing,
     setEditing,
+    onMoveItem,
+    isMoving,
+    moveError,
     confirmingDelete,
     setConfirmingDelete,
     form,
@@ -81,7 +113,7 @@ export const useListEditor = (list: ListDetail) => {
     isDeleting,
     deleteError,
     onDelete,
-    items: list.items.filter((item) => !removedUuids.includes(item.uuid)),
+    items: order.filter((item) => !removedUuids.includes(item.uuid)),
     isRemoving,
     removeError,
     onRemoveItem,

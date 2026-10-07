@@ -6,6 +6,7 @@ export type DeleteReviewInput = z.infer<typeof deleteReviewSchema>;
 export type ListInput = z.infer<typeof listSchema>;
 export type ListTargetInput = z.infer<typeof listTargetSchema>;
 export type ListItemInput = z.infer<typeof listItemSchema>;
+export type MoveListItemInput = z.infer<typeof moveListItemSchema>;
 export type FollowInput = z.infer<typeof followSchema>;
 export type UserTargetInput = z.infer<typeof userTargetSchema>;
 export type PinListInput = z.infer<typeof pinListSchema>;
@@ -36,6 +37,14 @@ export const listSchema = z.object({
   name: z.string().trim().min(1, "Give the list a name").max(80, "Keep the name under 80 characters"),
   description: z.string().trim().max(300, "Keep the description under 300 characters"),
   visibility: z.enum(visibilities),
+  ranked: z.boolean(),
+});
+
+/** A title moved one place on a ranked list. */
+export const moveListItemSchema = z.object({
+  listUuid: z.uuid(),
+  mediaUuid: z.uuid(),
+  direction: z.enum(["up", "down"]),
 });
 
 /** One list, for editing or deleting it. */

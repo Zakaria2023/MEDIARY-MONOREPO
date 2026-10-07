@@ -6,7 +6,7 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { SORT_LABELS } from "@/lib/explore-copy";
 import { HUB_COPY } from "@/lib/hub-copy";
 import { hubPath } from "@/lib/hub-path";
-import { hubFacet, hubHref, HubQuery } from "@/lib/hub-query";
+import { hubFacet, hubHref, HubQuery, hubYears } from "@/lib/hub-query";
 import { graph, itemListNode } from "@/lib/structured-data";
 
 type HubGridProps = {
@@ -21,14 +21,16 @@ export const HubGrid = async ({ query }: HubGridProps) => {
     sort: query.sort,
     genre: query.genre,
     facet: hubFacet(copy.facet.kind, query.facet),
+    minScore: query.score,
+    years: hubYears(query.year),
     page: query.page,
   });
 
   if (result.total === 0) {
-    return query.genre || query.facet || query.sort !== "trending" ? (
+    return query.genre || query.facet || query.score || query.year || query.sort !== "trending" ? (
       <CatalogEmptyState
         heading="Nothing here yet"
-        body={`No ${copy.noun} match this view right now. Try another order, ${copy.facet.label.toLowerCase()} or genre.`}
+        body={`No ${copy.noun} match this view right now. Try another order, ${copy.facet.label.toLowerCase()}, genre, score or year.`}
         action={{ label: `All ${copy.noun}`, href: hubPath(query.mediaType) }}
       />
     ) : (

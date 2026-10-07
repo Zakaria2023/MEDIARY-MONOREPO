@@ -12,7 +12,7 @@ export const useListForm = () => {
 
   const form = useForm<ListInput>({
     resolver: zodResolver(listSchema),
-    defaultValues: { name: "", description: "", visibility: "public" },
+    defaultValues: { name: "", description: "", visibility: "public", ranked: false },
   });
 
   const onSubmit = form.handleSubmit((values) => {

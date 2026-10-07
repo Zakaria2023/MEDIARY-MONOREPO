@@ -1,7 +1,7 @@
 "use client";
 
 import { Controller } from "react-hook-form";
-import { Button, Dropdown, FormError, Input, Textarea } from "ui";
+import { Button, Checkbox, Dropdown, FormError, Input, Textarea } from "ui";
 import { useListForm } from "@/app/(app)/lists/use-list-form";
 import { LIST_VISIBILITY_OPTIONS } from "@/lib/list-visibility";
 
@@ -45,6 +45,7 @@ export const ListForm = () => {
         error={formState.errors.description?.message}
         {...register("description")}
       />
+      <Checkbox label="Ranked list: number the titles and order them" {...register("ranked")} />
       <FormError message={state.error} />
       <div className="flex justify-end">
         <Button type="submit" disabled={isPending}>

@@ -24,7 +24,7 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 /** A list as a card on a profile or the owner's lists page. */
 export type ListSummary = Pick<
   SelectCustomLists,
-  "uuid" | "slug" | "name" | "description" | "visibility" | "updatedAt" | "pinnedAt"
+  "uuid" | "slug" | "name" | "description" | "visibility" | "updatedAt" | "pinnedAt" | "ranked"
 > & {
   owner: SocialUser;
   itemCount: number;
@@ -62,6 +62,7 @@ const SUMMARY_COLUMNS = {
   visibility: CustomLists.visibility,
   updatedAt: CustomLists.updatedAt,
   pinnedAt: CustomLists.pinnedAt,
+  ranked: CustomLists.ranked,
   owner: socialUserColumns(Users),
   itemCount: sql<number>`(select count(*)::int from ${CustomListItems} where ${CustomListItems.listUuid} = ${CustomLists.uuid})`,
 };
@@ -252,6 +253,7 @@ export const createList = async (userUuid: string, input: ListInput): Promise<Li
           name: input.name,
           description: input.description || null,
           visibility: input.visibility,
+          ranked: input.ranked,
         })
         .returning({ uuid: CustomLists.uuid });
       if (!created) {
@@ -281,8 +283,43 @@ export const updateList = async (userUuid: string, listUuid: string, input: List
     await ownedList(tx, userUuid, listUuid);
     await tx
       .update(CustomLists)
-      .set({ name: input.name, description: input.description || null, visibility: input.visibility })
+      .set({ name: input.name, description: input.description || null, visibility: input.visibility, ranked: input.ranked })
       .where(eq(CustomLists.uuid, listUuid));
+  });
+};
+
+/**
+ * Moves a title one place up or down a list, by swapping positions with
+ * its neighbor, under the list's lock. At an end, nothing happens.
+ */
+export const moveListItem = async (
+  userUuid: string,
+  listUuid: string,
+  mediaUuid: string,
+  direction: "up" | "down",
+): Promise<void> => {
+  await db.transaction(async (tx) => {
+    await ownedList(tx, userUuid, listUuid);
+    const items = await tx
+      .select({ id: CustomListItems.id, mediaUuid: CustomListItems.mediaUuid, position: CustomListItems.position })
+      .from(CustomListItems)
+      .where(eq(CustomListItems.listUuid, listUuid))
+      .orderBy(asc(CustomListItems.position), asc(CustomListItems.id));
+    const index = items.findIndex((item) => item.mediaUuid === mediaUuid);
+    if (index === -1) {
+      throw new NotFoundError("That title is not on the list");
+    }
+    const other = items[direction === "up" ? index - 1 : index + 1];
+    const current = items[index];
+    if (!other || !current) {
+      return;
+    }
+    // Positions may collide after imports; renumber the two by their order, not their stored numbers.
+    const [first, second] = direction === "up" ? [other, current] : [current, other];
+    const base = Math.min(first.position, second.position);
+    await tx.update(CustomListItems).set({ position: base + 1 }).where(eq(CustomListItems.id, first.id));
+    await tx.update(CustomListItems).set({ position: base }).where(eq(CustomListItems.id, second.id));
+    await tx.update(CustomLists).set({ updatedAt: new Date() }).where(eq(CustomLists.uuid, listUuid));
   });
 };
 

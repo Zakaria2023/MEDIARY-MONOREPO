@@ -3,7 +3,7 @@
 import { Pencil, Trash2 } from "lucide-react";
 import { Controller } from "react-hook-form";
 import { ListDetail } from "services";
-import { Button, ConfirmDialog, Dialog, Dropdown, FormError, Input, Textarea } from "ui";
+import { Button, Checkbox, ConfirmDialog, Dialog, Dropdown, FormError, Input, Textarea } from "ui";
 import { useListEditor } from "@/app/(site)/lists/[slug]/use-list-editor";
 import { ListHeader } from "@/components/lists/list-header";
 import { ListItems } from "@/components/lists/list-items";
@@ -34,6 +34,9 @@ export const ListEditor = ({ list }: ListEditorProps) => {
     isRemoving,
     removeError,
     onRemoveItem,
+    onMoveItem,
+    isMoving,
+    moveError,
   } = useListEditor(list);
 
   return (
@@ -53,8 +56,8 @@ export const ListEditor = ({ list }: ListEditorProps) => {
           </div>
         }
       />
-      <FormError message={removeError ?? undefined} />
-      <ListItems items={items} onRemove={onRemoveItem} isRemoving={isRemoving} />
+      <FormError message={removeError ?? moveError ?? undefined} />
+      <ListItems items={items} ranked={list.ranked} onRemove={onRemoveItem} isRemoving={isRemoving} onMove={onMoveItem} isMoving={isMoving} />
 
       <Dialog
         open={editing}
@@ -80,6 +83,7 @@ export const ListEditor = ({ list }: ListEditorProps) => {
             error={formState.errors.description?.message}
             {...register("description")}
           />
+          <Checkbox label="Ranked list: number the titles and order them" {...register("ranked")} />
           <div className="flex flex-col gap-2">
             <span className="text-sm font-medium text-ink">Who can see it</span>
             <Controller

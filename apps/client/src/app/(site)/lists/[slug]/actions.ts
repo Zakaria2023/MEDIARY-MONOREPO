@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { deleteList, removeFromList, updateList } from "services";
+import { deleteList, moveListItem, removeFromList, updateList } from "services";
 import { ActionResult, fail } from "utils";
 import {
   listItemSchema,
@@ -11,6 +11,8 @@ import {
   ListInput,
   listTargetSchema,
   ListTargetInput,
+  moveListItemSchema,
+  MoveListItemInput,
 } from "validators";
 import { requireOnboardedUser } from "@/lib/auth";
 
@@ -75,5 +77,22 @@ export const removeListItemAction = async (input: ListItemInput): Promise<Action
     return { success: true };
   } catch (error) {
     return fail(error, "Could not take this title off the list");
+  }
+};
+
+/** The owner's up and down on a ranked list. */
+export const moveListItemAction = async (input: MoveListItemInput): Promise<ActionResult> => {
+  const user = await requireOnboardedUser();
+  const parsed = moveListItemSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: "That title could not be found" };
+  }
+
+  try {
+    await moveListItem(user.uuid, parsed.data.listUuid, parsed.data.mediaUuid, parsed.data.direction);
+    revalidateLists();
+    return { success: true };
+  } catch (error) {
+    return fail(error, "Could not move this title");
   }
 };

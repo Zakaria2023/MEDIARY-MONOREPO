@@ -67,7 +67,7 @@ const HubPage = async ({ params, searchParams }: Props) => {
   const viewer = await getCurrentUser();
   const copy = HUB_COPY[mediaType];
   const path = hubPath(mediaType);
-  const gridKey = [query.sort, query.genre, query.facet, query.page].join("|");
+  const gridKey = [query.sort, query.genre, query.facet, query.score, query.year, query.page].join("|");
 
   return (
     <main className="flex flex-col gap-10 pb-10">

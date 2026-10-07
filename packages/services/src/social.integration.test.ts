@@ -143,8 +143,8 @@ describe("follows, reviews, lists and the feed", () => {
   });
 
   it("gives two lists with one name different addresses and adds a title once", async () => {
-    const a = await createList(fixture.sara, { name: "Rainy days", description: "", visibility: "public" });
-    const b = await createList(fixture.ahmad, { name: "Rainy days", description: "", visibility: "public" });
+    const a = await createList(fixture.sara, { name: "Rainy days", description: "", visibility: "public", ranked: false });
+    const b = await createList(fixture.ahmad, { name: "Rainy days", description: "", visibility: "public", ranked: false });
     expect([a.slug, b.slug]).toEqual(["rainy-days", "rainy-days-2"]);
 
     await addToList(fixture.sara, a.uuid, fixture.mediaUuid);
@@ -163,7 +163,7 @@ describe("follows, reviews, lists and the feed", () => {
   });
 
   it("hides a followers-only list from a stranger and shows it to a follower", async () => {
-    const list = await createList(fixture.sara, { name: "For friends", description: "", visibility: "followers" });
+    const list = await createList(fixture.sara, { name: "For friends", description: "", visibility: "followers", ranked: false });
     await addToList(fixture.sara, list.uuid, fixture.mediaUuid);
     expect(await getListBySlug(list.slug, null)).toBeNull();
     expect(await getListBySlug(list.slug, fixture.ahmad)).toBeNull();
