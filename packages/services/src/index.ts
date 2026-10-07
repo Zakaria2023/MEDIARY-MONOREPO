@@ -19,6 +19,7 @@ export * from "./profiles";
 export * from "./providers/registry";
 export * from "./public-profile";
 export * from "./reactions";
+export * from "./recommendations";
 export * from "./reports";
 export * from "./reviews";
 export * from "./social-reach";

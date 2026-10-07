@@ -7,6 +7,7 @@ import { ContinueRail } from "@/components/home/continue-rail";
 import { ContinueRailSkeleton } from "@/components/home/continue-rail-skeleton";
 import { FeedSkeleton } from "@/components/feed/feed-skeleton";
 import { FriendsPanel } from "@/components/home/friends-panel";
+import { RecommendationRail } from "@/components/recommendations/recommendation-rail";
 import { getCurrentUser } from "@/lib/auth";
 
 /**
@@ -77,6 +78,17 @@ const HomePage = async () => {
         <div className="mx-auto w-full max-w-7xl">
           <AsyncSection reloadKey={`continue-${user.uuid}`} skeleton={<ContinueRailSkeleton />}>
             <ContinueRail userUuid={user.uuid} />
+          </AsyncSection>
+        </div>
+      )}
+      {user && (
+        <div className="mx-auto w-full max-w-7xl">
+          <AsyncSection reloadKey={`for-you-${user.uuid}`} skeleton={<TitleRailSkeleton />}>
+            <RecommendationRail
+              userUuid={user.uuid}
+              heading="For you"
+              reason="Picked from what you loved, across every medium."
+            />
           </AsyncSection>
         </div>
       )}

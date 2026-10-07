@@ -10,6 +10,7 @@ import { HubHero } from "@/components/hub/hub-hero";
 import { HubRails } from "@/components/hub/hub-rails";
 import { HubTracking } from "@/components/hub/hub-tracking";
 import { HubTrackingSkeleton } from "@/components/hub/hub-tracking-skeleton";
+import { RecommendationRail } from "@/components/recommendations/recommendation-rail";
 import { TitleGridSkeleton } from "@/components/catalog/title-grid-skeleton";
 import { TitleRailSkeleton } from "@/components/catalog/title-rail-skeleton";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -86,6 +87,17 @@ const HubPage = async ({ params, searchParams }: Props) => {
             <HubTracking userUuid={viewer.uuid} query={query} />
           </AsyncSection>
         </div>
+      )}
+
+      {viewer && (
+        <AsyncSection reloadKey={`for-you-${mediaType}-${viewer.uuid}`} skeleton={<TitleRailSkeleton />}>
+          <RecommendationRail
+            userUuid={viewer.uuid}
+            mediaType={mediaType}
+            heading={`${copy.heading} for you`}
+            reason={`Picked from the ${copy.noun} you loved.`}
+          />
+        </AsyncSection>
       )}
 
       <AsyncSection reloadKey={`rails-${mediaType}`} skeleton={<TitleRailSkeleton />}>
