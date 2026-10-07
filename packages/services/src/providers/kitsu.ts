@@ -131,16 +131,21 @@ const MANGA_FORMATS: Record<string, MangaFormat> = {
   oel: "oel",
 };
 
-/** The catalog's names for the other databases a title is mapped to, per kind. */
-const MAPPED_SITES: Record<KitsuKind, Record<string, { provider: Provider; url: (id: string) => string | null }>> = {
+/**
+ * The catalog's names for the other databases a title is mapped to, per
+ * kind. MyAnimeList numbers anime and manga separately, so a manga's id
+ * is stored as "manga:75989" under `mal`, the way the MAL export matches
+ * it; AniList numbers everything together and needs no prefix.
+ */
+const MAPPED_SITES: Record<KitsuKind, Record<string, { provider: Provider; externalId: (id: string) => string; url: (id: string) => string | null }>> = {
   anime: {
-    "myanimelist/anime": { provider: "mal", url: (id) => `https://myanimelist.net/anime/${id}` },
-    "anilist/anime": { provider: "anilist", url: (id) => `https://anilist.co/anime/${id}` },
-    anidb: { provider: "anidb", url: (id) => `https://anidb.net/anime/${id}` },
+    "myanimelist/anime": { provider: "mal", externalId: (id) => id, url: (id) => `https://myanimelist.net/anime/${id}` },
+    "anilist/anime": { provider: "anilist", externalId: (id) => id, url: (id) => `https://anilist.co/anime/${id}` },
+    anidb: { provider: "anidb", externalId: (id) => id, url: (id) => `https://anidb.net/anime/${id}` },
   },
   manga: {
-    "myanimelist/manga": { provider: "mal", url: (id) => `https://myanimelist.net/manga/${id}` },
-    "anilist/manga": { provider: "anilist", url: (id) => `https://anilist.co/manga/${id}` },
+    "myanimelist/manga": { provider: "mal", externalId: (id) => `manga:${id}`, url: (id) => `https://myanimelist.net/manga/${id}` },
+    "anilist/manga": { provider: "anilist", externalId: (id) => id, url: (id) => `https://anilist.co/manga/${id}` },
   },
 };
 
@@ -276,7 +281,7 @@ export const normalizeKitsuRecord = (kind: KitsuKind, raw: unknown): NormalizedM
     .flatMap((entry) => {
       const site = MAPPED_SITES[kind][entry.attributes.externalSite ?? ""];
       const id = entry.attributes.externalId;
-      return site && id ? [{ provider: site.provider, externalId: id, externalUrl: site.url(id) }] : [];
+      return site && id ? [{ provider: site.provider, externalId: site.externalId(id), externalUrl: site.url(id) }] : [];
     });
   const users = attributes.userCount ?? 0;
   const average = attributes.averageRating ? Number(attributes.averageRating) : NaN;

@@ -125,7 +125,7 @@ describe("Kitsu normalization", () => {
     expect(manga).toMatchObject({
       mediaType: "manga",
       primaryRef: { provider: "kitsu", externalId: "manga:26004", externalUrl: "https://kitsu.app/manga/boku-no-hero-academia" },
-      otherRefs: [{ provider: "mal", externalId: "75989", externalUrl: "https://myanimelist.net/manga/75989" }],
+      otherRefs: [{ provider: "mal", externalId: "manga:75989", externalUrl: "https://myanimelist.net/manga/75989" }],
       genres: [{ slug: "action", name: "Action" }],
       details: { kind: "manga", format: "manga", chapterCount: 432, volumeCount: 42, serialization: "Weekly Shounen Jump" },
     });

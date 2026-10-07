@@ -107,3 +107,34 @@ describe("parseCsv and parseStatusWord", () => {
     expect(parseStatusWord("whatever")).toBeNull();
   });
 });
+
+const MAL_MANGA = `<?xml version="1.0" encoding="UTF-8" ?>
+<myanimelist>
+  <myinfo><user_export_type>2</user_export_type></myinfo>
+  <manga>
+    <manga_mangadb_id>75989</manga_mangadb_id>
+    <manga_title><![CDATA[Boku no Hero Academia]]></manga_title>
+    <my_read_chapters>120</my_read_chapters>
+    <my_start_date>2024-01-05</my_start_date>
+    <my_finish_date>0000-00-00</my_finish_date>
+    <my_score>8</my_score>
+    <my_status>Reading</my_status>
+  </manga>
+</myanimelist>`;
+
+describe("parseMalXml with a manga list", () => {
+  it("reads manga blocks as manga in chapters, with the id prefixed the way the catalog maps it", () => {
+    const [item] = parseMalXml(MAL_MANGA);
+    expect(item).toMatchObject({
+      externalId: "manga:75989",
+      title: "Boku no Hero Academia",
+      mediaType: "manga",
+      status: "in_progress",
+      score: 8,
+      progressValue: 120,
+      progressUnit: "chapters",
+      startedAt: "2024-01-05",
+      completedAt: null,
+    });
+  });
+});

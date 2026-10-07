@@ -222,33 +222,37 @@ const tagText = (block: string, tag: string): string | undefined => {
 };
 
 /**
- * MyAnimeList's list export: one <anime> block per title, with the site's
- * own id, the status in its words, the score out of 10 (0 for none), the
- * episodes seen and the dates.
+ * MyAnimeList's list exports: one <anime> block per title in an anime
+ * list, one <manga> block per title in a manga list, with the site's own
+ * id, the status in its words, the score out of 10 (0 for none), the
+ * episodes seen or chapters read, and the dates. The site numbers anime
+ * and manga separately, so a manga's id is kept as "manga:75989", the way
+ * the anime and manga catalog's mappings store it.
  */
 export const parseMalXml = (text: string): ParsedImportItem[] => {
   if (!/<myanimelist[\s>]/i.test(text)) {
     throw new ImportParseError("This is not a MyAnimeList export. Export your list as XML and try that file.");
   }
-  const blocks = text.match(/<anime>[\s\S]*?<\/anime>/g) ?? [];
+  const blocks = text.match(/<(anime|manga)>[\s\S]*?<\/>/g) ?? [];
   const items: ParsedImportItem[] = [];
   for (const block of blocks.slice(0, MAX_IMPORT_ITEMS)) {
-    const title = tagText(block, "series_title");
+    const manga = block.startsWith("<manga>");
+    const title = manga ? tagText(block, "manga_title") : tagText(block, "series_title");
     if (!title) {
       continue;
     }
-    const id = tagText(block, "series_animedb_id");
+    const id = manga ? tagText(block, "manga_mangadb_id") : tagText(block, "series_animedb_id");
     const status = parseStatusWord(tagText(block, "my_status") ?? "") ?? "planned";
     const score = parseNumber(tagText(block, "my_score"));
     items.push({
-      externalId: id && /^\d+$/.test(id) ? id : null,
+      externalId: id && /^\d+$/.test(id) ? (manga ? `manga:${id}` : id) : null,
       title,
       year: null,
-      mediaType: "anime",
+      mediaType: manga ? "manga" : "anime",
       status,
       score: score && score > 0 ? clampScore(score) : null,
-      progressValue: Math.max(0, parseNumber(tagText(block, "my_watched_episodes")) ?? 0),
-      progressUnit: "episodes",
+      progressValue: Math.max(0, parseNumber(tagText(block, manga ? "my_read_chapters" : "my_watched_episodes")) ?? 0),
+      progressUnit: manga ? "chapters" : "episodes",
       startedAt: parseDay(tagText(block, "my_start_date")),
       completedAt: parseDay(tagText(block, "my_finish_date")),
     });

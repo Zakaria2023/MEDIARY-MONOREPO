@@ -459,7 +459,7 @@ SEO is a core of the product, with the design. Every public route pays for its p
 ## Imports
 
 - A member's list from elsewhere comes in through `/settings/imports` in two steps: `previewImport` parses the file, matches every line against the catalog and keeps the result in `Imports` and `ImportItems`; `applyImport` puts the matched lines into the library on the person's say-so. Nothing reaches `UserMedia` before the second step.
-- The parsers (`packages/services/src/import-parsers.ts`) are pure and tested on their own; each throws `ImportParseError`, which the service turns into a `ValidationError` the person reads. Matching is by the source's own id in `MediaExternalRefs` first, then by name and year.
+- The parsers (`packages/services/src/import-parsers.ts`) are pure and tested on their own; each throws `ImportParseError`, which the service turns into a `ValidationError` the person reads. Matching is by the source's own id in `MediaExternalRefs` first, then by name and year. A MyAnimeList export may be an anime list or a manga list; MyAnimeList numbers the two separately, so a manga's id is kept as `manga:75989` under the `mal` provider, by the parser and by the Kitsu adapter's mappings alike.
 - An applied line becomes an entry and ONE `ProgressEvents` row dated by the file; no feed line is written. A title already in the library is skipped, never overwritten, by the `(user, media)` UNIQUE.
 - The import sources are named on screen by the person's own account elsewhere ("MyAnimeList export", "Letterboxd export"), on the same footing as "Continue with Google": the person's account, not a service Mediary uses.
 
