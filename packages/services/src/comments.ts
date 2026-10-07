@@ -5,6 +5,7 @@ import { Blocks } from "../../../db/schema/blocks";
 import { Comments, SelectComments } from "../../../db/schema/comments";
 import { Users } from "../../../db/schema/users";
 import { NotFoundError } from "./errors";
+import { assertFeature } from "./flags";
 import { notify } from "./notifications";
 import { reachSubject, SocialSubject, subjectColumns, subjectOf } from "./social-reach";
 import { SocialUser, socialUserColumns } from "./social-user";
@@ -66,6 +67,7 @@ export const listComments = async (viewerUuid: string, subject: SocialSubject): 
 
 /** Writes a reply under a subject the person may read. */
 export const addComment = async (userUuid: string, input: CommentInput): Promise<WrittenComment> => {
+  assertFeature("social");
   const subject = subjectOf(input);
   const reached = await reachSubject(userUuid, subject);
   const written = await db.transaction(async (tx) => {

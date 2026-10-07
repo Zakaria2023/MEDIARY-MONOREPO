@@ -4,10 +4,13 @@ import { revalidatePath } from "next/cache";
 import {
   addToList,
   createList,
+  deletePlaythrough,
   deleteReview,
   ListChoice,
   OwnReview,
+  Playthrough,
   removeFromList,
+  savePlaythrough,
   saveReview,
   setFeaturedReview,
 } from "services";
@@ -23,6 +26,10 @@ import {
   ReviewInput,
   featureReviewSchema,
   FeatureReviewInput,
+  playthroughSchema,
+  PlaythroughInput,
+  playthroughTargetSchema,
+  PlaythroughTargetInput,
 } from "validators";
 import { requireOnboardedUser } from "@/lib/auth";
 
@@ -32,6 +39,10 @@ export type ReviewActionResult = ActionResult & {
 
 export type ListChoiceActionResult = ActionResult & {
   choice?: ListChoice;
+};
+
+export type PlaythroughActionResult = ActionResult & {
+  playthrough?: Playthrough;
 };
 
 /** A new list made from the add-to-list dialog, with the title already on it. */
@@ -153,5 +164,41 @@ export const featureReviewAction = async (input: FeatureReviewInput): Promise<Ac
     return { success: true };
   } catch (error) {
     return fail(error, "Could not change your featured review");
+  }
+};
+
+/** The playthrough form's Save: a new run, or one corrected. */
+export const savePlaythroughAction = async (
+  _prevState: PlaythroughActionResult,
+  input: PlaythroughInput,
+): Promise<PlaythroughActionResult> => {
+  const user = await requireOnboardedUser();
+  const parsed = playthroughSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Check the playthrough" };
+  }
+
+  try {
+    const playthrough = await savePlaythrough(user.uuid, parsed.data);
+    revalidateTitlePages();
+    return { success: true, playthrough };
+  } catch (error) {
+    return fail(error, "Could not save the playthrough");
+  }
+};
+
+export const deletePlaythroughAction = async (input: PlaythroughTargetInput): Promise<ActionResult> => {
+  const user = await requireOnboardedUser();
+  const parsed = playthroughTargetSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: "That playthrough could not be found" };
+  }
+
+  try {
+    await deletePlaythrough(user.uuid, parsed.data.playthroughUuid);
+    revalidateTitlePages();
+    return { success: true };
+  } catch (error) {
+    return fail(error, "Could not remove the playthrough");
   }
 };

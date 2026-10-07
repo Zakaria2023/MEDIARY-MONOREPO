@@ -334,3 +334,20 @@ export const reportStatuses = [
 ] as const satisfies readonly string[];
 
 export type ReportStatus = (typeof reportStatuses)[number];
+
+// ---------------------------------------------------------------------------
+// Feature flags
+// ---------------------------------------------------------------------------
+
+/**
+ * The switches that can take a finished feature off the site without a
+ * deploy: `FEATURES_OFF=social,recommendations` in the environment. Every
+ * flag is on unless named there.
+ */
+export const featureFlags = [
+  "social",
+  "recommendations",
+  "taste_match",
+] as const satisfies readonly string[];
+
+export type FeatureFlag = (typeof featureFlags)[number];

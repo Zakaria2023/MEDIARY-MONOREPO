@@ -1,7 +1,7 @@
 import { CalendarDays, Link2, MapPin, Settings, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { ReactNode } from "react";
-import { AuthUser, PublicProfile, SocialStanding } from "services";
+import { AuthUser, isFeatureOn, PublicProfile, SocialStanding } from "services";
 import { formatDate } from "utils";
 import { FollowButton } from "@/components/profile/follow-button";
 import { ProfileControls } from "@/components/profile/profile-controls";
@@ -43,14 +43,18 @@ export const ProfileHeader = ({ profile, viewer, standing, children }: ProfileHe
             viewer && (
               <div className="flex items-center gap-2">
                 <ProfileControls userUuid={profile.uuid} displayName={profile.displayName} initialMuted={standing?.muted ?? false} />
-                <FollowButton userUuid={profile.uuid} initialFollowing={profile.relation === "follower"} />
-                <Link
-                  href={`/compare/${profile.username}`}
-                  className="inline-flex h-10 items-center gap-2 rounded-control bg-action-gradient px-4 text-sm font-medium text-white"
-                >
-                  <Sparkles size={16} />
-                  Compare taste
-                </Link>
+                {isFeatureOn("social") && (
+                  <FollowButton userUuid={profile.uuid} initialFollowing={profile.relation === "follower"} />
+                )}
+                {isFeatureOn("taste_match") && (
+                  <Link
+                    href={`/compare/${profile.username}`}
+                    className="inline-flex h-10 items-center gap-2 rounded-control bg-action-gradient px-4 text-sm font-medium text-white"
+                  >
+                    <Sparkles size={16} />
+                    Compare taste
+                  </Link>
+                )}
               </div>
             )
           )}

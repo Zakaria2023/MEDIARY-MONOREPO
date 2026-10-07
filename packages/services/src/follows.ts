@@ -7,6 +7,7 @@ import { recordActivity } from "./activities";
 import { notify } from "./notifications";
 import { isUniqueViolation } from "./db-result";
 import { NotFoundError, ValidationError } from "./errors";
+import { assertFeature } from "./flags";
 
 /** The two numbers on a profile. */
 export type FollowCounts = {
@@ -43,6 +44,7 @@ export const isBlockedEitherWay = async (a: string, b: string): Promise<boolean>
  * for an account that is not active, and across a block.
  */
 export const followUser = async (followerUuid: string, followingUuid: string): Promise<void> => {
+  assertFeature("social");
   if (followerUuid === followingUuid) {
     throw new ValidationError("You cannot follow yourself");
   }

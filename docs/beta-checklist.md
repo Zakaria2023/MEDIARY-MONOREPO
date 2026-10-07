@@ -32,6 +32,8 @@ What stands between the code on `main` and a public beta. Each line names who de
 - CSV export of the library and the diary; blocking and muting; diary editing; pinned and ranked lists; a featured review; milestones; `/@user/reviews`; platforms and replays in the stats; the week in numbers on the home; share cards for favorites, milestones and reviews; score and year filters on every hub; reports on replies, lists and profiles with an audit log of staff actions.
 - Terms, privacy, support and credits pages, linked from the footer; the credits page is the one screen that names the catalog sources.
 - An end-to-end suite (`pnpm test:e2e`) over the public site, desktop and phone, and `docs/runbooks.md` for whoever runs the site.
+- Feature flags (`FEATURES_OFF`) for social, recommendations and Taste Match, enforced in the services.
+- Game playthroughs: each run with its platform, difficulty, dates, hours and score, on the game's page. Not seen live yet, because the game catalog is empty until the Twitch keys exist.
 
 ## Done in hardening
 

@@ -1,6 +1,6 @@
 import { Download, Star } from "lucide-react";
 import Link from "next/link";
-import { UserReview } from "services";
+import { isFeatureOn, UserReview } from "services";
 import { Poster } from "ui";
 import { formatDate } from "utils";
 import { MEDIA_TYPE_LABELS } from "@/db/label";
@@ -40,7 +40,7 @@ export const ProfileReviewCard = ({ review, canRespond }: ProfileReviewCardProps
     {review.headline && <h3 className="font-display text-base text-ink">{review.headline}</h3>}
     <ReviewBody body={review.body} containsSpoilers={review.containsSpoilers} />
     <footer className="flex flex-col gap-3">
-      <ResponseBar subject={{ reviewUuid: review.uuid }} reactions={review.reactions} commentCount={review.commentCount} canRespond={canRespond} />
+      <ResponseBar subject={{ reviewUuid: review.uuid }} reactions={review.reactions} commentCount={review.commentCount} canRespond={canRespond && isFeatureOn("social")} />
       <a
         href={reviewCardPath(review.title, review.uuid)}
         download={`mediary-review-${review.title.slug}.png`}

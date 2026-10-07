@@ -5,6 +5,7 @@ import { Genres, MediaGenres } from "../../../db/schema/genres";
 import { Media } from "../../../db/schema/media";
 import { UserMedia } from "../../../db/schema/user-media";
 import { CatalogCard, CatalogGenre } from "./catalog";
+import { isFeatureOn } from "./flags";
 import { tasteEntries } from "./taste";
 import { computeTastePicks, TasteCandidate } from "./taste-rules";
 
@@ -86,6 +87,9 @@ export const listRecommendations = async (
   userUuid: string,
   { mediaType, limit = RECOMMENDATIONS_LIMIT }: ListRecommendationsParams = {},
 ): Promise<Recommendation[]> => {
+  if (!isFeatureOn("recommendations")) {
+    return [];
+  }
   const entries = await tasteEntries(userUuid);
   if (entries.length === 0) {
     return [];

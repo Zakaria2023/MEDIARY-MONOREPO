@@ -70,6 +70,7 @@ These come from the blueprint and settle arguments before they start.
 - **Progress events are the source of truth for history.** The diary, the stats and the yearly recap are built from `ProgressEvents`, written in the same transaction as the `UserMedia` change. History is never reconstructed from current state.
 - **Fast first, cinematic second.** Motion under 250ms except page transitions; reduced-motion is respected; no 3D or WebGL anywhere basic navigation depends on it.
 - **Social is opt-in.** A private library is a complete product. Every visibility defaults open at sign-up and every one is a setting.
+- **A finished feature can be switched off without a deploy** by naming it in `FEATURES_OFF` (`social`, `recommendations`, `taste_match`; `featureFlags` in `db/enum.ts`). The service that does the thing checks its flag (`assertFeature`, `isFeatureOn` in `services/flags.ts`), so a forgotten button still cannot write; screens read the flag only to hide what would be refused. Every flag is on unless named.
 - **Do not add a table without saying why the existing normalized model cannot hold the data.** Do not add a heavy dependency without a bundle-size justification.
 
 ## SEO
@@ -426,6 +427,7 @@ SEO is a core of the product, with the design. Every public route pays for its p
 - `saveEntry` and `tickEntryProgress` in `packages/services/src/tracking.ts` are the only writers of `UserMedia`. Each locks the entry row (`for update`), applies the rules, and writes the `ProgressEvents` row in the same transaction; a first save that loses an insert race retries against the row it lost to. Nothing else inserts a progress event.
 - The rules (auto-start, auto-complete at the total, clamped progress, what counts as history) live in `tracking-rules.ts`, pure and re-exported from `services/pure`, so the sheet settles its draft with the same code the server runs. That file's `db/enum` import is `import type` on purpose: the pure guard allows nothing else.
 - The total progress counts up to is a property of the medium (episodes, 100 for a film's percent, nothing for a game's hours) and is computed in the service as `progressTotal`; the sheet never guesses it.
+- **A game's runs are `GamePlaythroughs`**, one row per run under the entry, because a run has its own platform, difficulty, dates, hours and score that one `UserMedia` row cannot hold twice; a rewatch of a film stays `repeatCount`. `savePlaythrough` locks the entry and takes the next number, unique per entry by `uq_game_playthroughs_entry_number`, and raises `repeatCount` to match; it is not history and writes no progress event. The panel is on a game's title page for a member who holds it; its actions are beside that page.
 - The sheet, the tick and the entry a screen holds are `src/lib/use-entry-sheet.ts` and `src/lib/use-tracked-entry.ts`, in `lib/` because they open from a title page, a library row and a home card alike. Their actions are `app/(app)/library/actions.ts`. Every change shows at once and reverts only on a refusal.
 
 ## Profiles, Diary And Stats

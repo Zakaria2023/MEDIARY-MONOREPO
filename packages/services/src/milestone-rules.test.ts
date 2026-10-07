@@ -15,9 +15,9 @@ describe("milestones", () => {
       "completed:anime:100",
       "completed:50",
       "completed:anime:50",
-      "completed:movie:10",
-      "completed:anime:10",
       "completed:10",
+      "completed:anime:10",
+      "completed:movie:10",
       "lists:1",
     ]);
     // Reviews have not begun, so no "next" nags for them; the closest one leads.

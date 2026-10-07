@@ -2,6 +2,7 @@ import { and, count, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../../db";
 import { Reactions } from "../../../db/schema/reactions";
 import { isUniqueViolation } from "./db-result";
+import { assertFeature } from "./flags";
 import { notify } from "./notifications";
 import { reachSubject, SocialSubject, subjectColumns } from "./social-reach";
 
@@ -41,6 +42,7 @@ const summarize = async (userUuid: string, subject: SocialSubject): Promise<Reac
  * instead. The subject has to be one the person may read.
  */
 export const toggleReaction = async (userUuid: string, subject: SocialSubject): Promise<ReactionToggle> => {
+  assertFeature("social");
   const reached = await reachSubject(userUuid, subject);
   const removed = await db
     .delete(Reactions)

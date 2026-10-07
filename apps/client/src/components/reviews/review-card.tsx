@@ -1,6 +1,6 @@
 import { Download, Star } from "lucide-react";
 import Link from "next/link";
-import { CatalogCard, TitleReview } from "services";
+import { CatalogCard, isFeatureOn, TitleReview } from "services";
 import { formatDate } from "utils";
 import { UserAvatar } from "@/components/profile/user-avatar";
 import { ReportButton } from "@/components/social/report-button";
@@ -52,7 +52,7 @@ export const ReviewCard = ({ review, title, canReport }: ReviewCardProps) => (
         subject={{ reviewUuid: review.uuid }}
         reactions={review.reactions}
         commentCount={review.commentCount}
-        canRespond={canReport}
+        canRespond={canReport && isFeatureOn("social")}
       />
       <div className="flex items-center gap-4">
         <a

@@ -46,6 +46,11 @@ Mediary; nothing here needs more than the repo and the environment file.
 - Reports arrive at the admin's Reports screen. Dismissing is any staff member's; removing (a review or reply deleted, a list deleted, an account suspended) is an admin's. Every decision is in the Audit log.
 - A suspended member cannot sign in to anything that reads `Users.status`; reinstating is the Members screen.
 
+## Feature flags
+
+- `FEATURES_OFF` in the environment, comma separated, takes a finished feature off the site on the next request: `social` (follows, likes, replies), `recommendations` (the "For you" rails), `taste_match` (Compare taste). Read at request time, so on Vercel a change needs only a redeploy of the variable, not of the code.
+- The services refuse what is off with "This is switched off for now", and the screens hide the controls, so turning one off loses no data; turning it back on brings everything back as it was.
+
 ## Monitoring
 
 - `apps/client/src/instrumentation.ts` and `src/lib/analytics.ts` are the seams for an error monitor and a product-analytics client; both are empty until a provider is chosen. Nothing on screen may name the provider.

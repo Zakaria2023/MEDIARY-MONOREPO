@@ -9,6 +9,8 @@ import { TitleHero } from "@/components/catalog/title-hero";
 import { TitleRailSkeleton } from "@/components/catalog/title-rail-skeleton";
 import { TitleReviews } from "@/components/reviews/title-reviews";
 import { TitleReviewsSkeleton } from "@/components/reviews/title-reviews-skeleton";
+import { Playthroughs } from "@/components/tracking/playthroughs";
+import { PlaythroughsSkeleton } from "@/components/tracking/playthroughs-skeleton";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getCurrentUser } from "@/lib/auth";
 import { EXPLORE_COPY } from "@/lib/explore-copy";
@@ -110,6 +112,12 @@ const TitlePage = async ({ params }: Props) => {
                 ))}
               </div>
             </section>
+          )}
+
+          {viewer && tracking?.entry && title.mediaType === "game" && (
+            <AsyncSection reloadKey={`runs-${title.uuid}`} skeleton={<PlaythroughsSkeleton />}>
+              <Playthroughs userUuid={viewer.uuid} mediaUuid={title.uuid} platforms={tracking.target.platforms} />
+            </AsyncSection>
           )}
 
           <AsyncSection reloadKey={`reviews-${title.uuid}-${viewer?.uuid ?? "guest"}`} skeleton={<TitleReviewsSkeleton />}>

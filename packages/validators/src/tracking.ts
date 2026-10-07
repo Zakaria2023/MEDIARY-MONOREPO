@@ -6,6 +6,8 @@ export type DiaryTargetInput = z.infer<typeof diaryTargetSchema>;
 export type UpsertEntryInput = z.infer<typeof upsertEntrySchema>;
 export type ProgressTickInput = z.infer<typeof progressTickSchema>;
 export type RemoveEntryInput = z.infer<typeof removeEntrySchema>;
+export type PlaythroughInput = z.infer<typeof playthroughSchema>;
+export type PlaythroughTargetInput = z.infer<typeof playthroughTargetSchema>;
 
 /** How the library is ordered; the same names the tracking service takes. */
 export type LibrarySortParam = (typeof librarySorts)[number];
@@ -99,4 +101,30 @@ export const diaryEditSchema = z.object({
 /** One diary moment, for removing it. */
 export const diaryTargetSchema = z.object({
   eventUuid: z.uuid(),
+});
+
+/**
+ * One playthrough of a game, new (no uuid) or corrected. The game has to be
+ * in the library already; the service numbers the run.
+ */
+export const playthroughSchema = z
+  .object({
+    mediaUuid: z.uuid(),
+    playthroughUuid: z.uuid().nullable(),
+    platformId: z.number().int().positive().nullable(),
+    difficulty: z.string().trim().max(40, "Keep the difficulty under 40 characters"),
+    startedAt: isoDay.nullable(),
+    completedAt: isoDay.nullable(),
+    hours: z.number({ error: "Hours is a number" }).min(0, "Hours cannot be below zero").max(100_000).nullable(),
+    score: z.number().min(0, "A score is 0 to 10").max(10, "A score is 0 to 10").nullable(),
+    notes: z.string().trim().max(500, "Keep the note under 500 characters"),
+  })
+  .refine(
+    (run) => run.startedAt === null || run.completedAt === null || run.completedAt >= run.startedAt,
+    { message: "The finish date is before the start date", path: ["completedAt"] },
+  );
+
+/** One playthrough, for removing it. */
+export const playthroughTargetSchema = z.object({
+  playthroughUuid: z.uuid(),
 });

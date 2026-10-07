@@ -7,6 +7,7 @@ import { UserSettings } from "../../../db/schema/user-settings";
 import { Users } from "../../../db/schema/users";
 import { CatalogCard } from "./catalog";
 import { NotFoundError } from "./errors";
+import { isFeatureOn } from "./flags";
 import { isBlockedEitherWay, isFollowing } from "./follows";
 import { SocialUser, socialUserColumns } from "./social-user";
 import { computeTasteMatch, computeTasteTraits, TasteEntry, TasteMatch } from "./taste-rules";
@@ -98,6 +99,9 @@ export const getTasteTraits = async (userUuid: string): Promise<NamedTasteTrait[
  * not exist, is not active, or is blocked either way.
  */
 export const getTasteMatch = async (viewerUuid: string, username: string): Promise<TasteMatchResult | null> => {
+  if (!isFeatureOn("taste_match")) {
+    return null;
+  }
   const [other] = await db
     .select({ ...socialUserColumns(Users), status: Users.status, setting: UserSettings.tasteComparison })
     .from(Users)

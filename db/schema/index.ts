@@ -15,6 +15,7 @@ export * from "./tags";
 export * from "./platforms";
 export * from "./media-details";
 export * from "./user-media";
+export * from "./game-playthroughs";
 export * from "./progress-events";
 export * from "./favorites";
 export * from "./reviews";

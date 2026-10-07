@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FeedItem } from "services";
+import { FeedItem, isFeatureOn } from "services";
 import { Poster } from "ui";
 import { formatRelativeTime } from "utils";
 import { UserAvatar } from "@/components/profile/user-avatar";
@@ -71,7 +71,7 @@ export const FeedLine = ({ item }: FeedLineProps) => {
           subject={{ activityUuid: item.uuid }}
           reactions={item.reactions}
           commentCount={item.commentCount}
-          canRespond
+          canRespond={isFeatureOn("social")}
         />
       </div>
     </li>
