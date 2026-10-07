@@ -12,6 +12,8 @@ type ProgressStepperProps = {
   total: number | null;
   /** Said under the unit when the cap is what is out so far, not the end: "episodes out so far". */
   note?: string | null;
+  /** Spoken for by the status: completed fills it, so it is shown and not edited. */
+  disabled?: boolean;
   onChange: (value: number) => void;
 };
 
@@ -20,7 +22,7 @@ type ProgressStepperProps = {
  * number is the biggest thing in the sheet after the status: it is the one
  * people update most.
  */
-export const ProgressStepper = ({ value, unit, total, note = null, onChange }: ProgressStepperProps) => {
+export const ProgressStepper = ({ value, unit, total, note = null, disabled = false, onChange }: ProgressStepperProps) => {
   const step = (delta: number) => {
     const next = Math.max(0, value + delta);
     onChange(total === null ? next : Math.min(total, next));
@@ -37,7 +39,7 @@ export const ProgressStepper = ({ value, unit, total, note = null, onChange }: P
           size="lg"
           aria-label="One less"
           onClick={() => step(-1)}
-          disabled={value <= 0}
+          disabled={disabled || value <= 0}
         >
           <Minus size={18} />
         </Button>
@@ -51,8 +53,9 @@ export const ProgressStepper = ({ value, unit, total, note = null, onChange }: P
               max={total ?? undefined}
               step="any"
               value={value}
+              disabled={disabled}
               onChange={(event) => onChange(Math.max(0, Number(event.target.value) || 0))}
-              className="tabular w-24 bg-transparent text-center font-display text-3xl font-semibold text-ink outline-none"
+              className="tabular w-24 bg-transparent text-center font-display text-3xl font-semibold text-ink outline-none disabled:opacity-60"
             />
             {total !== null && <span className="text-lg text-muted">/ {total}</span>}
           </label>
@@ -63,7 +66,7 @@ export const ProgressStepper = ({ value, unit, total, note = null, onChange }: P
           size="lg"
           aria-label="One more"
           onClick={() => step(1)}
-          disabled={total !== null && value >= total}
+          disabled={disabled || (total !== null && value >= total)}
         >
           <Plus size={18} />
         </Button>

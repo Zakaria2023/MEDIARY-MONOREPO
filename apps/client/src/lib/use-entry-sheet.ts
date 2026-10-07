@@ -118,6 +118,24 @@ export const useEntrySheet = ({
     });
   };
 
+  /**
+   * Choosing the medium's "done" word means all of it: the progress goes to
+   * the title's total the moment it is pressed, as Save would settle it,
+   * so the sheet shows what will be stored. A title with no known end (a
+   * game's hours, a show still airing) keeps whatever number is there.
+   */
+  const onStatusChange = (next: UpsertEntryInput["status"]) => {
+    form.setValue("status", next, { shouldDirty: true });
+    const total = progressLimitsFor(target, form.getValues("progressUnit")).total;
+    if (next === "completed" && total !== null) {
+      form.setValue("progressValue", total, { shouldDirty: true });
+    }
+  };
+
+  /** Whether the progress is spoken for by the status: completed, with a total to fill. */
+  const progressLocked = (status: UpsertEntryInput["status"], unit: UpsertEntryInput["progressUnit"]): boolean =>
+    status === "completed" && progressLimitsFor(target, unit).total !== null;
+
   return {
     form,
     error: state.error ?? form.formState.errors.root?.message,
@@ -125,5 +143,7 @@ export const useEntrySheet = ({
     isRemoving,
     onSubmit,
     onRemove,
+    onStatusChange,
+    progressLocked,
   };
 };

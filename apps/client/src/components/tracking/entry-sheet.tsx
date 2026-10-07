@@ -43,7 +43,7 @@ export const EntrySheet = ({
   onFailed,
   onRemoved,
 }: EntrySheetProps) => {
-  const { form, error, isPending, isRemoving, onSubmit, onRemove } = useEntrySheet({
+  const { form, error, isPending, isRemoving, onSubmit, onRemove, onStatusChange, progressLocked } = useEntrySheet({
     target,
     entry,
     onOptimistic,
@@ -111,11 +111,7 @@ export const EntrySheet = ({
         }
       >
         <form id="entry-sheet-form" onSubmit={onSubmit} className="flex flex-col gap-7">
-          <StatusPicker
-            mediaType={target.mediaType}
-            value={status}
-            onChange={(next) => setValue("status", next, { shouldDirty: true })}
-          />
+          <StatusPicker mediaType={target.mediaType} value={status} onChange={onStatusChange} />
           <ScorePicker
             value={score}
             onChange={(next) => setValue("score", next, { shouldDirty: true })}
@@ -124,7 +120,14 @@ export const EntrySheet = ({
             value={progressValue}
             unit={progressUnit}
             total={total}
-            note={stillOut ? `${PROGRESS_UNIT_LABELS[progressUnit]} out so far` : null}
+            note={
+              progressLocked(status, progressUnit)
+                ? `all ${PROGRESS_UNIT_LABELS[progressUnit] === "%" ? "of it" : PROGRESS_UNIT_LABELS[progressUnit]}`
+                : stillOut
+                  ? `${PROGRESS_UNIT_LABELS[progressUnit]} out so far`
+                  : null
+            }
+            disabled={progressLocked(status, progressUnit)}
             onChange={(next) => setValue("progressValue", next, { shouldDirty: true })}
           />
 
