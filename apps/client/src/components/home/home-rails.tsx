@@ -1,5 +1,5 @@
-import { listCatalog } from "services";
-import { launchMediaTypes } from "@/db/enum";
+import { listCatalog, listCatalogShowcase } from "services";
+import { LaunchMediaType, launchMediaTypes } from "@/db/enum";
 import { CatalogEmptyState } from "@/components/catalog/catalog-empty-state";
 import { TitleGrid } from "@/components/catalog/title-grid";
 import { TitleRail } from "@/components/catalog/title-rail";
@@ -16,14 +16,17 @@ const RAIL_SIZE = 16;
  * no rail, so the page is as long as the catalog is.
  */
 export const HomeRails = async () => {
-  const [trending, upcoming, top, ...byType] = await Promise.all([
+  // One query per distinct first-rail sort, not one per medium: the pool is
+  // three connections and the home asks for a lot at once.
+  const railSorts = [...new Set(launchMediaTypes.map((mediaType) => HUB_COPY[mediaType].rails[0].sort))];
+  const [trending, upcoming, top, ...showcases] = await Promise.all([
     listCatalog({ sort: "trending", pageSize: RAIL_SIZE }),
     listCatalog({ sort: "upcoming", pageSize: RAIL_SIZE }),
     listCatalog({ sort: "top", pageSize: 18 }),
-    ...launchMediaTypes.map((mediaType) =>
-      listCatalog({ mediaType, sort: HUB_COPY[mediaType].rails[0].sort, pageSize: RAIL_SIZE }),
-    ),
+    ...railSorts.map((sort) => listCatalogShowcase({ sort, perMedium: RAIL_SIZE })),
   ]);
+  const bySort = new Map(railSorts.map((sort, index) => [sort, showcases[index] ?? {}]));
+  const railFor = (mediaType: LaunchMediaType) => bySort.get(HUB_COPY[mediaType].rails[0].sort)?.[mediaType] ?? [];
 
   if (trending.total === 0) {
     return (
@@ -45,7 +48,7 @@ export const HomeRails = async () => {
         titles={trending.items}
         showType
       />
-      {launchMediaTypes.map((mediaType, index) => {
+      {launchMediaTypes.map((mediaType) => {
         const copy = HUB_COPY[mediaType];
         const rail = copy.rails[0];
         return (
@@ -54,7 +57,7 @@ export const HomeRails = async () => {
             heading={`${copy.heading}: ${rail.heading.toLowerCase()}`}
             reason={rail.reason}
             href={hubPath(mediaType)}
-            titles={byType[index]?.items ?? []}
+            titles={railFor(mediaType)}
           />
         );
       })}

@@ -8,6 +8,7 @@ import {
   gte,
   ilike,
   inArray,
+  isNotNull,
   lte,
   ne,
   or,
@@ -170,6 +171,15 @@ export type AdminCatalogParams = {
 };
 
 export type SitemapTitle = Pick<SelectMedia, "mediaType" | "slug" | "updatedAt">;
+
+export type CatalogShowcaseParams = {
+  /** The order and filter a listing with this sort uses. */
+  sort: CatalogSort;
+  /** How many titles each medium brings. */
+  perMedium: number;
+  /** Only titles with artwork, for a place that shows nothing but posters. */
+  withCover?: boolean;
+};
 
 const CARD_COLUMNS = {
   uuid: Media.uuid,
@@ -695,6 +705,38 @@ export const listSitemapTitles = async (): Promise<SitemapTitle[]> =>
     .limit(SITEMAP_LIMIT);
 
 /** How many titles each medium has, for the admin overview. */
+/**
+ * THE BEST OF EVERY MEDIUM IN ONE QUERY: the first few public titles of
+ * each medium by the sort a listing uses, ranked with a window function so
+ * a showcase across seven media is one round trip instead of seven. The
+ * pool is three connections; a page that asks for every medium separately
+ * queues behind itself.
+ */
+export const listCatalogShowcase = async ({
+  sort,
+  perMedium,
+  withCover = false,
+}: CatalogShowcaseParams): Promise<Partial<Record<MediaType, CatalogCard[]>>> => {
+  const ranked = db
+    .select({
+      ...CARD_COLUMNS,
+      rank: sql<number>`row_number() over (partition by ${Media.mediaType} order by ${sql.join(SORTS[sort].orderBy, sql`, `)})`.as("rank"),
+    })
+    .from(Media)
+    .where(and(isPublic, SORTS[sort].where(), withCover ? isNotNull(Media.coverUrl) : undefined))
+    .as("ranked");
+  const rows = await db
+    .select()
+    .from(ranked)
+    .where(lte(ranked.rank, perMedium))
+    .orderBy(ranked.mediaType, ranked.rank);
+  const showcase: Partial<Record<MediaType, CatalogCard[]>> = {};
+  for (const { rank: _rank, ...card } of rows) {
+    (showcase[card.mediaType] ??= []).push(card);
+  }
+  return showcase;
+};
+
 export const countCatalogByType = async (): Promise<Partial<Record<MediaType, number>>> => {
   const rows = await db
     .select({ mediaType: Media.mediaType, value: count() })

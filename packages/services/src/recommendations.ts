@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, notInArray, sql } from "drizzle-orm";
+import { and, eq, inArray, lte, notInArray, sql } from "drizzle-orm";
 import { db } from "../../../db";
 import { launchMediaTypes, MediaType } from "../../../db/enum";
 import { Genres, MediaGenres } from "../../../db/schema/genres";
@@ -40,32 +40,46 @@ const CARD_COLUMNS = {
   providerScore: Media.providerScore,
 };
 
-const genreSlugs = sql<string[]>`coalesce((
-  select array_agg(${Genres.slug} order by ${MediaGenres.position})
-  from ${MediaGenres} join ${Genres} on ${Genres.id} = ${MediaGenres.genreId}
-  where ${MediaGenres.mediaUuid} = ${Media.uuid}
-), '{}')`;
-
-/** The most held public titles of one medium the person does not have, with their genres. */
-const candidatePool = async (userUuid: string, mediaType: MediaType): Promise<TasteCandidate[]> =>
-  db
+/**
+ * The most held public titles of each medium asked for that the person does
+ * not have, with their genres: every medium's pool in ONE query, ranked by
+ * a window function, so a home asking for seven media holds one of the
+ * pool's three connections instead of seven. Genres are gathered only for
+ * the rows that made the cut.
+ */
+const candidatePools = async (userUuid: string, types: MediaType[]): Promise<TasteCandidate[]> => {
+  const ranked = db
     .select({
       mediaUuid: Media.uuid,
       mediaType: Media.mediaType,
-      genres: genreSlugs,
       popularity: Media.popularity,
       providerScore: Media.providerScore,
+      rank: sql<number>`row_number() over (partition by ${Media.mediaType} order by ${Media.popularity} desc, ${Media.id} desc)`.as("rank"),
     })
     .from(Media)
     .where(
       and(
         eq(Media.adult, false),
-        eq(Media.mediaType, mediaType),
+        inArray(Media.mediaType, types),
         notInArray(Media.uuid, db.select({ uuid: UserMedia.mediaUuid }).from(UserMedia).where(eq(UserMedia.userUuid, userUuid))),
       ),
     )
-    .orderBy(desc(Media.popularity), desc(Media.id))
-    .limit(POOL_PER_TYPE);
+    .as("ranked");
+  return db
+    .select({
+      mediaUuid: ranked.mediaUuid,
+      mediaType: ranked.mediaType,
+      genres: sql<string[]>`coalesce((
+        select array_agg(${Genres.slug} order by ${MediaGenres.position})
+        from ${MediaGenres} join ${Genres} on ${Genres.id} = ${MediaGenres.genreId}
+        where "MediaGenres"."media_uuid" = ${ranked.mediaUuid}
+      ), '{}')`,
+      popularity: ranked.popularity,
+      providerScore: ranked.providerScore,
+    })
+    .from(ranked)
+    .where(lte(ranked.rank, POOL_PER_TYPE));
+};
 
 /** Cards for uuids, by uuid. */
 const cardsByUuid = async (uuids: string[]): Promise<Map<string, CatalogCard>> => {
@@ -95,8 +109,8 @@ export const listRecommendations = async (
     return [];
   }
   const types = mediaType ? [mediaType] : [...launchMediaTypes];
-  const pools = await Promise.all(types.map((type) => candidatePool(userUuid, type)));
-  const picks = computeTastePicks(entries, pools.flat(), limit);
+  const pool = await candidatePools(userUuid, types);
+  const picks = computeTastePicks(entries, pool, limit);
   const cards = await cardsByUuid([...new Set(picks.flatMap((pick) => [pick.mediaUuid, ...(pick.becauseUuid ? [pick.becauseUuid] : [])]))]);
   const slugs = [...new Set(picks.flatMap((pick) => pick.sharedGenres))];
   const names = slugs.length > 0
