@@ -78,6 +78,12 @@ owner asked for every medium's data in one go.
 - **Charts:** the catalog has no popularity or chart data. "Trending" and "popular" are recent official albums (90 and 365 days); "coming soon" is albums dated ahead. A real chart needs a second source and is not planned.
 - **Attribution:** kept as data on the adapter, rendered nowhere (No Vendor On Screen); MusicBrainz asks for a credit where its data is used, so it joins the TMDB credit on the Credits page when that is built.
 
+## Attribution: the credits page (2026-10-07)
+
+`/credits` on the client now renders every adapter's `attribution` (name,
+text, link), which meets the "visible credit" each source asks for in one
+place. The sections below record the earlier decision and the terms.
+
 ## Launch blocker: TMDB attribution
 
 On 2026-10-06 the owner decided that no vendor is named anywhere on screen,

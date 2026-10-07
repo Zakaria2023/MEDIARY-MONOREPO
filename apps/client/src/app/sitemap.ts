@@ -27,6 +27,11 @@ const sitemap = async (): Promise<MetadataRoute.Sitemap> => {
   return [
     { url: absoluteUrl("/"), changeFrequency: "daily", priority: 1 },
     { url: absoluteUrl("/explore"), changeFrequency: "daily", priority: 0.9 },
+    ...["/terms", "/privacy", "/support", "/credits"].map((path) => ({
+      url: absoluteUrl(path),
+      changeFrequency: "yearly" as const,
+      priority: 0.2,
+    })),
     ...launchMediaTypes.map((type) => ({
       url: absoluteUrl(hubPath(type)),
       changeFrequency: "daily" as const,

@@ -58,7 +58,7 @@ The schema and connection live in the repo-root `db/` folder, not in a package â
 - Catalog sources are named on screen by what they are, from `PROVIDER_LABELS` in `db/label.ts` ("Movie and TV database"), never by the vendor. Error messages a person may read use the same descriptive wording; an adapter's `SOURCE_LABEL` is the name its errors use.
 - An identity error is shown through `authErrorMessage`, never as the service sent it.
 - Vendor names are fine in code, comments, docs, env files and machine-only markup (JSON-LD `sameAs`, image URLs).
-- **Provider attribution is not rendered**, by the owner's decision of 2026-10-06. TMDB's terms require visible attribution once the site is public; that is recorded as a launch blocker in `docs/catalog-providers.md`, and the attribution data stays on each adapter for when the owner decides how to meet it.
+- **Provider attribution is rendered on one page only**: `/credits` names every catalog source with the credit its terms ask for, read from each adapter's `attribution` through `listProviderAttributions`. That page is the exception to this section, built on 2026-10-07 when the owner asked for every remaining feature; nowhere else names a vendor. Terms, privacy and support live beside it as plain-words drafts the owner should have reviewed before launch.
 
 ## Product Rules
 
@@ -517,6 +517,7 @@ One or two accents per screen. The spectrum belongs to the logo and the five gra
 | ----------------------- | ------------------------------------------- |
 | `/`                     | Marketing when signed out, home when signed in |
 | `/explore`              | Cross-media discovery hub                   |
+| `/terms`, `/privacy`, `/support`, `/credits` | The plain-words legal pages and the one page that names the catalog sources |
 | `/anime`, `/games`, `/movies`, `/tv`, `/music`, `/manga`, `/books` | One medium's hub: its own design, rails, facet filter and the member's own titles with statuses as filters (`app/(site)/[type]/page.tsx`, slugs in `src/lib/hub-path.ts`) |
 | `/explore/[type]`       | Permanent redirect to the medium's hub      |
 | `/search?q=`            | Universal search with type filters (noindex) |

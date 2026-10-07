@@ -52,6 +52,16 @@ const VISITOR_COLUMN: FooterColumn = {
   ],
 };
 
+const ABOUT_COLUMN: FooterColumn = {
+  heading: "About",
+  links: [
+    { label: "Credits", href: "/credits" },
+    { label: "Terms", href: "/terms" },
+    { label: "Privacy", href: "/privacy" },
+    { label: "Support", href: "/support" },
+  ],
+};
+
 const LINK_CLASSES = "text-sm text-secondary transition-colors hover:text-ink";
 
 /**
@@ -62,12 +72,12 @@ const LINK_CLASSES = "text-sm text-secondary transition-colors hover:text-ink";
  * on screen (CLAUDE.md).
  */
 export const SiteFooter = ({ user }: SiteFooterProps) => {
-  const columns = [EXPLORE_COLUMN, user ? MEMBER_COLUMN : VISITOR_COLUMN];
+  const columns = [EXPLORE_COLUMN, user ? MEMBER_COLUMN : VISITOR_COLUMN, ABOUT_COLUMN];
 
   return (
     <footer className="mt-20 border-t border-hairline bg-surface">
       <div className="mx-auto flex max-w-7xl flex-col gap-12 px-5 py-14 sm:px-8">
-        <div className="grid gap-12 md:grid-cols-[1.5fr_1fr_1fr] md:gap-8">
+        <div className="grid gap-12 md:grid-cols-[1.5fr_1fr_1fr_1fr] md:gap-8">
           <div className="flex max-w-sm flex-col gap-5">
             <Link href="/" aria-label="Mediary home" className="w-fit">
               <Logo height={32} />
@@ -76,8 +86,8 @@ export const SiteFooter = ({ user }: SiteFooterProps) => {
               Everything you watch, play and finish, in one place.
             </p>
             <p className="text-sm leading-relaxed text-muted">
-              Track anime, games, movies and TV with the same gestures, and keep
-              the whole story of what you have seen.
+              Track anime, games, movies, TV, music, manga and books with the same
+              gestures, and keep the whole story of what you have seen.
             </p>
             {!user && (
               <Link
