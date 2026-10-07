@@ -7,7 +7,9 @@ import { UserMedia } from "../../../db/schema/user-media";
 import { UserSettings } from "../../../db/schema/user-settings";
 import { Users } from "../../../db/schema/users";
 import { recordActivity } from "./activities";
+import { reviewCommentCounts } from "./comments";
 import { NotFoundError } from "./errors";
+import { noReactions, ReactionSummary, reviewReactions } from "./reactions";
 import { SocialUser, socialUserColumns } from "./social-user";
 
 /** A review as a title page shows it. */
@@ -17,6 +19,8 @@ export type TitleReview = Pick<
 > & {
   author: SocialUser;
   isOwn: boolean;
+  reactions: ReactionSummary;
+  commentCount: number;
 };
 
 /** The owner's own review, for the composer. */
@@ -95,7 +99,14 @@ export const listTitleReviews = async (
       desc(Reviews.createdAt),
     )
     .limit(limit);
-  return rows.map((row) => ({ ...row, isOwn: row.author.uuid === viewerUuid }));
+  const uuids = rows.map((row) => row.uuid);
+  const [reactions, comments] = await Promise.all([reviewReactions(viewerUuid, uuids), reviewCommentCounts(uuids)]);
+  return rows.map((row) => ({
+    ...row,
+    isOwn: row.author.uuid === viewerUuid,
+    reactions: reactions.get(row.uuid) ?? noReactions(),
+    commentCount: comments.get(row.uuid) ?? 0,
+  }));
 };
 
 /** The viewer's own review of a title, if they wrote one. */

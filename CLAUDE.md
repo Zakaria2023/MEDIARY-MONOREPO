@@ -444,6 +444,12 @@ SEO is a core of the product, with the design. Every public route pays for its p
 - **Following is idempotent** by the `(follower, following)` UNIQUE; a refused second insert is swallowed. A follow is refused for oneself, an inactive account, or across a block. `relation` on a profile is now `owner`, `follower` or `stranger`, and a blocked viewer gets a 404, not "private".
 - Every social action lives beside the page that offers it: reviews and add-to-list in `app/(site)/[type]/[slug]/actions.ts`, follow in `app/(site)/profile/[username]/actions.ts`, list editing in `app/(site)/lists/[slug]/actions.ts`, list creation in `app/(app)/lists/actions.ts`.
 
+## Reactions And Comments
+
+- **A like or a reply is about one review or one feed line**, by the CHECK on `Reactions` and `Comments`; who may respond is who may read the subject, decided once in `reachSubject` (`packages/services/src/social-reach.ts`): the author, anyone for public, followers for followers-only, nobody across a block, and a refused subject is "not found", never "forbidden". A like is one per (user, subject) by UNIQUE, so `toggleReaction` only decides which way a press goes. Neither writes a feed line.
+- A reply may be removed by its writer or by the author of what it sits under. Threads are flat and load when opened, through a Server Action, never a Route Handler.
+- The actions for both subjects live once, in `app/(app)/feed/actions.ts`; the shared `ResponseBar` (`components/social/`) sits under every review card and feed line, counts readable signed out, the heart and the thread for members.
+
 ## Imports
 
 - A member's list from elsewhere comes in through `/settings/imports` in two steps: `previewImport` parses the file, matches every line against the catalog and keeps the result in `Imports` and `ImportItems`; `applyImport` puts the matched lines into the library on the person's say-so. Nothing reaches `UserMedia` before the second step.

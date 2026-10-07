@@ -6,6 +6,7 @@ export * from "./catalog-facts";
 export * from "./catalog-import";
 export * from "./catalog-ingest";
 export * from "./clerk-sync";
+export * from "./comments";
 export * from "./diary";
 export * from "./diary-rules";
 export * from "./db-result";
@@ -17,8 +18,10 @@ export * from "./lists";
 export * from "./profiles";
 export * from "./providers/registry";
 export * from "./public-profile";
+export * from "./reactions";
 export * from "./reports";
 export * from "./reviews";
+export * from "./social-reach";
 export * from "./social-user";
 export type {
   NormalizedMedia,

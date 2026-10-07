@@ -1,4 +1,5 @@
 import { and, asc, eq, inArray, isNull, lt, or } from "drizzle-orm";
+import { mapWithLimit } from "utils";
 import { db } from "../../../db";
 import { MediaType, Provider } from "../../../db/enum";
 import { PROVIDER_LABELS } from "../../../db/label";
@@ -49,6 +50,13 @@ export const MAX_IMPORT_PAGES = 5;
 
 /** How deep into a list a bulk import may start; past this, lists are noise. */
 export const MAX_IMPORT_START_PAGE = 500;
+
+/**
+ * Titles ingested at once within a page: the app's pool is three, and each
+ * ingest holds one connection for its transaction. The provider's own
+ * ceiling is the adapter's throttle, not this.
+ */
+const INGEST_CONCURRENCY = 3;
 
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : "Unknown error";
@@ -163,12 +171,12 @@ export const importProviderList = async (
       provider,
       candidates.map((candidate) => candidate.externalId),
     );
-    for (const candidate of candidates) {
+    const due = candidates.filter((candidate) => {
       const synced = matches.get(candidate.externalId)?.lastSyncedAt;
-      if (synced && Date.now() - synced.getTime() < FRESH_FOR_MS) {
-        summary.skipped += 1;
-        continue;
-      }
+      return !(synced && Date.now() - synced.getTime() < FRESH_FOR_MS);
+    });
+    summary.skipped += candidates.length - due.length;
+    await mapWithLimit(due, INGEST_CONCURRENCY, async (candidate) => {
       try {
         const result = await ingestNormalizedMedia(
           await adapter.getById(mediaType, candidate.externalId),
@@ -181,7 +189,7 @@ export const importProviderList = async (
       } catch (error) {
         summary.failed.push({ title: candidate.title, error: errorMessage(error) });
       }
-    }
+    });
   }
   return summary;
 };

@@ -18,6 +18,11 @@ What stands between the code on `main` and a public beta. Each line names who de
 - Import sources are named on screen by the person's own account elsewhere ("MyAnimeList export", "Letterboxd export"), on the same footing as "Continue with Google". Change `IMPORT_SOURCE_LABELS` in `db/label.ts` if that is not wanted.
 - "Followers" visibility was treated as owner-only until follows existed; it is real now. Members who set it before Step 5 see no change in meaning.
 
+## Done since hardening
+
+- Kitsu is the anime catalog; bulk imports offer a highest-rated list and a start page, and ingest three titles at a time.
+- Likes and replies on reviews and feed lines.
+
 ## Done in hardening
 
 - The Step 0 prototypes and their mock data are removed.
@@ -28,7 +33,6 @@ What stands between the code on `main` and a public beta. Each line names who de
 
 ## Still ahead, by design
 
-- Review reactions and comments, activity reactions and comments.
 - Taste recommendations beyond a pair ("because you finished…").
 - Notifications and the email digest.
 - The light theme.
