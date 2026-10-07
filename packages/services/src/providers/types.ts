@@ -1,6 +1,7 @@
 import {
   AnimeFormat,
   ImageType,
+  MangaFormat,
   MediaStatus,
   MediaType,
   Provider,
@@ -93,12 +94,30 @@ export type NormalizedMusicDetails = {
   label: string | null;
 };
 
+export type NormalizedMangaDetails = {
+  kind: "manga";
+  format: MangaFormat | null;
+  chapterCount: number | null;
+  volumeCount: number | null;
+  serialization: string | null;
+};
+
+export type NormalizedBookDetails = {
+  kind: "book";
+  author: string | null;
+  pageCount: number | null;
+  publisher: string | null;
+  isbn13: string | null;
+};
+
 export type NormalizedDetails =
   | NormalizedMovieDetails
   | NormalizedTvDetails
   | NormalizedGameDetails
   | NormalizedAnimeDetails
-  | NormalizedMusicDetails;
+  | NormalizedMusicDetails
+  | NormalizedMangaDetails
+  | NormalizedBookDetails;
 
 /**
  * A provider record in MEDIARY'S SHAPE. Every adapter returns this and

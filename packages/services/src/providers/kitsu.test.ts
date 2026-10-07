@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeKitsuAnime, seasonOf } from "./kitsu";
+import { normalizeKitsuAnime, normalizeKitsuRecord, parseKitsuExternalId, seasonOf } from "./kitsu";
 
 // Trimmed from the catalog's record 46474 as fetched on 2026-10-07.
 const ANIME = {
@@ -95,5 +95,41 @@ describe("Kitsu normalization", () => {
     expect(seasonOf("2024-12-25")).toBe("fall");
     expect(seasonOf(null)).toBeNull();
     expect(seasonOf("2024")).toBeNull();
+  });
+
+  it("maps a manga record with its chapters, format, serialization and manga mappings", () => {
+    const manga = normalizeKitsuRecord("manga", {
+      data: {
+        ...ANIME.data,
+        id: "26004",
+        type: "manga",
+        attributes: {
+          ...ANIME.data.attributes,
+          slug: "boku-no-hero-academia",
+          canonicalTitle: "Boku no Hero Academia",
+          subtype: "manga",
+          status: "finished",
+          chapterCount: 432,
+          volumeCount: 42,
+          serialization: "Weekly Shounen Jump",
+          episodeCount: null,
+          episodeLength: null,
+        },
+      },
+      included: [
+        { type: "categories", attributes: { title: "Action" } },
+        { type: "mappings", attributes: { externalSite: "myanimelist/manga", externalId: "75989" } },
+        { type: "mappings", attributes: { externalSite: "myanimelist/anime", externalId: "31964" } },
+      ],
+    });
+    expect(manga).toMatchObject({
+      mediaType: "manga",
+      primaryRef: { provider: "kitsu", externalId: "manga:26004", externalUrl: "https://kitsu.app/manga/boku-no-hero-academia" },
+      otherRefs: [{ provider: "mal", externalId: "75989", externalUrl: "https://myanimelist.net/manga/75989" }],
+      genres: [{ slug: "action", name: "Action" }],
+      details: { kind: "manga", format: "manga", chapterCount: 432, volumeCount: 42, serialization: "Weekly Shounen Jump" },
+    });
+    expect(parseKitsuExternalId("manga", "manga:26004")).toBe("26004");
+    expect(parseKitsuExternalId("anime", "1")).toBe("1");
   });
 });

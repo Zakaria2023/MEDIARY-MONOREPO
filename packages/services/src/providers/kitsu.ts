@@ -1,9 +1,10 @@
 import { z } from "zod";
 import { yearOf } from "utils";
-import { AnimeFormat, MediaStatus, MediaType, Provider, Season } from "../../../../db/enum";
+import { AnimeFormat, MangaFormat, MediaStatus, MediaType, Provider, Season } from "../../../../db/enum";
 import { createThrottle, providerFetch } from "./http";
 import {
   MediaProvider,
+  NormalizedDetails,
   NormalizedImage,
   NormalizedMedia,
   NormalizedRef,
@@ -13,14 +14,16 @@ import {
 } from "./types";
 import { KITSU_CATEGORIES, popularityScore, toGenres } from "./vocabulary";
 
-type AnimeResource = z.infer<typeof animeSchema>;
+type KitsuKind = "anime" | "manga";
+
+type Resource = z.infer<typeof resourceSchema>;
 
 type Included = z.infer<typeof includedSchema>;
 
 const API = "https://kitsu.io/api/edge";
 
 /** How this source is named in any message a person may read. Never the vendor's name. */
-const SOURCE_LABEL = "The anime catalog";
+const SOURCE_LABEL = "The anime and manga catalog";
 
 /**
  * Where the catalog's member count sits for its very biggest titles; a
@@ -56,8 +59,10 @@ const imageSetSchema = z
   })
   .nullish();
 
-const animeSchema = z.object({
+/** An anime or a manga record; the two share every field but the counts. */
+const resourceSchema = z.object({
   id: z.string(),
+  type: z.string(),
   attributes: z.object({
     slug: nullableString,
     synopsis: nullableString,
@@ -76,6 +81,9 @@ const animeSchema = z.object({
     coverImage: imageSetSchema,
     episodeCount: z.number().nullish(),
     episodeLength: z.number().nullish(),
+    chapterCount: z.number().nullish(),
+    volumeCount: z.number().nullish(),
+    serialization: nullableString,
     nsfw: z.boolean().nullish(),
   }),
 });
@@ -89,10 +97,10 @@ const includedSchema = z.object({
   }),
 });
 
-const listSchema = z.object({ data: z.array(animeSchema) });
+const listSchema = z.object({ data: z.array(resourceSchema) });
 
 const detailSchema = z.object({
-  data: animeSchema,
+  data: resourceSchema,
   included: z.array(includedSchema).nullish(),
 });
 
@@ -104,7 +112,7 @@ const STATUSES: Record<string, MediaStatus> = {
   upcoming: "upcoming",
 };
 
-const FORMATS: Record<string, AnimeFormat> = {
+const ANIME_FORMATS: Record<string, AnimeFormat> = {
   tv: "tv",
   movie: "movie",
   ova: "ova",
@@ -113,17 +121,35 @@ const FORMATS: Record<string, AnimeFormat> = {
   music: "music",
 };
 
-/** The catalog's names for the other databases a title is mapped to. */
-const MAPPED_SITES: Record<string, { provider: Provider; url: (id: string) => string | null }> = {
-  "myanimelist/anime": { provider: "mal", url: (id) => `https://myanimelist.net/anime/${id}` },
-  "anilist/anime": { provider: "anilist", url: (id) => `https://anilist.co/anime/${id}` },
-  anidb: { provider: "anidb", url: (id) => `https://anidb.net/anime/${id}` },
+const MANGA_FORMATS: Record<string, MangaFormat> = {
+  manga: "manga",
+  manhwa: "manhwa",
+  manhua: "manhua",
+  novel: "novel",
+  oneshot: "oneshot",
+  doujin: "doujin",
+  oel: "oel",
 };
 
-const kindOf = (mediaType: MediaType): void => {
-  if (mediaType !== "anime") {
+/** The catalog's names for the other databases a title is mapped to, per kind. */
+const MAPPED_SITES: Record<KitsuKind, Record<string, { provider: Provider; url: (id: string) => string | null }>> = {
+  anime: {
+    "myanimelist/anime": { provider: "mal", url: (id) => `https://myanimelist.net/anime/${id}` },
+    "anilist/anime": { provider: "anilist", url: (id) => `https://anilist.co/anime/${id}` },
+    anidb: { provider: "anidb", url: (id) => `https://anidb.net/anime/${id}` },
+  },
+  manga: {
+    "myanimelist/manga": { provider: "mal", url: (id) => `https://myanimelist.net/manga/${id}` },
+    "anilist/manga": { provider: "anilist", url: (id) => `https://anilist.co/manga/${id}` },
+  },
+};
+
+/** "anime" or "manga" for a Mediary type the catalog serves, or an error. */
+const kindOf = (mediaType: MediaType): KitsuKind => {
+  if (mediaType !== "anime" && mediaType !== "manga") {
     throw new Error(`${SOURCE_LABEL} does not supply ${mediaType} titles`);
   }
+  return mediaType;
 };
 
 const kitsuFetch = async (path: string, params: Record<string, string> = {}) => {
@@ -140,7 +166,7 @@ const kitsuFetch = async (path: string, params: Record<string, string> = {}) => 
 const isFuture = (isoDate: string | null): boolean =>
   isoDate !== null && isoDate > new Date().toISOString().slice(0, 10);
 
-/** The broadcast season a first air date falls in. */
+/** The broadcast season a first air date falls in: the quarter of the year. */
 export const seasonOf = (isoDate: string | null): Season | null => {
   const month = isoDate ? Number(isoDate.slice(5, 7)) : NaN;
   if (!Number.isInteger(month) || month < 1 || month > 12) {
@@ -150,11 +176,11 @@ export const seasonOf = (isoDate: string | null): Season | null => {
   return seasons[Math.floor((month - 1) / 3)] ?? null;
 };
 
-const titlesFor = (anime: AnimeResource["attributes"]): NormalizedTitle[] => {
-  const names = anime.titles ?? {};
-  const seen = new Set<string>([anime.canonicalTitle]);
+const titlesFor = (record: Resource["attributes"]): NormalizedTitle[] => {
+  const names = record.titles ?? {};
+  const seen = new Set<string>([record.canonicalTitle]);
   const titles: NormalizedTitle[] = [
-    { title: anime.canonicalTitle, titleType: "canonical", language: null },
+    { title: record.canonicalTitle, titleType: "canonical", language: null },
   ];
   const add = (title: string | null | undefined, titleType: NormalizedTitle["titleType"], language: string | null) => {
     if (title && !seen.has(title)) {
@@ -165,7 +191,7 @@ const titlesFor = (anime: AnimeResource["attributes"]): NormalizedTitle[] => {
   add(names.en ?? names.en_us, "english", "en");
   add(names.en_jp, "romaji", "ja");
   add(names.ja_jp, "native", "ja");
-  for (const alias of anime.abbreviatedTitles ?? []) {
+  for (const alias of record.abbreviatedTitles ?? []) {
     // The catalog has been known to hold a null in this list.
     add(alias, "alias", null);
   }
@@ -177,42 +203,78 @@ const titlesFor = (anime: AnimeResource["attributes"]): NormalizedTitle[] => {
  * Every size has its own file name, so the stored URL is the one the slot
  * shows and is never rewritten.
  */
-const imagesFor = (anime: AnimeResource["attributes"]): NormalizedImage[] => {
+const imagesFor = (record: Resource["attributes"]): NormalizedImage[] => {
   const images: NormalizedImage[] = [];
-  const poster = anime.posterImage?.large ?? anime.posterImage?.original;
+  const poster = record.posterImage?.large ?? record.posterImage?.original;
   if (poster) {
-    const size = anime.posterImage?.meta?.dimensions?.large;
+    const size = record.posterImage?.meta?.dimensions?.large;
     images.push({ imageType: "cover", url: poster, width: size?.width ?? 550, height: size?.height ?? 780, position: 0 });
   }
-  const banner = anime.coverImage?.large ?? anime.coverImage?.original;
+  const banner = record.coverImage?.large ?? record.coverImage?.original;
   if (banner) {
-    const size = anime.coverImage?.meta?.dimensions?.large;
+    const size = record.coverImage?.meta?.dimensions?.large;
     images.push({ imageType: "backdrop", url: banner, width: size?.width ?? 1500, height: size?.height ?? 500, position: 0 });
   }
   return images;
 };
 
-const toCandidate = (anime: AnimeResource): ProviderCandidate => ({
+/**
+ * The catalog's ids are only unique per kind. Anime keeps the bare id it
+ * was first imported with; manga folds its kind in ("manga:38"), as the
+ * TMDB adapter does, so the database's unique (provider, external_id) holds.
+ */
+export const kitsuExternalId = (kind: KitsuKind, id: string): string => (kind === "anime" ? id : `${kind}:${id}`);
+
+/** The catalog's own id from an external id of either kind. */
+export const parseKitsuExternalId = (kind: KitsuKind, externalId: string): string => {
+  const prefix = `${kind}:`;
+  return externalId.startsWith(prefix) ? externalId.slice(prefix.length) : externalId;
+};
+
+const toCandidate = (kind: KitsuKind, record: Resource): ProviderCandidate => ({
   provider: "kitsu",
-  mediaType: "anime",
-  externalId: anime.id,
-  title: anime.attributes.canonicalTitle,
-  year: yearOf(anime.attributes.startDate),
-  overview: anime.attributes.synopsis,
-  posterUrl: anime.attributes.posterImage?.medium ?? anime.attributes.posterImage?.large ?? null,
+  mediaType: kind,
+  externalId: kitsuExternalId(kind, record.id),
+  title: record.attributes.canonicalTitle,
+  year: yearOf(record.attributes.startDate),
+  overview: record.attributes.synopsis,
+  posterUrl: record.attributes.posterImage?.medium ?? record.attributes.posterImage?.large ?? null,
 });
 
+/** The medium's own details from a record. */
+const detailsFor = (kind: KitsuKind, record: Resource["attributes"]): NormalizedDetails => {
+  if (kind === "manga") {
+    return {
+      kind: "manga",
+      format: MANGA_FORMATS[(record.subtype ?? "").toLowerCase()] ?? null,
+      chapterCount: record.chapterCount || null,
+      volumeCount: record.volumeCount || null,
+      serialization: record.serialization?.slice(0, 120) ?? null,
+    };
+  }
+  return {
+    kind: "anime",
+    format: ANIME_FORMATS[(record.subtype ?? "").toLowerCase()] ?? null,
+    episodeCount: record.episodeCount ?? null,
+    episodeDuration: record.episodeLength ?? null,
+    season: seasonOf(record.startDate),
+    seasonYear: yearOf(record.startDate),
+    sourceMaterial: null,
+    studio: null,
+  };
+};
+
 /** A catalog record in Mediary's shape, with its categories and mappings. Exported for the unit tests. */
-export const normalizeKitsuAnime = (raw: unknown): NormalizedMedia => {
-  const { data: anime, included } = detailSchema.parse(raw);
-  const attributes = anime.attributes;
+export const normalizeKitsuRecord = (kind: KitsuKind, raw: unknown): NormalizedMedia => {
+  const { data: record, included } = detailSchema.parse(raw);
+  const attributes = record.attributes;
   const categories = (included ?? [])
     .filter((entry: Included) => entry.type === "categories")
     .map((entry) => (entry.attributes.title ?? "").toLowerCase());
   const otherRefs: NormalizedRef[] = (included ?? [])
     .filter((entry: Included) => entry.type === "mappings")
     .flatMap((entry) => {
-      const site = MAPPED_SITES[entry.attributes.externalSite ?? ""];
+      const site = MAPPED_SITES[kind][entry.attributes.externalSite ?? ""];
       const id = entry.attributes.externalId;
       return site && id ? [{ provider: site.provider, externalId: id, externalUrl: site.url(id) }] : [];
     });
@@ -221,14 +283,13 @@ export const normalizeKitsuAnime = (raw: unknown): NormalizedMedia => {
   const status: MediaStatus = isFuture(attributes.startDate)
     ? "upcoming"
     : (STATUSES[attributes.status ?? ""] ?? "unknown");
-  const format = FORMATS[(attributes.subtype ?? "").toLowerCase()] ?? null;
 
   return {
-    mediaType: "anime",
+    mediaType: kind,
     primaryRef: {
       provider: "kitsu",
-      externalId: anime.id,
-      externalUrl: `https://kitsu.app/anime/${attributes.slug ?? anime.id}`,
+      externalId: kitsuExternalId(kind, record.id),
+      externalUrl: `https://kitsu.app/${kind}/${attributes.slug ?? record.id}`,
     },
     otherRefs,
     canonicalTitle: attributes.canonicalTitle,
@@ -245,23 +306,18 @@ export const normalizeKitsuAnime = (raw: unknown): NormalizedMedia => {
     images: imagesFor(attributes),
     genres: toGenres(categories.flatMap((name) => KITSU_CATEGORIES[name] ?? [])),
     platforms: [],
-    details: {
-      kind: "anime",
-      format,
-      episodeCount: attributes.episodeCount ?? null,
-      episodeDuration: attributes.episodeLength ?? null,
-      season: seasonOf(attributes.startDate),
-      seasonYear: yearOf(attributes.startDate),
-      sourceMaterial: null,
-      studio: null,
-    },
+    details: detailsFor(kind, attributes),
   };
 };
 
+/** The anime record in Mediary's shape; kept under its Step 10 name for the tests. */
+export const normalizeKitsuAnime = (raw: unknown): NormalizedMedia => normalizeKitsuRecord("anime", raw);
+
 /**
- * The catalog's lists: what its members keep most, among what is airing,
- * among everything, and among what is not out yet, and its own rating
- * rank. All four page the same way, so a bulk import can walk them.
+ * The catalog's lists: what its members keep most, among what is airing
+ * or running, among everything, and among what is not out yet, and its
+ * own rating rank. All four page the same way, so a bulk import can walk
+ * them.
  */
 const LIST_PARAMS: Record<ProviderListKind, Record<string, string>> = {
   trending: { "filter[status]": "current", sort: "-userCount" },
@@ -276,40 +332,41 @@ const pageParams = (page: number): Record<string, string> => ({
 });
 
 /**
- * Kitsu: anime as the catalog's own records, with its mappings to the
- * other anime databases kept as refs so a member's export from one of them
- * matches. Open JSON:API, no key, posters hotlinked from its media host
- * (docs/catalog-providers.md).
+ * Kitsu: anime and manga as the catalog's own records, with its mappings
+ * to the other databases kept as refs so a member's export from one of
+ * them matches. Open JSON:API, no key, posters hotlinked from its media
+ * host (docs/catalog-providers.md).
  */
 export const kitsuProvider: MediaProvider = {
   provider: "kitsu",
-  mediaTypes: ["anime"],
+  mediaTypes: ["anime", "manga"],
   attribution: {
     provider: "kitsu",
     name: "Kitsu",
-    text: "Anime data and artwork from Kitsu.",
+    text: "Anime and manga data and artwork from Kitsu.",
     url: "https://kitsu.app/",
     logoPath: null,
   },
   isConfigured: () => true,
   search: async (mediaType, query, page = 1) => {
-    kindOf(mediaType);
+    const kind = kindOf(mediaType);
     const data = listSchema.parse(
-      await kitsuFetch("/anime", { "filter[text]": query, ...pageParams(page) }),
+      await kitsuFetch(`/${kind}`, { "filter[text]": query, ...pageParams(page) }),
     );
-    return data.data.map(toCandidate);
+    return data.data.map((record) => toCandidate(kind, record));
   },
   getById: async (mediaType, externalId) => {
-    kindOf(mediaType);
-    return normalizeKitsuAnime(
-      await kitsuFetch(`/anime/${externalId}`, { include: "categories,mappings" }),
+    const kind = kindOf(mediaType);
+    return normalizeKitsuRecord(
+      kind,
+      await kitsuFetch(`/${kind}/${parseKitsuExternalId(kind, externalId)}`, { include: "categories,mappings" }),
     );
   },
   getList: async (mediaType, kind, page = 1) => {
-    kindOf(mediaType);
+    const kitsuKind = kindOf(mediaType);
     const data = listSchema.parse(
-      await kitsuFetch("/anime", { ...LIST_PARAMS[kind], ...pageParams(page) }),
+      await kitsuFetch(`/${kitsuKind}`, { ...LIST_PARAMS[kind], ...pageParams(page) }),
     );
-    return data.data.map(toCandidate);
+    return data.data.map((record) => toCandidate(kitsuKind, record));
   },
 };

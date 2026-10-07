@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Mediary is a cross-media entertainment tracker: one profile for everything a person watches, plays and reads. Launch media are anime, games, movies and TV; manga, books, music and podcasts come later and the data model is shaped to take them without a rebuild. The full product blueprint is the PDF the owner keeps outside the repo; the decisions that matter for code are restated here.
+Mediary is a cross-media entertainment tracker: one profile for everything a person watches, plays, reads and listens to. The media are anime, games, movies, TV, music, manga and books; podcasts come later and the data model is shaped to take them without a rebuild. The full product blueprint is the PDF the owner keeps outside the repo; the decisions that matter for code are restated here.
 
 ## Monorepo Architecture
 
@@ -412,7 +412,7 @@ SEO is a core of the product, with the design. Every public route pays for its p
 ## Catalog Providers
 
 - Every catalog source implements the same `MediaProvider` contract in `packages/services/src/providers/types.ts`: `search`, `getById`, `getList` (trending, popular, upcoming), `isConfigured`, and the `attribution` it requires. Normalizing, mapping external ids and choosing images all happen inside the adapter, which hands back one `NormalizedMedia`; nothing outside `providers/` ever sees what a provider sent. Responses are parsed with zod, so a changed field fails loudly instead of leaking a bad shape.
-- Adapters live in `providers/` (`tmdb.ts` for movies and TV, `igdb.ts` for games, `kitsu.ts` for anime, `musicbrainz.ts` for music) and are listed once in `providers/registry.ts`. AniList is ruled out by its terms (`docs/catalog-providers.md`); Kitsu's mappings give each anime its MyAnimeList, AniList and AniDB ids as refs, which is what an export from one of them matches on.
+- Adapters live in `providers/` (`tmdb.ts` for movies and TV, `igdb.ts` for games, `kitsu.ts` for anime and manga, `musicbrainz.ts` for music, `openlibrary.ts` for books) and are listed once in `providers/registry.ts`. AniList is ruled out by its terms (`docs/catalog-providers.md`); Kitsu's mappings give each anime its MyAnimeList, AniList and AniDB ids as refs, which is what an export from one of them matches on.
 - A provider whose ids are only unique per kind folds the kind into the external id (`movie:550`, `tv:1399`), so the database's unique `(provider, external_id)` holds without a third column.
 - Credentials and rate limits stay inside the adapter. Every request goes through `providerFetch` with that provider's `createThrottle` gate, which retries a 429 after the provider's `Retry-After` and a 5xx with backoff.
 - `ingestNormalizedMedia` is the one writer: it upserts by external mapping inside one transaction, locks the matched refs, picks a slug once and never changes it, and leaves every field or section named in `Media.lockedFields` alone. A lost race ends in a UNIQUE violation that rolls back and retries.
@@ -481,6 +481,7 @@ SEO is a core of the product, with the design. Every public route pays for its p
 - **Every launch medium has a hub** at its plural address, served by `app/(site)/[type]/page.tsx` through `parseHubSlug`; a singular address (`/movie`) redirects to the hub, because the singular is a title's address space (`/movie/inception`). The hub is where a medium's own design lives: `HUB_COPY` in `src/lib/hub-copy.ts` names its two rails and its facet; everything else is shared.
 - **A facet is a medium's own filter beside genres** (`HubFacetKind` in `catalog.ts`: a game's platform, a film's decade, an anime's season, a show's airing status, a record's kind). `listHubFacetOptions` offers only values with public titles. Statuses inside a hub are filters on the member's own section, never pages.
 - **Music is albums, EPs and singles** from the music catalog (`providers/musicbrainz.ts`), one request a second with a named User-Agent, covers from the Cover Art Archive at 250, 500 and 1200 (`catalogImageUrl`). `MusicDetails` carries the artist line, the kind of record, tracks, length and label; progress is counted in plays, time as plays by length. The catalog has no charts, so "trending" is recent releases (`docs/catalog-providers.md`).
+- **Manga and books are launch media too** (`launchMediaTypes` is every medium with a source; podcasts wait for theirs). Manga comes from Kitsu's manga records through the same adapter, the kind folded into the external id (`manga:38`), with `MangaDetails` (format, chapters, volumes, serialization) and the format as its facet; progress is chapters, the total the chapter count. Books come from Open Library (`providers/openlibrary.ts`, no key, one request a second, covers by id at S, M and L) with `BookDetails` (author, pages, publisher, ISBN) and the decade as their facet; progress is pages, the total the page count. Reading time is estimated at 20 minutes a chapter, 3 hours a volume and 90 seconds a page.
 
 ## Design Tokens
 
@@ -510,7 +511,7 @@ One or two accents per screen. The spectrum belongs to the logo and the five gra
 | ----------------------- | ------------------------------------------- |
 | `/`                     | Marketing when signed out, home when signed in |
 | `/explore`              | Cross-media discovery hub                   |
-| `/anime`, `/games`, `/movies`, `/tv`, `/music` | One medium's hub: its own design, rails, facet filter and the member's own titles with statuses as filters (`app/(site)/[type]/page.tsx`, slugs in `src/lib/hub-path.ts`) |
+| `/anime`, `/games`, `/movies`, `/tv`, `/music`, `/manga`, `/books` | One medium's hub: its own design, rails, facet filter and the member's own titles with statuses as filters (`app/(site)/[type]/page.tsx`, slugs in `src/lib/hub-path.ts`) |
 | `/explore/[type]`       | Permanent redirect to the medium's hub      |
 | `/search?q=`            | Universal search with type filters (noindex) |
 | `/[type]/[slug]`        | Canonical media detail page                 |

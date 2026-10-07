@@ -28,7 +28,8 @@ export type HubCopy = {
  * EACH MEDIUM'S HUB, in its own words. The rails and the facet are what make
  * one hub different from the next: anime is lived by season, games by
  * platform, movies by decade, TV by whether it is still airing, music by
- * the kind of record. The design around them is shared.
+ * the kind of record, manga by format, books by decade. The design around
+ * them is shared.
  */
 export const HUB_COPY: Record<LaunchMediaType, HubCopy> = {
   anime: {
@@ -95,5 +96,31 @@ export const HUB_COPY: Record<LaunchMediaType, HubCopy> = {
       { heading: "Most rated", reason: "The records people keep coming back to.", sort: "top" },
     ],
     mine: "Your music",
+  },
+  manga: {
+    heading: "Manga",
+    intro: "What everyone is reading, by format, from one-shots to the long runners.",
+    description:
+      "Discover manga, manhwa and light novels by format and genre: the most read, the highest rated, and what is still running. Track every chapter on Mediary.",
+    noun: "manga",
+    facet: { kind: "format", label: "Format" },
+    rails: [
+      { heading: "Most read", reason: "What people are keeping up with.", sort: "trending" },
+      { heading: "Highest rated", reason: "The best, by community score.", sort: "top" },
+    ],
+    mine: "Your manga",
+  },
+  book: {
+    heading: "Books",
+    intro: "The most shelved, the best loved, and this year's new titles.",
+    description:
+      "Discover books by decade and genre: the most read, the highest rated, and new releases. Keep a reading log, rate what you finish and build a to-read pile on Mediary.",
+    noun: "books",
+    facet: { kind: "decade", label: "Decade" },
+    rails: [
+      { heading: "Most shelved", reason: "What readers are picking up.", sort: "trending" },
+      { heading: "Highest rated", reason: "The best loved, by community score.", sort: "top" },
+    ],
+    mine: "Your books",
   },
 };

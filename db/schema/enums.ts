@@ -7,6 +7,7 @@ import {
   importOutcomes,
   importSources,
   importStatuses,
+  mangaFormats,
   mediaStatuses,
   mediaTypes,
   notificationKinds,
@@ -51,6 +52,7 @@ export const imageTypeEnum = pgEnum("image_type", imageTypes);
 export const providerEnum = pgEnum("provider", providers);
 export const animeFormatEnum = pgEnum("anime_format", animeFormats);
 export const seasonEnum = pgEnum("season", seasons);
+export const mangaFormatEnum = pgEnum("manga_format", mangaFormats);
 export const releaseTypeEnum = pgEnum("release_type", releaseTypes);
 export const tagCategoryEnum = pgEnum("tag_category", tagCategories);
 

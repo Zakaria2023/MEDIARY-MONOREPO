@@ -66,13 +66,15 @@ export const mediaTypes = [
 
 export type MediaType = (typeof mediaTypes)[number];
 
-/** The five media the first release ships with. */
+/** The media the site ships with: every one that has a catalog source. Podcasts wait for theirs. */
 export const launchMediaTypes = [
   "anime",
   "game",
   "movie",
   "tv",
   "music",
+  "manga",
+  "book",
 ] as const satisfies readonly MediaType[];
 
 export type LaunchMediaType = (typeof launchMediaTypes)[number];
@@ -146,6 +148,19 @@ export const animeFormats = [
 ] as const satisfies readonly string[];
 
 export type AnimeFormat = (typeof animeFormats)[number];
+
+/** What kind of comic or light novel a manga record is. */
+export const mangaFormats = [
+  "manga",
+  "manhwa",
+  "manhua",
+  "novel",
+  "oneshot",
+  "doujin",
+  "oel",
+] as const satisfies readonly string[];
+
+export type MangaFormat = (typeof mangaFormats)[number];
 
 /** What kind of record a music release is. */
 export const releaseTypes = [

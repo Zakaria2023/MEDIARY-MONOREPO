@@ -3,6 +3,7 @@ import { PROVIDER_LABELS } from "../../../../db/label";
 import { igdbProvider } from "./igdb";
 import { kitsuProvider } from "./kitsu";
 import { musicbrainzProvider } from "./musicbrainz";
+import { openLibraryProvider } from "./openlibrary";
 import { tmdbProvider } from "./tmdb";
 import { MediaProvider } from "./types";
 
@@ -16,11 +17,11 @@ export type ProviderStatus = {
 };
 
 /**
- * EVERY CATALOG SOURCE MEDIARY CAN IMPORT FROM. Anime comes from Kitsu;
+ * EVERY CATALOG SOURCE MEDIARY CAN IMPORT FROM. Anime and manga come from Kitsu, books from Open Library;
  * AniList is ruled out by its terms (docs/catalog-providers.md). Adding a
  * source is one adapter and one line here.
  */
-const ADAPTERS: MediaProvider[] = [tmdbProvider, igdbProvider, kitsuProvider, musicbrainzProvider];
+const ADAPTERS: MediaProvider[] = [tmdbProvider, igdbProvider, kitsuProvider, musicbrainzProvider, openLibraryProvider];
 
 /** The adapter for a provider, or an error naming what is missing. */
 export const getProvider = (provider: Provider): MediaProvider => {

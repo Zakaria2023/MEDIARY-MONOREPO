@@ -1,5 +1,6 @@
 import { formatDate, formatRuntime } from "utils";
-import { ANIME_FORMAT_LABELS, MEDIA_STATUS_LABELS, RELEASE_TYPE_LABELS, SEASON_LABELS } from "../../../db/label";
+import { ANIME_FORMAT_LABELS,
+  MANGA_FORMAT_LABELS, MEDIA_STATUS_LABELS, RELEASE_TYPE_LABELS, SEASON_LABELS } from "../../../db/label";
 import { CatalogTitle } from "./catalog";
 
 /** One labelled fact on a title page. */
@@ -71,6 +72,21 @@ export const catalogFacts = (title: CatalogTitle): CatalogFact[] => {
       { label: "Tracks", value: count(details.trackCount) },
       { label: "Length", value: formatRuntime(details.durationMinutes) },
       { label: "Label", value: details.label },
+    );
+  } else if (details?.kind === "manga") {
+    facts.push(
+      { label: "Format", value: details.format ? MANGA_FORMAT_LABELS[details.format] : null },
+      { label: "Chapters", value: count(details.chapterCount) },
+      { label: "Volumes", value: count(details.volumeCount) },
+      { label: "Serialized in", value: details.serialization },
+      { label: "Ended", value: title.endDate ? formatDate(title.endDate) : null },
+    );
+  } else if (details?.kind === "book") {
+    facts.push(
+      { label: "Author", value: details.author },
+      { label: "Pages", value: count(details.pageCount) },
+      { label: "Publisher", value: details.publisher },
+      { label: "ISBN", value: details.isbn13 },
     );
   }
 

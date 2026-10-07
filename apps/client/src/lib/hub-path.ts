@@ -11,6 +11,8 @@ export const HUB_SLUGS: Record<LaunchMediaType, string> = {
   movie: "movies",
   tv: "tv",
   music: "music",
+  manga: "manga",
+  book: "books",
 };
 
 export const hubPath = (mediaType: LaunchMediaType): string => `/${HUB_SLUGS[mediaType]}`;

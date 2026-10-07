@@ -17,15 +17,20 @@ import {
 import { buildPaginatedResult, PaginatedResult, resolvePagination } from "utils";
 import { db } from "../../../db";
 import { MediaStatus, MediaType, Provider, Season } from "../../../db/enum";
-import { ANIME_FORMAT_LABELS, MEDIA_STATUS_LABELS, RELEASE_TYPE_LABELS, SEASON_LABELS } from "../../../db/label";
+import { ANIME_FORMAT_LABELS, MEDIA_STATUS_LABELS, MANGA_FORMAT_LABELS,
+  RELEASE_TYPE_LABELS, SEASON_LABELS } from "../../../db/label";
 import { Genres, MediaGenres, SelectGenres } from "../../../db/schema/genres";
 import {
   AnimeDetails,
+  BookDetails,
   GameDetails,
+  MangaDetails,
   MovieDetails,
   MusicDetails,
   SelectAnimeDetails,
+  SelectBookDetails,
   SelectGameDetails,
+  SelectMangaDetails,
   SelectMovieDetails,
   SelectMusicDetails,
   SelectTvDetails,
@@ -74,7 +79,9 @@ export type CatalogDetails =
   | ({ kind: "tv" } & Omit<SelectTvDetails, "id" | "mediaUuid">)
   | ({ kind: "game" } & Omit<SelectGameDetails, "id" | "mediaUuid">)
   | ({ kind: "anime" } & Omit<SelectAnimeDetails, "id" | "mediaUuid">)
-  | ({ kind: "music" } & Omit<SelectMusicDetails, "id" | "mediaUuid">);
+  | ({ kind: "music" } & Omit<SelectMusicDetails, "id" | "mediaUuid">)
+  | ({ kind: "manga" } & Omit<SelectMangaDetails, "id" | "mediaUuid">)
+  | ({ kind: "book" } & Omit<SelectBookDetails, "id" | "mediaUuid">);
 
 /** Everything a title's public page renders. */
 export type CatalogTitle = CatalogCard &
@@ -106,7 +113,7 @@ export type CatalogSort = "trending" | "top" | "new" | "upcoming";
  * decade, an anime's season, a show's airing status, a record's kind. One
  * per medium, chosen by the hub; the value is what the option carries.
  */
-export type HubFacetKind = "platform" | "decade" | "season" | "status" | "releaseType";
+export type HubFacetKind = "platform" | "decade" | "season" | "status" | "releaseType" | "format";
 
 export type HubFacet = {
   kind: HubFacetKind;
@@ -252,6 +259,14 @@ const facetCondition = (facet: HubFacet): SQL | undefined => {
           .select({ uuid: MusicDetails.mediaUuid })
           .from(MusicDetails)
           .where(sql`${MusicDetails.releaseType} = ${facet.value}`),
+      );
+    case "format":
+      return inArray(
+        Media.uuid,
+        db
+          .select({ uuid: MangaDetails.mediaUuid })
+          .from(MangaDetails)
+          .where(sql`${MangaDetails.format} = ${facet.value}`),
       );
   }
 };
@@ -441,6 +456,18 @@ export const listHubFacetOptions = async (
         .orderBy(desc(titleCount));
       return rows.map((row) => ({ value: row.releaseType, label: RELEASE_TYPE_LABELS[row.releaseType], titleCount: row.titleCount }));
     }
+    case "format": {
+      const rows = await db
+        .select({ format: MangaDetails.format, titleCount })
+        .from(MangaDetails)
+        .innerJoin(Media, eq(Media.uuid, MangaDetails.mediaUuid))
+        .where(and(base, sql`${MangaDetails.format} is not null`))
+        .groupBy(MangaDetails.format)
+        .orderBy(desc(titleCount));
+      return rows.flatMap((row) =>
+        row.format ? [{ value: row.format, label: MANGA_FORMAT_LABELS[row.format], titleCount: row.titleCount }] : [],
+      );
+    }
   }
 };
 
@@ -503,6 +530,22 @@ const detailsFor = async (
     }
     const { id: _id, mediaUuid: _mediaUuid, ...values } = row;
     return { kind: "music", ...values };
+  }
+  if (mediaType === "manga") {
+    const [row] = await db.select().from(MangaDetails).where(eq(MangaDetails.mediaUuid, mediaUuid));
+    if (!row) {
+      return null;
+    }
+    const { id: _id, mediaUuid: _mediaUuid, ...values } = row;
+    return { kind: "manga", ...values };
+  }
+  if (mediaType === "book") {
+    const [row] = await db.select().from(BookDetails).where(eq(BookDetails.mediaUuid, mediaUuid));
+    if (!row) {
+      return null;
+    }
+    const { id: _id, mediaUuid: _mediaUuid, ...values } = row;
+    return { kind: "book", ...values };
   }
   return null;
 };

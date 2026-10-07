@@ -26,6 +26,7 @@ What stands between the code on `main` and a public beta. Each line names who de
 - "For you" recommendations on the home and in every hub, each pick explained by a loved title.
 - Notifications (follows, likes, replies) with the bell in the header, and the weekly email digest behind the Monday cron.
 - The light theme and "match my device", with a reduce-motion switch, at /settings/appearance.
+- Manga (Kitsu) and books (Open Library) as media of their own, with hubs at /manga and /books, their facets, tracking in chapters and pages, and loaded catalogs.
 
 ## Done in hardening
 

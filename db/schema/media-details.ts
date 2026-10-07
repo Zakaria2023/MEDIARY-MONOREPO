@@ -8,7 +8,7 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
-import { animeFormatEnum, releaseTypeEnum, seasonEnum } from "./enums";
+import { animeFormatEnum, mangaFormatEnum, releaseTypeEnum, seasonEnum } from "./enums";
 import { Media } from "./media";
 
 // THE FIELDS ONLY ONE MEDIUM HAS, one table per medium, each keyed one-to-one
@@ -100,6 +100,36 @@ export const MusicDetails = pgTable("MusicDetails", {
   label: varchar("label", { length: 160 }),
 });
 
+export const MangaDetails = pgTable("MangaDetails", {
+  id: serial("id").primaryKey(),
+  mediaUuid: uuid("media_uuid")
+    .notNull()
+    .unique()
+    .references(() => Media.uuid, { onDelete: "cascade" }),
+  format: mangaFormatEnum("format"),
+  chapterCount: integer("chapter_count"),
+  volumeCount: integer("volume_count"),
+  // The magazine it runs in, as the provider gives it.
+  serialization: varchar("serialization", { length: 120 }),
+});
+
+export const BookDetails = pgTable("BookDetails", {
+  id: serial("id").primaryKey(),
+  mediaUuid: uuid("media_uuid")
+    .notNull()
+    .unique()
+    .references(() => Media.uuid, { onDelete: "cascade" }),
+  // The author line as it reads: "Frank Herbert", "Terry Pratchett, Neil Gaiman".
+  author: varchar("author", { length: 200 }),
+  pageCount: integer("page_count"),
+  publisher: varchar("publisher", { length: 160 }),
+  isbn13: varchar("isbn13", { length: 13 }),
+});
+
+export type SelectMangaDetails = InferSelectModel<typeof MangaDetails>;
+export type InsertMangaDetails = InferInsertModel<typeof MangaDetails>;
+export type SelectBookDetails = InferSelectModel<typeof BookDetails>;
+export type InsertBookDetails = InferInsertModel<typeof BookDetails>;
 export type SelectAnimeDetails = InferSelectModel<typeof AnimeDetails>;
 export type InsertAnimeDetails = InferInsertModel<typeof AnimeDetails>;
 export type SelectGameDetails = InferSelectModel<typeof GameDetails>;

@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { db } from "../../../db";
-import { AnimeDetails, MusicDetails } from "../../../db/schema/media-details";
+import { AnimeDetails, MangaDetails, MusicDetails } from "../../../db/schema/media-details";
 import { Media } from "../../../db/schema/media";
 import { GamePlatforms, Platforms } from "../../../db/schema/platforms";
 import { listCatalog, listHubFacetOptions } from "./catalog";
@@ -9,7 +9,7 @@ import { listCatalog, listHubFacetOptions } from "./catalog";
 const TRUNCATE = sql`truncate "Media", "Genres", "Platforms" restart identity cascade`;
 
 const seed = async () => {
-  const [heat, arrival, frieren, bebop, elden, discovery] = await db
+  const [heat, arrival, frieren, bebop, elden, discovery, berserk] = await db
     .insert(Media)
     .values([
       { mediaType: "movie", slug: "heat", canonicalTitle: "Heat", releaseYear: 1995, releaseDate: "1995-12-15", popularity: 10 },
@@ -18,9 +18,10 @@ const seed = async () => {
       { mediaType: "anime", slug: "bebop", canonicalTitle: "Cowboy Bebop", releaseYear: 1998, popularity: 25 },
       { mediaType: "game", slug: "elden-ring", canonicalTitle: "Elden Ring", releaseYear: 2022, popularity: 40 },
       { mediaType: "music", slug: "discovery", canonicalTitle: "Discovery", releaseYear: 2001, popularity: 5 },
+      { mediaType: "manga", slug: "berserk", canonicalTitle: "Berserk", releaseYear: 1989, popularity: 50 },
     ])
     .returning({ uuid: Media.uuid });
-  if (!heat || !arrival || !frieren || !bebop || !elden || !discovery) {
+  if (!heat || !arrival || !frieren || !bebop || !elden || !discovery || !berserk) {
     throw new Error("Fixture rows were not written");
   }
   await db.insert(AnimeDetails).values([
@@ -33,6 +34,7 @@ const seed = async () => {
   }
   await db.insert(GamePlatforms).values({ mediaUuid: elden.uuid, platformId: pc.id });
   await db.insert(MusicDetails).values({ mediaUuid: discovery.uuid, artist: "Daft Punk", releaseType: "album" });
+  await db.insert(MangaDetails).values({ mediaUuid: berserk.uuid, format: "manga", chapterCount: 380 });
 };
 
 describe("hub facets", () => {
@@ -56,6 +58,7 @@ describe("hub facets", () => {
     ]);
     expect(await listHubFacetOptions("game", "platform")).toEqual([{ value: "pc", label: "PC", titleCount: 1 }]);
     expect(await listHubFacetOptions("music", "releaseType")).toEqual([{ value: "album", label: "Album", titleCount: 1 }]);
+    expect(await listHubFacetOptions("manga", "format")).toEqual([{ value: "manga", label: "Manga", titleCount: 1 }]);
 
     const nineties = await listCatalog({ mediaType: "movie", sort: "trending", facet: { kind: "decade", value: "1990s" } });
     expect(nineties.items.map((card) => card.slug)).toEqual(["heat"]);
@@ -65,6 +68,8 @@ describe("hub facets", () => {
     expect(onPc.items.map((card) => card.slug)).toEqual(["elden-ring"]);
     const albums = await listCatalog({ mediaType: "music", sort: "trending", facet: { kind: "releaseType", value: "album" } });
     expect(albums.items.map((card) => card.slug)).toEqual(["discovery"]);
+    const comics = await listCatalog({ mediaType: "manga", sort: "trending", facet: { kind: "format", value: "manga" } });
+    expect(comics.items.map((card) => card.slug)).toEqual(["berserk"]);
   });
 
   it("matches nothing for a value that is not a decade or a season", async () => {

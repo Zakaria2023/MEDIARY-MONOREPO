@@ -39,6 +39,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "coverartarchive.org" },
       { protocol: "https", hostname: "*.archive.org" },
       { protocol: "https", hostname: "media.kitsu.app" },
+      { protocol: "https", hostname: "covers.openlibrary.org" },
       { protocol: "https", hostname: "*.r2.dev" },
       // Profile pictures from the identity service.
       { protocol: "https", hostname: "img.clerk.com" },

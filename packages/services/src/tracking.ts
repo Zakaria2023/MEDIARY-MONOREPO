@@ -4,7 +4,7 @@ import { ProgressTickInput, UpsertEntryInput } from "validators";
 import { db } from "../../../db";
 import { MediaType, ProgressUnit, TrackingStatus } from "../../../db/enum";
 import { DEFAULT_PROGRESS_UNIT } from "../../../db/label";
-import { AnimeDetails, TvDetails } from "../../../db/schema/media-details";
+import { AnimeDetails, BookDetails, MangaDetails, TvDetails } from "../../../db/schema/media-details";
 import { Media, SelectMedia } from "../../../db/schema/media";
 import { GamePlatforms, Platforms, SelectPlatforms } from "../../../db/schema/platforms";
 import { ProgressEvents } from "../../../db/schema/progress-events";
@@ -114,6 +114,8 @@ const PROGRESS_TOTAL = sql<number | null>`case ${Media.mediaType}
   when 'anime' then (select ${AnimeDetails.episodeCount} from ${AnimeDetails} where ${AnimeDetails.mediaUuid} = ${Media.uuid})
   when 'tv' then (select ${TvDetails.episodeCount} from ${TvDetails} where ${TvDetails.mediaUuid} = ${Media.uuid})
   when 'movie' then 100
+  when 'manga' then (select ${MangaDetails.chapterCount} from ${MangaDetails} where ${MangaDetails.mediaUuid} = ${Media.uuid})
+  when 'book' then (select ${BookDetails.pageCount} from ${BookDetails} where ${BookDetails.mediaUuid} = ${Media.uuid})
   else null end`;
 
 /** A game's platforms, in the picker's order. Empty for every other medium. */

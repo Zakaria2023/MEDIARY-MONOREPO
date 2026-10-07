@@ -6,6 +6,7 @@ import {
   ImportOutcome,
   ImportSource,
   ImportStatus,
+  MangaFormat,
   MediaStatus,
   MediaType,
   ProgressUnit,
@@ -301,4 +302,14 @@ export const NOTIFICATION_VERBS: Record<NotificationKind, string> = {
   followed: "followed you",
   liked: "liked your",
   replied: "replied to your",
+};
+
+export const MANGA_FORMAT_LABELS: Record<MangaFormat, string> = {
+  manga: "Manga",
+  manhwa: "Manhwa",
+  manhua: "Manhua",
+  novel: "Light novel",
+  oneshot: "One-shot",
+  doujin: "Doujinshi",
+  oel: "Original English",
 };

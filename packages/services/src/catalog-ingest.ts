@@ -5,6 +5,8 @@ import { MediaType } from "../../../db/enum";
 import { Genres, MediaGenres } from "../../../db/schema/genres";
 import {
   AnimeDetails,
+  BookDetails,
+  MangaDetails,
   GameDetails,
   MovieDetails,
   MusicDetails,
@@ -312,6 +314,18 @@ const writeDetails = async (tx: Tx, mediaUuid: string, record: NormalizedMedia) 
       .insert(GameDetails)
       .values({ mediaUuid, ...values })
       .onConflictDoUpdate({ target: GameDetails.mediaUuid, set: values });
+  } else if (details.kind === "manga") {
+    const { kind: _kind, ...values } = details;
+    await tx
+      .insert(MangaDetails)
+      .values({ mediaUuid, ...values })
+      .onConflictDoUpdate({ target: MangaDetails.mediaUuid, set: values });
+  } else if (details.kind === "book") {
+    const { kind: _kind, ...values } = details;
+    await tx
+      .insert(BookDetails)
+      .values({ mediaUuid, ...values })
+      .onConflictDoUpdate({ target: BookDetails.mediaUuid, set: values });
   } else {
     const { kind: _kind, ...values } = details;
     await tx

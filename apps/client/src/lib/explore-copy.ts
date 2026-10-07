@@ -53,6 +53,20 @@ export const EXPLORE_COPY: Record<LaunchMediaType, ExploreCopy> = {
       "Discover new albums and EPs, keep a listening diary, rate records and build a collection on Mediary.",
     noun: "records",
   },
+  manga: {
+    heading: "Manga",
+    intro: "What everyone is reading, the highest rated, and what is still running.",
+    description:
+      "Discover trending and top rated manga, manhwa and light novels. Track every chapter you read on Mediary.",
+    noun: "manga",
+  },
+  book: {
+    heading: "Books",
+    intro: "The most shelved, the best loved, and this year's new titles.",
+    description:
+      "Discover the most read and highest rated books. Keep a reading log, rate what you finish and build a to-read pile on Mediary.",
+    noun: "books",
+  },
 };
 
 /** The sort tabs, in order, with what each one shows. */

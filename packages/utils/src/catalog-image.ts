@@ -34,6 +34,14 @@ const IGDB_WIDE_STEPS: readonly SizeStep[] = [
 const COVER_ART_PREFIX = "https://coverartarchive.org/release-group/";
 const COVER_ART_WIDTHS = [250, 500, 1200] as const;
 
+// Open Library serves a cover by id at S (about 40 wide), M (about 180) and L (about 500).
+const BOOK_COVER_PREFIX = "https://covers.openlibrary.org/b/id/";
+const BOOK_COVER_STEPS: readonly SizeStep[] = [
+  [60, "S"],
+  [200, "M"],
+  [1200, "L"],
+];
+
 const pick = (steps: readonly SizeStep[], width: number): string => {
   const step = steps.find(([maxWidth]) => maxWidth >= width) ?? steps[steps.length - 1];
   return step ? step[1] : "original";
@@ -57,6 +65,10 @@ export const catalogImageUrl = (src: string, width: number): string => {
       return `${match[1]}-${size}`;
     }
     return src;
+  }
+  if (src.startsWith(BOOK_COVER_PREFIX)) {
+    const match = src.match(/^(.*\/\d+)-[SML]\.jpg$/);
+    return match ? `${match[1]}-${pick(BOOK_COVER_STEPS, width)}.jpg` : src;
   }
   if (src.startsWith(IGDB_PREFIX)) {
     const rest = src.slice(IGDB_PREFIX.length);

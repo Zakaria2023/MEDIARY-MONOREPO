@@ -11,7 +11,8 @@ where the check is recorded.
 | -------- | ------- | -------- |
 | TMDB     | Built: movies and TV | Live against the API; imports, refresh and search tested end to end. |
 | IGDB     | Built: games | Unit-tested against the documented v4 shape only. Not yet called live: the Twitch credentials are not configured. Run one import as soon as they are. |
-| Kitsu    | Built: anime | Live against the API on 2026-10-07; search, lists and imports tested end to end. No key. |
+| Kitsu    | Built: anime and manga | Live against the API on 2026-10-07; search, lists and imports tested end to end. No key. |
+| Open Library | Built: books (works) | Live against the API on 2026-10-07. No key; a named User-Agent and one request a second. |
 | MusicBrainz + Cover Art Archive | Built: music (albums, EPs, singles as release groups) | Unit-tested against the documented JSON shape. Live calls need no key; the adapter sends the required User-Agent and keeps to one request a second. |
 
 ## Kitsu, checked 2026-10-07
@@ -41,6 +42,33 @@ MyAnimeList export match a title.
   setting; `KITSU_CATEGORIES` keeps the ones a person would filter by.
 - **Attribution:** kept as data on the adapter, rendered nowhere (No Vendor
   On Screen); it joins the Credits page when that is built.
+
+## Open Library, checked 2026-10-07
+
+Chosen as the book catalog on 2026-10-07, with manga from Kitsu, when the
+owner asked for every medium's data in one go.
+
+- **Data:** open, read without an account, under its own open license;
+  the search API carries the author, the first publication year, the page
+  count, the readers' shelf counts and ratings and the subject headings;
+  the work page carries the description. Two requests per title.
+- **Rate limit:** its documentation asks for a named User-Agent with a
+  contact and a gentle pace; the adapter sends `Mediary/0.1
+  (https://mediary.com)` and keeps to one request a second, one in flight.
+- **Images:** covers are served by cover id at S, M and L from
+  `covers.openlibrary.org`, hotlinking allowed; `catalogImageUrl` picks the
+  size for the slot. A work with no cover shows the placeholder.
+- **Lists:** "trending" is its own weekly chart; "popular" the most shelved
+  in English; "highest rated" the best averages; "coming soon" the most
+  shelved among this year's and next year's publications.
+- **Genres:** subject headings are free text from library records;
+  `OPENLIBRARY_SUBJECTS` maps the common ones and drops the rest.
+- **Manga** comes from Kitsu's `/manga`, the same adapter as anime with the
+  kind folded into the external id (`manga:38`); chapters, volumes, the
+  format and the serialization are kept in `MangaDetails`.
+- **Attribution:** kept as data on the adapter, rendered nowhere (No Vendor
+  On Screen); Open Library asks for a credit where its data is used, so it
+  joins the Credits page when that is built.
 
 ## MusicBrainz, checked 2026-10-07
 

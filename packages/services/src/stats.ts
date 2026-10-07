@@ -72,6 +72,11 @@ const literal = (value: number) => sql.raw(String(value));
  * rather than for a guess. Branching on the unit, which CLAUDE.md allows;
  * the status is never branched on.
  */
+/** A manga chapter, a volume and a book page as reading time, for the estimate. */
+const CHAPTER_MINUTES = 20;
+const VOLUME_MINUTES = 180;
+const PAGE_MINUTES = 1.5;
+
 const ENTRY_MINUTES = sql<number>`case ${UserMedia.progressUnit}
   when 'hours' then ${UserMedia.progressValue} * 60
   when 'episodes' then ${UserMedia.progressValue} * coalesce(
@@ -81,6 +86,9 @@ const ENTRY_MINUTES = sql<number>`case ${UserMedia.progressUnit}
   )
   when 'percent' then ${UserMedia.progressValue} / 100.0 * coalesce(${MovieDetails.runtime}, ${literal(FALLBACK_RUNTIME_MINUTES)})
   when 'plays' then ${UserMedia.progressValue} * coalesce(${MusicDetails.durationMinutes}, ${literal(FALLBACK_RECORD_MINUTES)})
+  when 'chapters' then ${UserMedia.progressValue} * ${literal(CHAPTER_MINUTES)}
+  when 'volumes' then ${UserMedia.progressValue} * ${literal(VOLUME_MINUTES)}
+  when 'pages' then ${UserMedia.progressValue} * ${literal(PAGE_MINUTES)}
   else 0 end`;
 
 /** The entries with every duration source joined, for the time estimate. */

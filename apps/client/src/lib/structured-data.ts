@@ -66,6 +66,12 @@ const schemaType = (title: CatalogTitle): string => {
   if (title.mediaType === "music") {
     return "MusicAlbum";
   }
+  if (title.mediaType === "book") {
+    return "Book";
+  }
+  if (title.mediaType === "manga") {
+    return "ComicSeries";
+  }
   if (title.details?.kind === "anime" && title.details.format === "movie") {
     return "Movie";
   }
