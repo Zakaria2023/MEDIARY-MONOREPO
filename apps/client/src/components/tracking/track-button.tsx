@@ -6,7 +6,7 @@ import { TRACKING_STATUS_LABELS } from "@/db/label";
 import { EntrySheet } from "@/components/tracking/entry-sheet";
 import { ProgressTickButton } from "@/components/tracking/progress-tick-button";
 import { StatusDot } from "@/components/tracking/status-dot";
-import { formatProgress } from "@/lib/format-progress";
+import { formatProgress, progressCapFor } from "@/lib/format-progress";
 import { useTrackedEntry } from "@/lib/use-tracked-entry";
 
 type TrackButtonProps = {
@@ -23,8 +23,7 @@ export const TrackButton = ({ target, initialEntry }: TrackButtonProps) => {
   const tracked = useTrackedEntry(target, initialEntry);
   const { entry, removed, sheetOpen, isTicking, tickError, openSheet, closeSheet, onTick } = tracked;
   const current = removed ? null : entry;
-  const total =
-    current && current.progressUnit === target.progressUnit ? target.progressTotal : null;
+  const total = current ? progressCapFor(target, current.progressUnit) : null;
   const canTick =
     current !== null && current.status !== "completed" && (total === null || current.progressValue < total);
 

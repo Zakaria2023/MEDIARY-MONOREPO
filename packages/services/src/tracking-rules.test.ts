@@ -10,6 +10,9 @@ import {
 
 const TODAY = "2026-10-06";
 
+/** A title whose whole length is out. */
+const ends = (total: number | null) => ({ total, released: total });
+
 const entry = (overrides: Partial<EntryState> = {}): EntryState => ({
   status: "in_progress",
   score: null,
@@ -24,7 +27,7 @@ describe("settleEntry", () => {
   it("fills progress to the total and dates the finish when completed", () => {
     const settled = settleEntry(
       entry({ status: "completed", progressValue: 3 }),
-      24,
+      ends(24),
       TODAY,
     );
     expect(settled.progressValue).toBe(24);
@@ -34,39 +37,39 @@ describe("settleEntry", () => {
   it("keeps a finish date the person gave", () => {
     const settled = settleEntry(
       entry({ status: "completed", completedAt: "2026-09-01" }),
-      24,
+      ends(24),
       TODAY,
     );
     expect(settled.completedAt).toBe("2026-09-01");
   });
 
   it("starts an in-progress entry today and leaves a planned one undated", () => {
-    expect(settleEntry(entry(), 12, TODAY).startedAt).toBe(TODAY);
+    expect(settleEntry(entry(), ends(12), TODAY).startedAt).toBe(TODAY);
     expect(
-      settleEntry(entry({ status: "planned" }), 12, TODAY).startedAt,
+      settleEntry(entry({ status: "planned" }), ends(12), TODAY).startedAt,
     ).toBeNull();
   });
 
   it("puts the score on the 0-10 scale", () => {
-    expect(settleEntry(entry({ score: 7.46 }), 12, TODAY).score).toBe(7.5);
+    expect(settleEntry(entry({ score: 7.46 }), ends(12), TODAY).score).toBe(7.5);
   });
 
   it("holds progress between zero and the total", () => {
     expect(
-      settleEntry(entry({ progressValue: 40 }), 24, TODAY).progressValue,
+      settleEntry(entry({ progressValue: 40 }), ends(24), TODAY).progressValue,
     ).toBe(24);
     expect(
-      settleEntry(entry({ progressValue: -3 }), 24, TODAY).progressValue,
+      settleEntry(entry({ progressValue: -3 }), ends(24), TODAY).progressValue,
     ).toBe(0);
     expect(
-      settleEntry(entry({ progressValue: 140 }), null, TODAY).progressValue,
+      settleEntry(entry({ progressValue: 140 }), ends(null), TODAY).progressValue,
     ).toBe(140);
   });
 });
 
 describe("applyTick", () => {
   it("moves a planned entry to in progress and starts it", () => {
-    const next = applyTick(entry({ status: "planned" }), 1, 12, TODAY);
+    const next = applyTick(entry({ status: "planned" }), 1, ends(12), TODAY);
     expect(next.status).toBe("in_progress");
     expect(next.progressValue).toBe(1);
     expect(next.startedAt).toBe(TODAY);
@@ -76,7 +79,7 @@ describe("applyTick", () => {
     const next = applyTick(
       entry({ progressValue: 11, startedAt: "2026-09-01" }),
       1,
-      12,
+      ends(12),
       TODAY,
     );
     expect(next.status).toBe("completed");
@@ -86,11 +89,11 @@ describe("applyTick", () => {
 
   it("never passes the total and never goes below zero", () => {
     expect(
-      applyTick(entry({ progressValue: 12, status: "completed" }), 1, 12, TODAY)
+      applyTick(entry({ progressValue: 12, status: "completed" }), 1, ends(12), TODAY)
         .progressValue,
     ).toBe(12);
     expect(
-      applyTick(entry({ progressValue: 0 }), -1, 12, TODAY).progressValue,
+      applyTick(entry({ progressValue: 0 }), -1, ends(12), TODAY).progressValue,
     ).toBe(0);
   });
 
@@ -98,7 +101,7 @@ describe("applyTick", () => {
     const next = applyTick(
       entry({ status: "paused", progressValue: 5 }),
       -1,
-      12,
+      ends(12),
       TODAY,
     );
     expect(next.status).toBe("paused");
@@ -109,7 +112,7 @@ describe("applyTick", () => {
     const next = applyTick(
       entry({ progressUnit: "hours", progressValue: 41 }),
       1,
-      null,
+      ends(null),
       TODAY,
     );
     expect(next.progressValue).toBe(42);
@@ -188,5 +191,20 @@ describe("todayIn", () => {
     const late = new Date("2026-10-06T23:30:00Z");
     expect(todayIn("Asia/Tokyo", late)).toBe("2026-10-07");
     expect(todayIn("Not/AZone", late)).toBe("2026-10-06");
+  });
+});
+
+describe("a title still coming out", () => {
+  it("holds progress to what has aired and never completes it by catching up", () => {
+    const airing = { total: null, released: 1180 };
+    const caught = applyTick(entry({ progressValue: 1179 }), 1, airing, TODAY);
+    expect(caught.progressValue).toBe(1180);
+    expect(caught.status).toBe("in_progress");
+    expect(applyTick(caught, 1, airing, TODAY).progressValue).toBe(1180);
+    expect(settleEntry(entry({ progressValue: 1300 }), airing, TODAY).progressValue).toBe(1180);
+    // A planned total with only part of it out: catching up stops short of completing.
+    const cour = { total: 12, released: 7 };
+    expect(applyTick(entry({ progressValue: 6 }), 1, cour, TODAY)).toMatchObject({ progressValue: 7, status: "in_progress" });
+    expect(applyTick(entry({ progressValue: 7 }), 1, cour, TODAY).progressValue).toBe(7);
   });
 });

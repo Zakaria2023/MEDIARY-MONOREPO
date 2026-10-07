@@ -10,7 +10,7 @@ import { UserMedia } from "../../../db/schema/user-media";
 import { UserSettings } from "../../../db/schema/user-settings";
 import { NotFoundError, ValidationError } from "./errors";
 import { ImportParseError, MAX_IMPORT_ITEMS, parseImportFile, ParsedImportItem } from "./import-parsers";
-import { settleEntry, todayIn } from "./tracking-rules";
+import { NO_LIMITS, settleEntry, todayIn } from "./tracking-rules";
 
 /** An import as the history list shows it. */
 export type LibraryImport = Pick<
@@ -255,7 +255,7 @@ export const applyImport = async (userUuid: string, importUuid: string): Promise
           startedAt: line.startedAt,
           completedAt: line.completedAt,
         },
-        null,
+        NO_LIMITS,
         today,
       );
       const [entry] = await tx

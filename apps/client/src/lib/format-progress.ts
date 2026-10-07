@@ -1,5 +1,16 @@
+import { TrackingTarget } from "services";
+import { progressCap, progressLimitsFor } from "services/pure";
 import { ProgressUnit } from "@/db/enum";
 import { PROGRESS_UNIT_LABELS } from "@/db/label";
+
+/**
+ * What an entry's progress reads against: the episodes out so far, else
+ * the total, else nothing; only when the entry counts in the title's unit.
+ */
+export const progressCapFor = (
+  target: Pick<TrackingTarget, "progressUnit" | "progressTotal" | "progressReleased">,
+  unit: ProgressUnit,
+): number | null => progressCap(progressLimitsFor(target, unit));
 
 /** A number with at most one decimal, so hours read "12.5h" and not "12.50h". */
 const compact = (value: number): string => String(Math.round(value * 10) / 10);

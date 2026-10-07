@@ -16,6 +16,7 @@ import { isUniqueViolation } from "./db-result";
 import { NotFoundError, ValidationError } from "./errors";
 import {
   applyTick,
+  progressLimitsFor,
   changeMoment,
   EntryState,
   entryChange,
@@ -61,8 +62,14 @@ export type TrackingTarget = Pick<
   | "dominantColor"
 > & {
   progressUnit: ProgressUnit;
-  /** What progress counts up to: episodes for a series, 100 for a film's percent. */
+  /** What progress counts up to when the title ends: episodes for a series, 100 for a film's percent. Null while a series is open-ended. */
   progressTotal: number | null;
+  /** How much of it is out so far in the same unit: the episodes aired to date. Null when unknown. */
+  progressReleased: number | null;
+  /** Where the title is in its own life: airing, finished, coming. */
+  titleStatus: SelectMedia["status"];
+  /** When the next episode is due, if the source knows. */
+  nextAt: string | null;
   platforms: TrackingPlatform[];
 };
 
@@ -112,10 +119,29 @@ export const LIBRARY_PAGE_SIZE = 48;
  */
 const PROGRESS_TOTAL = sql<number | null>`case ${Media.mediaType}
   when 'anime' then (select ${AnimeDetails.episodeCount} from ${AnimeDetails} where ${AnimeDetails.mediaUuid} = ${Media.uuid})
-  when 'tv' then (select ${TvDetails.episodeCount} from ${TvDetails} where ${TvDetails.mediaUuid} = ${Media.uuid})
+  when 'tv' then (select case when ${Media.status} in ('finished', 'cancelled') then ${TvDetails.episodeCount} else null end from ${TvDetails} where ${TvDetails.mediaUuid} = ${Media.uuid})
   when 'movie' then 100
   when 'manga' then (select ${MangaDetails.chapterCount} from ${MangaDetails} where ${MangaDetails.mediaUuid} = ${Media.uuid})
   when 'book' then (select ${BookDetails.pageCount} from ${BookDetails} where ${BookDetails.mediaUuid} = ${Media.uuid})
+  else null end`;
+
+/**
+ * How much of the title is out so far, in the same unit: the episodes aired
+ * to date for a series, everything once it has finished. Null when nothing
+ * says.
+ */
+const PROGRESS_RELEASED = sql<number | null>`case ${Media.mediaType}
+  when 'anime' then (select coalesce(${AnimeDetails.airedEpisodeCount}, case when ${Media.status} = 'finished' then ${AnimeDetails.episodeCount} else null end) from ${AnimeDetails} where ${AnimeDetails.mediaUuid} = ${Media.uuid})
+  when 'tv' then (select coalesce(${TvDetails.airedEpisodeCount}, ${TvDetails.episodeCount}) from ${TvDetails} where ${TvDetails.mediaUuid} = ${Media.uuid})
+  when 'movie' then 100
+  when 'manga' then (select case when ${Media.status} = 'finished' then ${MangaDetails.chapterCount} else null end from ${MangaDetails} where ${MangaDetails.mediaUuid} = ${Media.uuid})
+  when 'book' then (select ${BookDetails.pageCount} from ${BookDetails} where ${BookDetails.mediaUuid} = ${Media.uuid})
+  else null end`;
+
+/** When the next episode is due, for a series whose source knows. */
+const NEXT_AT = sql<string | null>`case ${Media.mediaType}
+  when 'anime' then (select ${AnimeDetails.nextEpisodeAt}::text from ${AnimeDetails} where ${AnimeDetails.mediaUuid} = ${Media.uuid})
+  when 'tv' then (select ${TvDetails.nextEpisodeAt}::text from ${TvDetails} where ${TvDetails.mediaUuid} = ${Media.uuid})
   else null end`;
 
 /** A game's platforms, in the picker's order. Empty for every other medium. */
@@ -134,6 +160,9 @@ const TARGET_COLUMNS = {
   coverUrl: Media.coverUrl,
   dominantColor: Media.dominantColor,
   progressTotal: PROGRESS_TOTAL,
+  progressReleased: PROGRESS_RELEASED,
+  titleStatus: Media.status,
+  nextAt: NEXT_AT,
   platforms: PLATFORMS,
 };
 
@@ -172,15 +201,15 @@ const toTarget = (row: TargetRow): TrackingTarget => ({
   ...row,
   progressUnit: DEFAULT_PROGRESS_UNIT[row.mediaType],
   progressTotal: knownTotal(row.progressTotal),
+  progressReleased: knownTotal(row.progressReleased),
 });
 
 /**
- * The total an entry's progress is held to. Only when the entry counts in
+ * The limits an entry's progress is held to. Only when the entry counts in
  * the medium's own unit: someone logging hours against an anime has no
  * episode count to stop at.
  */
-const totalFor = (target: Pick<TrackingTarget, "progressUnit" | "progressTotal">, unit: ProgressUnit) =>
-  unit === target.progressUnit ? target.progressTotal : null;
+const limitsFor = progressLimitsFor;
 
 const stateOf = (entry: Pick<TrackedEntry, keyof EntryState>): EntryState => ({
   status: entry.status,
@@ -313,7 +342,7 @@ const writeEntry = async (
       startedAt: input.startedAt,
       completedAt: input.completedAt,
     },
-    totalFor(target, input.progressUnit),
+    limitsFor(target, input.progressUnit),
     today,
   );
   if (next.startedAt !== null && next.completedAt !== null && next.completedAt < next.startedAt) {
@@ -391,6 +420,7 @@ export const tickEntryProgress = async (
         mediaType: Media.mediaType,
         mediaUuid: Media.uuid,
         progressTotal: PROGRESS_TOTAL,
+        progressReleased: PROGRESS_RELEASED,
       })
       .from(UserMedia)
       .innerJoin(Media, eq(Media.uuid, UserMedia.mediaUuid))
@@ -399,15 +429,16 @@ export const tickEntryProgress = async (
     if (!row) {
       throw new NotFoundError("That title is not in your library");
     }
-    const { mediaType, progressTotal, mediaUuid, ...entry } = row;
+    const { mediaType, progressTotal, progressReleased, mediaUuid, ...entry } = row;
 
     const { today, activityPrefs } = await settingsFor(tx, userUuid);
     const target = {
       progressUnit: DEFAULT_PROGRESS_UNIT[mediaType],
       progressTotal: knownTotal(progressTotal),
+      progressReleased: knownTotal(progressReleased),
     };
     const previous = stateOf(entry);
-    const next = applyTick(previous, input.delta, totalFor(target, entry.progressUnit), today);
+    const next = applyTick(previous, input.delta, limitsFor(target, entry.progressUnit), today);
     if (next.progressValue === previous.progressValue && next.status === previous.status) {
       return entry;
     }

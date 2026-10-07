@@ -53,6 +53,7 @@ describe("Kitsu normalization", () => {
       otherRefs: [
         { provider: "mal", externalId: "52991", externalUrl: "https://myanimelist.net/anime/52991" },
         { provider: "anilist", externalId: "154587", externalUrl: "https://anilist.co/anime/154587" },
+        { provider: "tvdb", externalId: "424536", externalUrl: null },
       ],
       canonicalTitle: "Sousou no Frieren",
       releaseDate: "2023-09-29",
@@ -66,7 +67,7 @@ describe("Kitsu normalization", () => {
         { slug: "slice-of-life", name: "Slice of life" },
       ],
       // The season is the quarter the first air date falls in; a late-September premiere counts as summer.
-      details: { kind: "anime", format: "tv", episodeCount: 28, episodeDuration: 24, season: "summer", seasonYear: 2023 },
+      details: { kind: "anime", format: "tv", episodeCount: 28, episodeDuration: 24, season: "summer", seasonYear: 2023, airedEpisodeCount: 28 },
     });
     expect(anime.titles).toEqual([
       { title: "Sousou no Frieren", titleType: "canonical", language: null },

@@ -5,7 +5,9 @@ import { useState } from "react";
 import { useWatch } from "react-hook-form";
 import { TrackedEntry, TrackingTarget } from "services";
 import { Button, ConfirmDialog, Dropdown, FormError, Input, Poster, Sheet, Textarea } from "ui";
-import { MEDIA_TYPE_LABELS } from "@/db/label";
+import { MEDIA_TYPE_LABELS, PROGRESS_UNIT_LABELS } from "@/db/label";
+import { progressCapFor } from "@/lib/format-progress";
+import { titleStatusLine } from "@/lib/title-status";
 import { ProgressStepper } from "@/components/tracking/progress-stepper";
 import { ScorePicker } from "@/components/tracking/score-picker";
 import { StatusPicker } from "@/components/tracking/status-picker";
@@ -55,7 +57,10 @@ export const EntrySheet = ({
     control,
     name: ["status", "score", "progressValue", "progressUnit", "favorite", "platformId"],
   });
-  const total = progressUnit === target.progressUnit ? target.progressTotal : null;
+  const total = progressCapFor(target, progressUnit);
+  const counted = progressUnit === target.progressUnit;
+  const stillOut = counted && target.progressReleased !== null && (target.progressTotal === null || target.progressReleased < target.progressTotal);
+  const statusLine = titleStatusLine(target);
   const subtitle = [MEDIA_TYPE_LABELS[target.mediaType], target.releaseYear]
     .filter(Boolean)
     .join(" · ");
@@ -81,6 +86,7 @@ export const EntrySheet = ({
                 {target.canonicalTitle}
               </span>
               <span className="text-xs text-muted">{subtitle}</span>
+              {statusLine && <span className="line-clamp-1 text-xs text-faint">{statusLine}</span>}
             </div>
           </div>
         }
@@ -118,6 +124,7 @@ export const EntrySheet = ({
             value={progressValue}
             unit={progressUnit}
             total={total}
+            note={stillOut ? `${PROGRESS_UNIT_LABELS[progressUnit]} out so far` : null}
             onChange={(next) => setValue("progressValue", next, { shouldDirty: true })}
           />
 

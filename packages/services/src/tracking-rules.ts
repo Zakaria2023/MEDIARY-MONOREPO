@@ -19,6 +19,18 @@ export type EntryState = {
   completedAt: string | null;
 };
 
+/**
+ * How far progress may go, and where it ends. `total` is the title's final
+ * length, when known (26 episodes, 100 percent, 608 pages); `released` is
+ * how much of it is out so far (the episodes aired to date). Progress is
+ * held to what is out; only reaching the TOTAL completes a title, so a
+ * show still airing is never marked finished by catching up with it.
+ */
+export type ProgressLimits = {
+  total: number | null;
+  released: number | null;
+};
+
 /** What one ProgressEvents row records. Null fields did not change. */
 export type EntryChange = {
   delta: number | null;
@@ -44,10 +56,27 @@ export const todayIn = (timeZone: string, now: Date = new Date()): string => {
   }
 };
 
-/** Progress kept between zero and the title's total, when it has one. */
-export const clampProgress = (value: number, total: number | null): number => {
+/** Nothing is out yet and nothing ends: no limit at all. */
+export const NO_LIMITS: ProgressLimits = { total: null, released: null };
+
+/**
+ * The limits a title puts on an entry, only when the entry counts in the
+ * medium's own unit: someone logging hours against an anime has no
+ * episode count to stop at.
+ */
+export const progressLimitsFor = (
+  target: { progressUnit: ProgressUnit; progressTotal: number | null; progressReleased: number | null },
+  unit: ProgressUnit,
+): ProgressLimits =>
+  unit === target.progressUnit ? { total: target.progressTotal, released: target.progressReleased } : NO_LIMITS;
+
+/** How far progress may go right now: what is out, else the total, else no end. */
+export const progressCap = (limits: ProgressLimits): number | null => limits.released ?? limits.total;
+
+/** Progress kept between zero and what is out, when that is known. */
+export const clampProgress = (value: number, cap: number | null): number => {
   const floor = Math.max(0, Number.isFinite(value) ? value : 0);
-  const capped = total === null ? floor : Math.min(total, floor);
+  const capped = cap === null ? floor : Math.min(cap, floor);
   return Math.round(capped * 100) / 100;
 };
 
@@ -59,11 +88,11 @@ export const clampProgress = (value: number, total: number | null): number => {
  * - Completed means all of it, so progress goes to the total when one is
  *   known, and the finish date is today if none was given.
  * - In progress with no start date starts today.
- * - Progress never goes below zero or past the total.
+ * - Progress never goes below zero or past what is out.
  */
 export const settleEntry = (
   next: EntryState,
-  total: number | null,
+  limits: ProgressLimits,
   today: string,
 ): EntryState => {
   const completed = next.status === "completed";
@@ -71,9 +100,9 @@ export const settleEntry = (
     ...next,
     score: clampScore(next.score),
     progressValue:
-      completed && total !== null
-        ? total
-        : clampProgress(next.progressValue, total),
+      completed && limits.total !== null
+        ? limits.total
+        : clampProgress(next.progressValue, progressCap(limits)),
     startedAt: next.startedAt ?? (next.status === "in_progress" ? today : null),
     completedAt: completed ? (next.completedAt ?? today) : next.completedAt,
   };
@@ -82,18 +111,19 @@ export const settleEntry = (
 /**
  * THE ONE-TAP INCREMENT: "+1 episode", "+1 hour". Logging progress on
  * something planned, paused or dropped means it is being watched again, so
- * it moves to in progress; reaching the total completes it. Lowering
- * progress never changes the status.
+ * it moves to in progress; reaching the TOTAL completes it, while catching
+ * up with what has aired so far does not. Lowering progress never changes
+ * the status.
  */
 export const applyTick = (
   current: EntryState,
   delta: number,
-  total: number | null,
+  limits: ProgressLimits,
   today: string,
 ): EntryState => {
-  const progressValue = clampProgress(current.progressValue + delta, total);
+  const progressValue = clampProgress(current.progressValue + delta, progressCap(limits));
   const moved = progressValue > current.progressValue;
-  const finished = moved && total !== null && progressValue >= total;
+  const finished = moved && limits.total !== null && progressValue >= limits.total;
   const resumed =
     moved && current.status !== "in_progress" && current.status !== "completed";
 

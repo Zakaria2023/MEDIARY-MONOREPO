@@ -142,6 +142,8 @@ const MAPPED_SITES: Record<KitsuKind, Record<string, { provider: Provider; exter
     "myanimelist/anime": { provider: "mal", externalId: (id) => id, url: (id) => `https://myanimelist.net/anime/${id}` },
     "anilist/anime": { provider: "anilist", externalId: (id) => id, url: (id) => `https://anilist.co/anime/${id}` },
     anidb: { provider: "anidb", externalId: (id) => id, url: (id) => `https://anidb.net/anime/${id}` },
+    // The TVDB id is what lets the movie and TV database say how many episodes have aired.
+    "thetvdb/series": { provider: "tvdb", externalId: (id) => id, url: () => null },
   },
   manga: {
     "myanimelist/manga": { provider: "mal", externalId: (id) => `manga:${id}`, url: (id) => `https://myanimelist.net/manga/${id}` },
@@ -257,6 +259,7 @@ const detailsFor = (kind: KitsuKind, record: Resource["attributes"]): Normalized
       serialization: record.serialization?.slice(0, 120) ?? null,
     };
   }
+  const finished = record.status === "finished";
   return {
     kind: "anime",
     format: ANIME_FORMATS[(record.subtype ?? "").toLowerCase()] ?? null,
@@ -266,6 +269,10 @@ const detailsFor = (kind: KitsuKind, record: Resource["attributes"]): Normalized
     seasonYear: yearOf(record.startDate),
     sourceMaterial: null,
     studio: null,
+    // The catalog has no air dates for a running show; the import fills
+    // this from the series' TVDB mapping. Finished means all are out.
+    airedEpisodeCount: finished ? (record.episodeCount ?? null) : null,
+    nextEpisodeAt: null,
   };
 };
 

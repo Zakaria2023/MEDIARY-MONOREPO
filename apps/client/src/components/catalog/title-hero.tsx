@@ -2,7 +2,8 @@ import { Plus, Star } from "lucide-react";
 import Link from "next/link";
 import { AuthUser, CatalogTitle, ListChoice, TitleTracking } from "services";
 import { Badge, CatalogImage, Poster } from "ui";
-import { MEDIA_STATUS_LABELS, MEDIA_TYPE_LABELS } from "@/db/label";
+import { MEDIA_TYPE_LABELS } from "@/db/label";
+import { titleStatusLabel } from "@/lib/title-status";
 import { AddToListButton } from "@/components/lists/add-to-list-button";
 import { TrackButton } from "@/components/tracking/track-button";
 
@@ -59,7 +60,9 @@ export const TitleHero = ({ title, viewer, tracking, listChoices }: TitleHeroPro
             <Badge tone="accent">{MEDIA_TYPE_LABELS[title.mediaType]}</Badge>
             {title.releaseYear && <Badge>{title.releaseYear}</Badge>}
             {title.status !== "released" && title.status !== "unknown" && (
-              <Badge>{MEDIA_STATUS_LABELS[title.status]}</Badge>
+              <Badge tone={title.status === "releasing" ? "accent" : "neutral"}>
+                {titleStatusLabel(title.mediaType, title.status)}
+              </Badge>
             )}
           </div>
 

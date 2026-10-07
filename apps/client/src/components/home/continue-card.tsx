@@ -6,7 +6,7 @@ import { Poster } from "ui";
 import { EntrySheet } from "@/components/tracking/entry-sheet";
 import { ProgressTickButton } from "@/components/tracking/progress-tick-button";
 import { ProgressBar } from "@/components/shared/progress-bar";
-import { formatProgress } from "@/lib/format-progress";
+import { formatProgress, progressCapFor } from "@/lib/format-progress";
 import { titlePath } from "@/lib/title-path";
 import { useTrackedEntry } from "@/lib/use-tracked-entry";
 
@@ -25,7 +25,7 @@ export const ContinueCard = ({ item }: ContinueCardProps) => {
   if (!entry || removed) {
     return null;
   }
-  const total = entry.progressUnit === title.progressUnit ? title.progressTotal : null;
+  const total = progressCapFor(title, entry.progressUnit);
   const finished = entry.status === "completed";
 
   return (

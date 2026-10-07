@@ -8,8 +8,10 @@ import { PROGRESS_UNIT_LABELS } from "@/db/label";
 type ProgressStepperProps = {
   value: number;
   unit: ProgressUnit;
-  /** What the number counts up to, when the title has an end. */
+  /** What the number may go up to right now: the episodes out, or the total. */
   total: number | null;
+  /** Said under the unit when the cap is what is out so far, not the end: "episodes out so far". */
+  note?: string | null;
   onChange: (value: number) => void;
 };
 
@@ -18,7 +20,7 @@ type ProgressStepperProps = {
  * number is the biggest thing in the sheet after the status: it is the one
  * people update most.
  */
-export const ProgressStepper = ({ value, unit, total, onChange }: ProgressStepperProps) => {
+export const ProgressStepper = ({ value, unit, total, note = null, onChange }: ProgressStepperProps) => {
   const step = (delta: number) => {
     const next = Math.max(0, value + delta);
     onChange(total === null ? next : Math.min(total, next));
@@ -54,7 +56,7 @@ export const ProgressStepper = ({ value, unit, total, onChange }: ProgressSteppe
             />
             {total !== null && <span className="text-lg text-muted">/ {total}</span>}
           </label>
-          <span className="text-xs text-muted">{PROGRESS_UNIT_LABELS[unit]}</span>
+          <span className="text-xs text-muted">{note ?? PROGRESS_UNIT_LABELS[unit]}</span>
         </div>
         <Button
           variant="icon"

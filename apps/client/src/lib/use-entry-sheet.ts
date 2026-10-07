@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { startTransition, useActionState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { TrackedEntry, TrackingTarget } from "services";
-import { settleEntry, todayIn } from "services/pure";
+import { progressLimitsFor, settleEntry, todayIn } from "services/pure";
 import { UpsertEntryInput, upsertEntrySchema } from "validators";
 import {
   EntryActionResult,
@@ -92,11 +92,10 @@ export const useEntrySheet = ({
 
   const onSubmit = form.handleSubmit((values) => {
     const today = todayIn(Intl.DateTimeFormat().resolvedOptions().timeZone);
-    const total = values.progressUnit === target.progressUnit ? target.progressTotal : null;
     onOptimistic({
       uuid: entry?.uuid ?? "",
       ...values,
-      ...settleEntry(values, total, today),
+      ...settleEntry(values, progressLimitsFor(target, values.progressUnit), today),
       notes: values.notes || null,
       updatedAt: new Date(),
     });

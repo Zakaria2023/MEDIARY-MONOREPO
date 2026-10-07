@@ -8,7 +8,8 @@ import { Media, SelectMedia } from "../../../db/schema/media";
 import { IngestResult, ingestNormalizedMedia } from "./catalog-ingest";
 import { NotFoundError, ValidationError } from "./errors";
 import { getProvider, listProviderStatuses, providerForType } from "./providers/registry";
-import { MediaProvider, ProviderCandidate, ProviderListKind } from "./providers/types";
+import { lookupSeriesAiring, tmdbProvider } from "./providers/tmdb";
+import { MediaProvider, NormalizedMedia, ProviderCandidate, ProviderListKind } from "./providers/types";
 
 /** A provider hit, with the catalog title it already is, if any. */
 export type ImportCandidate = ProviderCandidate & {
@@ -136,6 +137,44 @@ export const searchProviderCatalog = async (
   });
 };
 
+/**
+ * HOW FAR A RUNNING ANIME HAS GOT. Its own catalog has no air dates, so a
+ * series that is airing or about to air is looked up by its TVDB mapping
+ * in the movie and TV database, which counts aired episodes and knows the
+ * next date. Nothing happens without that source's keys or the mapping,
+ * and a failed lookup never fails the import: the record goes in as it is.
+ */
+const withAiring = async (record: NormalizedMedia): Promise<NormalizedMedia> => {
+  if (
+    record.details.kind !== "anime" ||
+    (record.status !== "releasing" && record.status !== "upcoming") ||
+    !tmdbProvider.isConfigured()
+  ) {
+    return record;
+  }
+  const tvdb = record.otherRefs.find((ref) => ref.provider === "tvdb");
+  if (!tvdb) {
+    return record;
+  }
+  try {
+    const airing = await lookupSeriesAiring(tvdb.externalId);
+    if (!airing) {
+      return record;
+    }
+    return {
+      ...record,
+      details: {
+        ...record.details,
+        airedEpisodeCount: airing.airedEpisodeCount,
+        nextEpisodeAt: airing.nextEpisodeAt,
+        episodeCount: record.details.episodeCount ?? (airing.ended ? airing.airedEpisodeCount : null),
+      },
+    };
+  } catch {
+    return record;
+  }
+};
+
 /** Fetches one provider record and writes it into the catalog. */
 export const importProviderTitle = async (
   provider: Provider,
@@ -143,7 +182,7 @@ export const importProviderTitle = async (
   externalId: string,
 ): Promise<IngestResult> => {
   const adapter = usableProvider(provider, mediaType);
-  return ingestNormalizedMedia(await adapter.getById(mediaType, externalId));
+  return ingestNormalizedMedia(await withAiring(await adapter.getById(mediaType, externalId)));
 };
 
 /**
@@ -179,7 +218,7 @@ export const importProviderList = async (
     await mapWithLimit(due, INGEST_CONCURRENCY, async (candidate) => {
       try {
         const result = await ingestNormalizedMedia(
-          await adapter.getById(mediaType, candidate.externalId),
+          await withAiring(await adapter.getById(mediaType, candidate.externalId)),
         );
         if (result.created) {
           summary.created += 1;

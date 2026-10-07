@@ -4,7 +4,7 @@ import { Poster } from "ui";
 import { MEDIA_TYPE_LABELS } from "@/db/label";
 import { ProgressBar } from "@/components/shared/progress-bar";
 import { SectionHeading } from "@/components/shared/section-heading";
-import { formatProgress } from "@/lib/format-progress";
+import { formatProgress, progressCapFor } from "@/lib/format-progress";
 import { titlePath } from "@/lib/title-path";
 
 type ProfileCurrentProps = {
@@ -26,7 +26,7 @@ export const ProfileCurrent = async ({ profile }: ProfileCurrentProps) => {
       />
       <div className="scrollbar-none -mx-5 flex snap-x gap-3 overflow-x-auto px-5 pb-1 sm:-mx-8 sm:px-8">
         {items.map(({ title, entry }) => {
-          const total = entry.progressUnit === title.progressUnit ? title.progressTotal : null;
+          const total = progressCapFor(title, entry.progressUnit);
           return (
             <article
               key={entry.uuid}

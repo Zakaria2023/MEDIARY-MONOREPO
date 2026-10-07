@@ -38,7 +38,8 @@ export const catalogFacts = (title: CatalogTitle): CatalogFact[] => {
   } else if (details?.kind === "tv") {
     facts.push(
       { label: "Seasons", value: count(details.seasonCount) },
-      { label: "Episodes", value: count(details.episodeCount) },
+      { label: title.status === "releasing" ? "Episodes so far" : "Episodes", value: count(details.airedEpisodeCount ?? details.episodeCount) },
+      { label: "Next episode", value: title.status === "releasing" && details.nextEpisodeAt ? formatDate(details.nextEpisodeAt) : null },
       { label: "Episode length", value: formatRuntime(details.episodeDuration) },
       { label: "Network", value: details.network },
       { label: "Ended", value: title.endDate ? formatDate(title.endDate) : null },
@@ -54,6 +55,8 @@ export const catalogFacts = (title: CatalogTitle): CatalogFact[] => {
     facts.push(
       { label: "Format", value: details.format ? ANIME_FORMAT_LABELS[details.format] : null },
       { label: "Episodes", value: count(details.episodeCount) },
+      { label: "Episodes so far", value: title.status === "releasing" && details.airedEpisodeCount !== details.episodeCount ? count(details.airedEpisodeCount) : null },
+      { label: "Next episode", value: title.status === "releasing" && details.nextEpisodeAt ? formatDate(details.nextEpisodeAt) : null },
       { label: "Episode length", value: formatRuntime(details.episodeDuration) },
       {
         label: "Season",

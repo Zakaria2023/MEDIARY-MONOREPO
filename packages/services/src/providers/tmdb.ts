@@ -10,6 +10,7 @@ import {
   NormalizedTitle,
   ProviderCandidate,
   ProviderListKind,
+  SeriesAiring,
 } from "./types";
 import { popularityScore, TMDB_GENRES, toGenres } from "./vocabulary";
 
@@ -111,6 +112,7 @@ const tvSchema = z.object({
   number_of_episodes: z.number().nullish(),
   episode_run_time: z.array(z.number()).nullish(),
   last_episode_to_air: z.object({ runtime: z.number().nullish() }).nullish(),
+  next_episode_to_air: z.object({ air_date: nullableString }).nullish(),
   in_production: z.boolean().nullish(),
   networks: z.array(z.object({ name: z.string() })).nullish(),
   external_ids: z
@@ -324,7 +326,39 @@ export const normalizeTmdbTv = (raw: unknown): NormalizedMedia => {
         show.episode_run_time?.[0] ?? show.last_episode_to_air?.runtime ?? null,
       network: show.networks?.[0]?.name ?? null,
       inProduction: show.in_production ?? null,
+      // TMDB counts the episodes that have aired; for a running show that is
+      // "so far", for an ended one the total.
+      airedEpisodeCount: show.number_of_episodes ?? null,
+      nextEpisodeAt: show.next_episode_to_air?.air_date ?? null,
     },
+  };
+};
+
+const findSchema = z.object({ tv_results: z.array(z.object({ id: z.number() })) });
+
+const airingSchema = z.object({
+  status: nullableString,
+  number_of_episodes: z.number().nullish(),
+  next_episode_to_air: z.object({ air_date: nullableString }).nullish(),
+});
+
+/**
+ * HOW A SERIES IS AIRING, by its TVDB id: how many episodes are out, when
+ * the next one is due, whether it has ended. The anime catalog has no air
+ * dates for a running show, but it maps every title to its TVDB id, and
+ * TMDB knows the rest. Null when TMDB does not know the series.
+ */
+export const lookupSeriesAiring = async (tvdbId: string): Promise<SeriesAiring | null> => {
+  const found = findSchema.parse(await tmdbFetch(`/find/${tvdbId}`, { external_source: "tvdb_id" }));
+  const id = found.tv_results[0]?.id;
+  if (!id) {
+    return null;
+  }
+  const show = airingSchema.parse(await tmdbFetch(`/tv/${id}`));
+  return {
+    airedEpisodeCount: show.number_of_episodes || null,
+    nextEpisodeAt: show.next_episode_to_air?.air_date ?? null,
+    ended: show.status === "Ended" || show.status === "Canceled",
   };
 };
 

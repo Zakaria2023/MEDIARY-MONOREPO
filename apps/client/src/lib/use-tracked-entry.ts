@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { TrackedEntry, TrackingTarget } from "services";
-import { applyTick, todayIn } from "services/pure";
+import { applyTick, progressLimitsFor, todayIn } from "services/pure";
 import { tickProgressAction } from "@/app/(app)/library/actions";
 
 /**
@@ -28,9 +28,8 @@ export const useTrackedEntry = (target: TrackingTarget, initial: TrackedEntry | 
       return;
     }
     const before = entry;
-    const total = entry.progressUnit === target.progressUnit ? target.progressTotal : null;
     const today = todayIn(Intl.DateTimeFormat().resolvedOptions().timeZone);
-    setEntry({ ...entry, ...applyTick(entry, delta, total, today) });
+    setEntry({ ...entry, ...applyTick(entry, delta, progressLimitsFor(target, entry.progressUnit), today) });
     setTickError(null);
     startTick(async () => {
       const result = await tickProgressAction({ entryUuid: before.uuid, delta });

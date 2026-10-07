@@ -313,3 +313,16 @@ export const MANGA_FORMAT_LABELS: Record<MangaFormat, string> = {
   doujin: "Doujinshi",
   oel: "Original English",
 };
+
+/**
+ * The medium's own word for where a title is in its life, where the
+ * generic one reads wrong: a show is "Airing", a manga "Ongoing", a record
+ * is simply out. Anything not listed falls back to MEDIA_STATUS_LABELS.
+ */
+export const MEDIA_STATUS_WORDS: Partial<Record<MediaType, Partial<Record<MediaStatus, string>>>> = {
+  anime: { releasing: "Airing", finished: "Finished airing", hiatus: "On hiatus" },
+  tv: { releasing: "Airing", finished: "Ended", hiatus: "On hiatus" },
+  manga: { releasing: "Ongoing", finished: "Completed", hiatus: "On hiatus" },
+  music: { releasing: "Out", released: "Out" },
+  game: { releasing: "Early access" },
+};

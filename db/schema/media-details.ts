@@ -31,6 +31,9 @@ export const AnimeDetails = pgTable("AnimeDetails", {
   episodeDuration: integer("episode_duration"),
   season: seasonEnum("season"),
   seasonYear: integer("season_year"),
+  // Episodes out so far while it airs; equals episodeCount once it has finished.
+  airedEpisodeCount: integer("aired_episode_count"),
+  nextEpisodeAt: date("next_episode_at"),
   // "manga", "light novel", "original" as the provider gives it.
   sourceMaterial: varchar("source_material", { length: 40 }),
   studio: varchar("studio", { length: 120 }),
@@ -81,6 +84,9 @@ export const TvDetails = pgTable("TvDetails", {
   network: varchar("network", { length: 120 }),
   // Whether the provider says more episodes are coming.
   inProduction: boolean("in_production"),
+  // Episodes out so far while it airs; equals episodeCount once it has ended.
+  airedEpisodeCount: integer("aired_episode_count"),
+  nextEpisodeAt: date("next_episode_at"),
 });
 
 export const MusicDetails = pgTable("MusicDetails", {

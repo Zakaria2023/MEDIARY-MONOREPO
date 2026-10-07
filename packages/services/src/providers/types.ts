@@ -63,6 +63,8 @@ export type NormalizedTvDetails = {
   episodeDuration: number | null;
   network: string | null;
   inProduction: boolean | null;
+  airedEpisodeCount: number | null;
+  nextEpisodeAt: string | null;
 };
 
 export type NormalizedGameDetails = {
@@ -82,6 +84,16 @@ export type NormalizedAnimeDetails = {
   seasonYear: number | null;
   sourceMaterial: string | null;
   studio: string | null;
+  airedEpisodeCount: number | null;
+  nextEpisodeAt: string | null;
+};
+
+/** What a series' airing looks like right now, from a source that tracks episodes. */
+export type SeriesAiring = {
+  airedEpisodeCount: number | null;
+  nextEpisodeAt: string | null;
+  /** Whether the source says it has ended, so the aired count is the total. */
+  ended: boolean;
 };
 
 export type NormalizedMusicDetails = {

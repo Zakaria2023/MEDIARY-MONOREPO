@@ -23,10 +23,13 @@ export {
   applyTick,
   clampProgress,
   entryChange,
+  NO_LIMITS,
+  progressCap,
+  progressLimitsFor,
   settleEntry,
   todayIn,
 } from "./tracking-rules";
-export type { EntryChange, EntryState } from "./tracking-rules";
+export type { EntryChange, EntryState, ProgressLimits } from "./tracking-rules";
 
 export { canView } from "./visibility";
 export type { ViewerRelation } from "./visibility";
