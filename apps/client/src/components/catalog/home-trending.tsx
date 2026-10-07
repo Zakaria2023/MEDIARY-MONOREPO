@@ -8,7 +8,7 @@ export const HomeTrending = async () => {
   return (
     <TitleRail
       heading="Trending this week"
-      reason="Across movies, shows, games, anime and music."
+      reason="Across movies, shows, games, anime, music, manga and books."
       href="/explore"
       titles={trending.items}
       showType

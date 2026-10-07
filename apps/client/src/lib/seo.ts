@@ -31,7 +31,7 @@ export const SITE_NAME = "Mediary";
 export const SITE_TAGLINE = "Your entertainment, beautifully tracked";
 
 export const SITE_DESCRIPTION =
-  "One profile for everything you watch, play, read, rate and love. Track anime, games, movies and TV in one place, compare taste with friends, and share your year.";
+  "One profile for everything you watch, play, read, rate and love. Track anime, games, movies, TV, music, manga and books in one place, compare taste with friends, and share your year.";
 
 /**
  * The public origin, used for canonicals, OG URLs and the sitemap. Set
