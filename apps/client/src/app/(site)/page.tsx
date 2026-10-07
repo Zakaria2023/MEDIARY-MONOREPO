@@ -1,19 +1,21 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AsyncSection } from "ui";
-import { HomeTrending } from "@/components/catalog/home-trending";
+import { ExploreRailsSkeleton } from "@/components/catalog/explore-rails-skeleton";
 import { TitleRailSkeleton } from "@/components/catalog/title-rail-skeleton";
 import { ContinueRail } from "@/components/home/continue-rail";
 import { ContinueRailSkeleton } from "@/components/home/continue-rail-skeleton";
 import { FeedSkeleton } from "@/components/feed/feed-skeleton";
 import { FriendsPanel } from "@/components/home/friends-panel";
+import { HomeBrowse } from "@/components/home/home-browse";
+import { HomeRails } from "@/components/home/home-rails";
 import { RecommendationRail } from "@/components/recommendations/recommendation-rail";
 import { getCurrentUser } from "@/lib/auth";
 
 /**
  * The root: marketing when signed out, home when signed in. A member gets
- * a greeting, what they are in the middle of, then what is trending; a
- * visitor gets the promise and the catalog under it.
+ * a greeting, what they are in the middle of, their picks, then the whole
+ * catalog by medium; a visitor gets the promise and the same catalog under it.
  */
 const HomePage = async () => {
   const user = await getCurrentUser();
@@ -93,8 +95,13 @@ const HomePage = async () => {
         </div>
       )}
       <div className="mx-auto w-full max-w-7xl">
-        <AsyncSection reloadKey="home-trending" skeleton={<TitleRailSkeleton />}>
-          <HomeTrending />
+        <AsyncSection reloadKey="home-browse" skeleton={<TitleRailSkeleton />}>
+          <HomeBrowse />
+        </AsyncSection>
+      </div>
+      <div className="mx-auto w-full max-w-7xl">
+        <AsyncSection reloadKey="home-rails" skeleton={<ExploreRailsSkeleton />}>
+          <HomeRails />
         </AsyncSection>
       </div>
       {user && (
