@@ -5,6 +5,7 @@ import { Blocks } from "../../../db/schema/blocks";
 import { Comments, SelectComments } from "../../../db/schema/comments";
 import { Users } from "../../../db/schema/users";
 import { NotFoundError } from "./errors";
+import { notify } from "./notifications";
 import { reachSubject, SocialSubject, subjectColumns, subjectOf } from "./social-reach";
 import { SocialUser, socialUserColumns } from "./social-user";
 
@@ -67,10 +68,22 @@ export const listComments = async (viewerUuid: string, subject: SocialSubject): 
 export const addComment = async (userUuid: string, input: CommentInput): Promise<WrittenComment> => {
   const subject = subjectOf(input);
   const reached = await reachSubject(userUuid, subject);
-  const [written] = await db
-    .insert(Comments)
-    .values({ userUuid, ...subjectColumns(subject), body: input.body })
-    .returning(COMMENT_COLUMNS);
+  const written = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .insert(Comments)
+      .values({ userUuid, ...subjectColumns(subject), body: input.body })
+      .returning(COMMENT_COLUMNS);
+    if (row) {
+      await notify(tx, {
+        userUuid: reached.authorUuid,
+        actorUuid: userUuid,
+        kind: "replied",
+        ...subjectColumns(subject),
+        commentUuid: row.uuid,
+      });
+    }
+    return row;
+  });
   const [author] = await db.select(socialUserColumns(Users)).from(Users).where(eq(Users.uuid, userUuid));
   if (!written || !author) {
     throw new Error("The comment was not written");

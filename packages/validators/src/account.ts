@@ -60,5 +60,6 @@ export const privacySchema = z.object({
   tasteComparison: z.enum(["everyone", "followers", "nobody"]),
   hideSpoilers: z.boolean(),
   showAdultContent: z.boolean(),
+  emailDigest: z.boolean(),
   activityPrefs: activityPrefsSchema,
 });

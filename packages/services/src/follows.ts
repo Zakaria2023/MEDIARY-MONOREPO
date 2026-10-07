@@ -4,6 +4,7 @@ import { Blocks } from "../../../db/schema/blocks";
 import { Follows } from "../../../db/schema/follows";
 import { Users } from "../../../db/schema/users";
 import { recordActivity } from "./activities";
+import { notify } from "./notifications";
 import { isUniqueViolation } from "./db-result";
 import { NotFoundError, ValidationError } from "./errors";
 
@@ -64,6 +65,7 @@ export const followUser = async (followerUuid: string, followingUuid: string): P
         { userUuid: followerUuid, kind: "followed", targetUserUuid: followingUuid },
         null,
       );
+      await notify(tx, { userUuid: followingUuid, actorUuid: followerUuid, kind: "followed" });
     });
   } catch (error) {
     if (!isUniqueViolation(error)) {

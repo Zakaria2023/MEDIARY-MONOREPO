@@ -24,3 +24,4 @@ export * from "./imports";
 export * from "./review-reports";
 export * from "./reactions";
 export * from "./comments";
+export * from "./notifications";
