@@ -320,3 +320,24 @@ export const deleteReview = async (userUuid: string, reviewUuid: string): Promis
     throw new NotFoundError("That review could not be found");
   }
 };
+
+/** One review, with its title, when the viewer may read it; null otherwise. */
+export const getReviewByUuid = async (reviewUuid: string, viewerUuid: string | null): Promise<UserReview | null> => {
+  const [row] = await db
+    .select({ ...REVIEW_COLUMNS, author: socialUserColumns(Users), title: TITLE_COLUMNS })
+    .from(Reviews)
+    .innerJoin(Users, eq(Users.uuid, Reviews.userUuid))
+    .innerJoin(UserSettings, eq(UserSettings.userUuid, Reviews.userUuid))
+    .innerJoin(Media, eq(Media.uuid, Reviews.mediaUuid))
+    .where(and(eq(Reviews.uuid, reviewUuid), eq(Users.status, "active"), readableBy(viewerUuid)));
+  if (!row) {
+    return null;
+  }
+  const [reactions, comments] = await Promise.all([reviewReactions(viewerUuid, [row.uuid]), reviewCommentCounts([row.uuid])]);
+  return {
+    ...row,
+    isOwn: row.author.uuid === viewerUuid,
+    reactions: reactions.get(row.uuid) ?? noReactions(),
+    commentCount: comments.get(row.uuid) ?? 0,
+  };
+};

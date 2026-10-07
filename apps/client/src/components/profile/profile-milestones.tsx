@@ -1,4 +1,4 @@
-import { Award } from "lucide-react";
+import { Award, Download } from "lucide-react";
 import { getMilestones, PublicProfile } from "services";
 import { formatCount } from "utils";
 import { ProgressBar } from "@/components/shared/progress-bar";
@@ -23,10 +23,26 @@ export const ProfileMilestones = async ({ profile }: ProfileMilestonesProps) => 
     return null;
   }
   const next = milestones.next[0];
+  const biggest = milestones.reached[0];
 
   return (
     <section className="flex flex-col gap-4">
-      <SectionHeading title="Milestones" description="What it has all added up to." />
+      <SectionHeading
+        title="Milestones"
+        description="What it has all added up to."
+        action={
+          profile.relation === "owner" && biggest ? (
+            <a
+              href={`/stats/milestone?measure=${encodeURIComponent(biggest.measure)}&threshold=${biggest.threshold}`}
+              download={`mediary-milestone-${biggest.threshold}.png`}
+              className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-ink"
+            >
+              <Download size={14} />
+              Save as image
+            </a>
+          ) : undefined
+        }
+      />
       <div className="flex flex-col gap-4 rounded-card border border-hairline bg-surface p-5">
         {milestones.reached.length > 0 && (
           <ul className="flex flex-wrap gap-2">

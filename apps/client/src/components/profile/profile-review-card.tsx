@@ -1,4 +1,4 @@
-import { Star } from "lucide-react";
+import { Download, Star } from "lucide-react";
 import Link from "next/link";
 import { UserReview } from "services";
 import { Poster } from "ui";
@@ -6,7 +6,7 @@ import { formatDate } from "utils";
 import { MEDIA_TYPE_LABELS } from "@/db/label";
 import { ReviewBody } from "@/components/reviews/review-body";
 import { ResponseBar } from "@/components/social/response-bar";
-import { titlePath } from "@/lib/title-path";
+import { reviewCardPath, titlePath } from "@/lib/title-path";
 
 type ProfileReviewCardProps = {
   review: UserReview;
@@ -39,6 +39,16 @@ export const ProfileReviewCard = ({ review, canRespond }: ProfileReviewCardProps
     </header>
     {review.headline && <h3 className="font-display text-base text-ink">{review.headline}</h3>}
     <ReviewBody body={review.body} containsSpoilers={review.containsSpoilers} />
-    <ResponseBar subject={{ reviewUuid: review.uuid }} reactions={review.reactions} commentCount={review.commentCount} canRespond={canRespond} />
+    <footer className="flex flex-col gap-3">
+      <ResponseBar subject={{ reviewUuid: review.uuid }} reactions={review.reactions} commentCount={review.commentCount} canRespond={canRespond} />
+      <a
+        href={reviewCardPath(review.title, review.uuid)}
+        download={`mediary-review-${review.title.slug}.png`}
+        className="flex w-fit items-center gap-1.5 text-xs text-faint transition-colors hover:text-ink"
+      >
+        <Download size={13} />
+        Save as image
+      </a>
+    </footer>
   </article>
 );

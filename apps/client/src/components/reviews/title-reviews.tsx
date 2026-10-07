@@ -35,7 +35,7 @@ export const TitleReviews = async ({ title, viewer }: TitleReviewsProps) => {
       {others.length > 0 ? (
         <div className="flex flex-col gap-4">
           {others.map((review) => (
-            <ReviewCard key={review.uuid} review={review} canReport={viewer !== null} />
+            <ReviewCard key={review.uuid} review={review} title={title} canReport={viewer !== null} />
           ))}
         </div>
       ) : (

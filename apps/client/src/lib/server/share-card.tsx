@@ -204,3 +204,157 @@ export const profileCard = async ({ name, username, line, stats, avatarUrl }: Pr
     ),
     CARD_SIZE,
   );
+
+/** A poster on a card: the artwork, or the title's color with its initial. */
+type CardPoster = {
+  url: string | null;
+  dominantColor: string | null;
+  title: string;
+};
+
+const PosterRow = ({ posters }: { posters: CardPoster[] }) => (
+  <div style={{ display: "flex", gap: 14, flexShrink: 0 }}>
+    {posters.slice(0, 4).map((poster, index) => (
+      <div
+        key={`${poster.title}-${index}`}
+        style={{
+          width: 120,
+          height: 180,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 14,
+          border: "1px solid rgba(255,255,255,0.14)",
+          background: poster.url ? `url(${poster.url})` : (poster.dominantColor ?? "#171a26"),
+          backgroundSize: "120px 180px",
+          fontSize: 40,
+          fontWeight: 600,
+          color: "#f7f8fc",
+          transform: `translateY(${index % 2 === 0 ? 0 : 24}px)`,
+        }}
+      >
+        {poster.url ? "" : poster.title.slice(0, 1).toUpperCase()}
+      </div>
+    ))}
+  </div>
+);
+
+type FavoritesCardInput = {
+  name: string;
+  username: string;
+  posters: CardPoster[];
+  stats: CardStat[];
+};
+
+/** The favorites card: the posters that define the taste, and the counts behind them. */
+export const favoritesCard = async ({ name, username, posters, stats }: FavoritesCardInput) =>
+  new ImageResponse(
+    (
+      <CardFrame
+        kicker={`@${username} on Mediary`}
+        headline={`${name}'s favorites`}
+        line="The ones that define the taste."
+        stats={stats}
+        aside={<PosterRow posters={posters} />}
+        markUrl={await loadMark()}
+      />
+    ),
+    CARD_SIZE,
+  );
+
+type MilestoneCardInput = {
+  name: string;
+  /** "100 completed", "500 hours". */
+  label: string;
+  value: string;
+  stats: CardStat[];
+};
+
+/** A milestone card: the number, big, and what it was reached across. */
+export const milestoneCard = async ({ name, label, value, stats }: MilestoneCardInput) =>
+  new ImageResponse(
+    (
+      <CardFrame
+        kicker="Milestone on Mediary"
+        headline={label}
+        line={`${name} just got there.`}
+        stats={stats}
+        aside={
+          <div
+            style={{
+              width: 260,
+              height: 260,
+              display: "flex",
+              flexShrink: 0,
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: 130,
+              background: "conic-gradient(#1697ff 0deg, #7b2cff 180deg, #d815ff 360deg)",
+            }}
+          >
+            <div
+              style={{
+                width: 212,
+                height: 212,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: 106,
+                background: "#090a10",
+                fontSize: value.length > 4 ? 60 : 80,
+                fontWeight: 600,
+              }}
+            >
+              {value}
+            </div>
+          </div>
+        }
+        markUrl={await loadMark()}
+      />
+    ),
+    CARD_SIZE,
+  );
+
+type ReviewCardInput = {
+  name: string;
+  title: string;
+  poster: CardPoster;
+  headline: string | null;
+  excerpt: string;
+  score: number | null;
+};
+
+/** A review card: the poster, the headline or the title, the first lines, and the score. */
+export const reviewCard = async ({ name, title, poster, headline, excerpt, score }: ReviewCardInput) =>
+  new ImageResponse(
+    (
+      <CardFrame
+        kicker={`${name} on Mediary`}
+        headline={headline ?? title}
+        line={headline ? `${title}. ${excerpt}` : excerpt}
+        stats={score === null ? [] : [{ label: "Score", value: `${score}/10` }]}
+        aside={
+          <div
+            style={{
+              width: 220,
+              height: 330,
+              display: "flex",
+              flexShrink: 0,
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: 18,
+              border: "1px solid rgba(255,255,255,0.14)",
+              background: poster.url ? `url(${poster.url})` : (poster.dominantColor ?? "#171a26"),
+              backgroundSize: "220px 330px",
+              fontSize: 72,
+              fontWeight: 600,
+            }}
+          >
+            {poster.url ? "" : poster.title.slice(0, 1).toUpperCase()}
+          </div>
+        }
+        markUrl={await loadMark()}
+      />
+    ),
+    CARD_SIZE,
+  );

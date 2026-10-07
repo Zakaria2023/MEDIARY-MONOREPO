@@ -1,21 +1,24 @@
-import { Star } from "lucide-react";
+import { Download, Star } from "lucide-react";
 import Link from "next/link";
-import { TitleReview } from "services";
+import { CatalogCard, TitleReview } from "services";
 import { formatDate } from "utils";
 import { UserAvatar } from "@/components/profile/user-avatar";
 import { ReportReviewButton } from "@/components/reviews/report-review-button";
 import { ReviewBody } from "@/components/reviews/review-body";
 import { ResponseBar } from "@/components/social/response-bar";
 import { profilePath } from "@/lib/profile-path";
+import { reviewCardPath } from "@/lib/title-path";
 
 type ReviewCardProps = {
   review: TitleReview;
+  /** The title the review is about, for its card's address. */
+  title: Pick<CatalogCard, "mediaType" | "slug">;
   /** Whether the viewer may flag it, like it and reply: signed in, and not its author. */
   canReport: boolean;
 };
 
 /** One member's review: who, when, their score, the headline and the text, and the room to answer it. */
-export const ReviewCard = ({ review, canReport }: ReviewCardProps) => (
+export const ReviewCard = ({ review, title, canReport }: ReviewCardProps) => (
   <article className="flex flex-col gap-3 rounded-card border border-hairline bg-surface p-5">
     <header className="flex items-center gap-3">
       <UserAvatar name={review.author.displayName} imageUrl={review.author.imageUrl} size="md" />
@@ -51,7 +54,17 @@ export const ReviewCard = ({ review, canReport }: ReviewCardProps) => (
         commentCount={review.commentCount}
         canRespond={canReport}
       />
-      {canReport && <ReportReviewButton reviewUuid={review.uuid} />}
+      <div className="flex items-center gap-4">
+        <a
+          href={reviewCardPath(title, review.uuid)}
+          download={`mediary-review-${title.slug}.png`}
+          className="flex items-center gap-1.5 text-xs text-faint transition-colors hover:text-ink"
+        >
+          <Download size={13} />
+          Save as image
+        </a>
+        {canReport && <ReportReviewButton reviewUuid={review.uuid} />}
+      </div>
     </footer>
   </article>
 );
