@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ThreadComment } from "services";
 import { formatRelativeTime } from "utils";
 import { UserAvatar } from "@/components/profile/user-avatar";
+import { ReportButton } from "@/components/social/report-button";
 import { profilePath } from "@/lib/profile-path";
 
 type CommentLineProps = {
@@ -31,6 +32,7 @@ export const CommentLine = ({ comment, onRemove }: CommentLineProps) => (
         <time dateTime={comment.createdAt.toISOString()}>{formatRelativeTime(comment.createdAt)}</time>
       </p>
       <p className="whitespace-pre-line text-sm text-secondary">{comment.body}</p>
+      {!comment.canRemove && <ReportButton subject={{ kind: "comment", uuid: comment.uuid }} what="this reply" compact />}
     </div>
     {comment.canRemove && (
       <button

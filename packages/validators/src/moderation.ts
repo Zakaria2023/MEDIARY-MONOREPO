@@ -1,22 +1,23 @@
 import { z } from "zod";
-import { reportReasons, userRoles } from "../../../db/enum";
+import { reportKinds, reportReasons, userRoles } from "../../../db/enum";
 
-export type ReportReviewInput = z.infer<typeof reportReviewSchema>;
+export type ReportInput = z.infer<typeof reportSchema>;
 export type ResolveReportInput = z.infer<typeof resolveReportSchema>;
 export type MemberRoleInput = z.infer<typeof memberRoleSchema>;
 export type MemberStatusInput = z.infer<typeof memberStatusSchema>;
 
-/** A member flagging a review. */
-export const reportReviewSchema = z.object({
-  reviewUuid: z.uuid(),
+/** A member flagging a review, a reply, a list or a profile. */
+export const reportSchema = z.object({
+  kind: z.enum(reportKinds),
+  uuid: z.uuid(),
   reason: z.enum(reportReasons),
   note: z.string().trim().max(500, "Keep the note under 500 characters"),
 });
 
-/** What staff did with a report. */
+/** What staff did with a report: dismissed it, or removed the thing. */
 export const resolveReportSchema = z.object({
   reportUuid: z.uuid(),
-  action: z.enum(["dismiss", "remove_review"]),
+  action: z.enum(["dismiss", "remove"]),
 });
 
 /** An admin changing a member's role. */

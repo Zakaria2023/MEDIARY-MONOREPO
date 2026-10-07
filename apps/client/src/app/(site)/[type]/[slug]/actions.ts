@@ -8,7 +8,6 @@ import {
   ListChoice,
   OwnReview,
   removeFromList,
-  reportReview,
   saveReview,
   setFeaturedReview,
 } from "services";
@@ -20,8 +19,6 @@ import {
   ListItemInput,
   listSchema,
   ListInput,
-  reportReviewSchema,
-  ReportReviewInput,
   reviewSchema,
   ReviewInput,
   featureReviewSchema,
@@ -139,25 +136,6 @@ export const createListForTitleAction = async (
     };
   } catch (error) {
     return fail(error, "Could not create the list");
-  }
-};
-
-/** A member flagging someone's review for staff. */
-export const reportReviewAction = async (
-  _prevState: ActionResult,
-  input: ReportReviewInput,
-): Promise<ActionResult> => {
-  const user = await requireOnboardedUser();
-  const parsed = reportReviewSchema.safeParse(input);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Check the form" };
-  }
-
-  try {
-    await reportReview(user.uuid, parsed.data);
-    return { success: true };
-  } catch (error) {
-    return fail(error, "Could not send this report");
   }
 };
 

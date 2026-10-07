@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CatalogCard, TitleReview } from "services";
 import { formatDate } from "utils";
 import { UserAvatar } from "@/components/profile/user-avatar";
-import { ReportReviewButton } from "@/components/reviews/report-review-button";
+import { ReportButton } from "@/components/social/report-button";
 import { ReviewBody } from "@/components/reviews/review-body";
 import { ResponseBar } from "@/components/social/response-bar";
 import { profilePath } from "@/lib/profile-path";
@@ -63,7 +63,7 @@ export const ReviewCard = ({ review, title, canReport }: ReviewCardProps) => (
           <Download size={13} />
           Save as image
         </a>
-        {canReport && <ReportReviewButton reviewUuid={review.uuid} />}
+        {canReport && <ReportButton subject={{ kind: "review", uuid: review.uuid }} what="this review" />}
       </div>
     </footer>
   </article>

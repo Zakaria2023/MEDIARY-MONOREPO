@@ -8,14 +8,14 @@ import { requireAdmin, requireStaff } from "@/lib/auth";
 
 /**
  * Closing a report. Dismissing is any staff member's call; removing the
- * review is a deletion, so it is an admin's.
+ * thing (a review, a reply, a list, or an account suspended) is an admin's.
  */
 export const resolveReportAction = async (input: ResolveReportInput): Promise<ActionResult> => {
   const parsed = resolveReportSchema.safeParse(input);
   if (!parsed.success) {
     return { error: "That report could not be found" };
   }
-  const staff = parsed.data.action === "remove_review" ? await requireAdmin() : await requireStaff();
+  const staff = parsed.data.action === "remove" ? await requireAdmin() : await requireStaff();
 
   try {
     await resolveReport(staff.uuid, parsed.data.reportUuid, parsed.data.action);

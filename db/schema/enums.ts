@@ -14,6 +14,7 @@ import {
   progressUnits,
   providers,
   releaseTypes,
+  reportKinds,
   reportReasons,
   reportStatuses,
   seasons,
@@ -67,5 +68,6 @@ export const importSourceEnum = pgEnum("import_source", importSources);
 export const importStatusEnum = pgEnum("import_status", importStatuses);
 export const importOutcomeEnum = pgEnum("import_outcome", importOutcomes);
 
+export const reportKindEnum = pgEnum("report_kind", reportKinds);
 export const reportReasonEnum = pgEnum("report_reason", reportReasons);
 export const reportStatusEnum = pgEnum("report_status", reportStatuses);

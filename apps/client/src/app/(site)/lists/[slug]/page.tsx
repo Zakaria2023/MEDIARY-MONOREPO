@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { ListEditor } from "@/components/lists/list-editor";
 import { ListHeader } from "@/components/lists/list-header";
 import { ListItems } from "@/components/lists/list-items";
+import { ReportButton } from "@/components/social/report-button";
+import { getCurrentUser } from "@/lib/auth";
 import { JsonLd } from "@/components/seo/json-ld";
 import { loadList } from "@/lib/load-list";
 import { pageMetadata } from "@/lib/seo";
@@ -36,7 +38,7 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
  */
 const ListPage = async ({ params }: Props) => {
   const { slug } = await params;
-  const list = await loadList(slug);
+  const [list, viewer] = await Promise.all([loadList(slug), getCurrentUser()]);
   if (!list) {
     notFound();
   }
@@ -50,7 +52,7 @@ const ListPage = async ({ params }: Props) => {
         <ListEditor list={list} />
       ) : (
         <>
-          <ListHeader list={list} />
+          <ListHeader list={list} actions={viewer ? <ReportButton subject={{ kind: "list", uuid: list.uuid }} what="this list" /> : undefined} />
           <ListItems items={list.items} ranked={list.ranked} />
         </>
       )}

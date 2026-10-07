@@ -26,7 +26,7 @@ const ReportsPage = async ({ searchParams }: Props) => {
     <div className="flex flex-col gap-8">
       <PageHeading
         title="Reports"
-        description="Reviews members flagged, waiting for a decision."
+        description="Reviews, replies, lists and profiles members flagged, waiting for a decision."
       />
       <AsyncSection reloadKey={`reports-${page}`} skeleton={<ReportsListSkeleton />}>
         <ReportsList page={page} canRemove={viewer?.role === "admin"} />

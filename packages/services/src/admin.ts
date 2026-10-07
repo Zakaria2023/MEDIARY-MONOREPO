@@ -5,7 +5,8 @@ import { UserRole } from "../../../db/enum";
 import { Media } from "../../../db/schema/media";
 import { UserMedia } from "../../../db/schema/user-media";
 import { SelectUsers, Users } from "../../../db/schema/users";
-import { ValidationError } from "./errors";
+import { recordAudit } from "./audit";
+import { NotFoundError, ValidationError } from "./errors";
 
 /** A member as the admin's members list shows them. */
 export type MemberRow = Pick<
@@ -89,7 +90,14 @@ export const setMemberRole = async (actorUuid: string, userUuid: string, role: U
   if (actorUuid === userUuid) {
     throw new ValidationError("Ask another admin to change your own role");
   }
-  await db.update(Users).set({ role }).where(and(eq(Users.uuid, userUuid), ne(Users.uuid, actorUuid)));
+  await db.transaction(async (tx) => {
+    const [before] = await tx.select({ role: Users.role }).from(Users).where(eq(Users.uuid, userUuid)).for("update");
+    if (!before) {
+      throw new NotFoundError("That account could not be found");
+    }
+    await tx.update(Users).set({ role }).where(and(eq(Users.uuid, userUuid), ne(Users.uuid, actorUuid)));
+    await recordAudit(tx, { actorUuid, action: "member.role", targetKind: "user", targetUuid: userUuid, details: { from: before.role, to: role } });
+  });
 };
 
 /** An admin suspending someone else, or reinstating them. */
@@ -101,5 +109,12 @@ export const setMemberStatus = async (
   if (actorUuid === userUuid) {
     throw new ValidationError("You cannot suspend your own account");
   }
-  await db.update(Users).set({ status }).where(and(eq(Users.uuid, userUuid), ne(Users.uuid, actorUuid)));
+  await db.transaction(async (tx) => {
+    const [before] = await tx.select({ status: Users.status }).from(Users).where(eq(Users.uuid, userUuid)).for("update");
+    if (!before) {
+      throw new NotFoundError("That account could not be found");
+    }
+    await tx.update(Users).set({ status }).where(and(eq(Users.uuid, userUuid), ne(Users.uuid, actorUuid)));
+    await recordAudit(tx, { actorUuid, action: "member.status", targetKind: "user", targetUuid: userUuid, details: { from: before.status, to: status } });
+  });
 };

@@ -316,6 +316,16 @@ export const reportReasons = [
 
 export type ReportReason = (typeof reportReasons)[number];
 
+/** What a report is about. */
+export const reportKinds = [
+  "review",
+  "comment",
+  "list",
+  "profile",
+] as const satisfies readonly string[];
+
+export type ReportKind = (typeof reportKinds)[number];
+
 /** A report's life: waiting for staff, closed without action, or acted on. */
 export const reportStatuses = [
   "open",

@@ -5,7 +5,7 @@ import { kitsuProvider } from "./kitsu";
 import { musicbrainzProvider } from "./musicbrainz";
 import { openLibraryProvider } from "./openlibrary";
 import { tmdbProvider } from "./tmdb";
-import { MediaProvider } from "./types";
+import { MediaProvider, ProviderAttribution } from "./types";
 
 /** What the admin shows about a source: whether it can be used yet. */
 export type ProviderStatus = {
@@ -44,3 +44,6 @@ export const listProviderStatuses = (): ProviderStatus[] =>
     mediaTypes: adapter.mediaTypes,
     configured: adapter.isConfigured(),
   }));
+
+/** The credit every source asks for, for the one page that names them. */
+export const listProviderAttributions = (): ProviderAttribution[] => ADAPTERS.map((adapter) => adapter.attribution);

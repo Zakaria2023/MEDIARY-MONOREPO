@@ -2,6 +2,7 @@
 
 import { Ban, BellOff, Bell } from "lucide-react";
 import { Button, ConfirmDialog } from "ui";
+import { ReportButton } from "@/components/social/report-button";
 import { useProfileControls } from "@/app/(site)/profile/[username]/use-profile-controls";
 
 type ProfileControlsProps = {
@@ -27,6 +28,7 @@ export const ProfileControls = ({ userUuid, displayName, initialMuted }: Profile
         <Button variant="icon" onClick={openBlock} disabled={isPending} aria-label={`Block ${displayName}`}>
           <Ban size={16} />
         </Button>
+        <ReportButton subject={{ kind: "profile", uuid: userUuid }} what="this profile" icon />
       </div>
       {error && <p className="text-xs text-danger">{error}</p>}
       <ConfirmDialog

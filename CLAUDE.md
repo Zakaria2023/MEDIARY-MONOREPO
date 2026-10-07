@@ -477,7 +477,8 @@ SEO is a core of the product, with the design. Every public route pays for its p
 
 ## Moderation And Members
 
-- A member flags a review through `reportReview`; one report per (review, reporter) by UNIQUE, never one's own review. The report copies the author and an excerpt so the record outlives the review. Staff handle the queue at the admin's `/reports`: dismissing needs `requireStaff`, removing the review needs `requireAdmin`, and removing closes every open report about that review as actioned before the delete.
+- A member flags a review, a reply, a list or a profile through `reportSubject` into one `Reports` table (`kind` says which column is set); one report per (reporter, kind, target) by a UNIQUE declared NULLS NOT DISTINCT, never one's own. The report copies the author and an excerpt so the record outlives the thing. Staff handle the queue at the admin's `/reports`: dismissing needs `requireStaff`, removing needs `requireAdmin` and acts by kind (a review or reply deleted, a list deleted, an account suspended), closing every open report about that thing as actioned first. The one `ReportButton` (`components/social/`) serves every kind; its action is in `app/(app)/feed/actions.ts`.
+- **Every staff action is written to `AuditLog`** in the same transaction by `recordAudit` (`services/audit.ts`): role changes, suspensions, closed reports; the admin's `/audit` lists them and nothing there can be edited.
 - The admin's `/members` lists every member; a role change or a suspension needs `requireAdmin`, and an admin can never change their own role or status: the last admin must not lock everyone out.
 - The Step 0 design prototypes (`/design`, `lib/design/mock.ts`, the mock components) were removed in beta hardening; the real components they were drawn for are the product.
 
@@ -544,7 +545,8 @@ The table above is `apps/client`. `apps/admin` has its own routes, added with th
 | `/catalog/[uuid]` | One title: facts, names, sources, locks, refresh       |
 | `/imports`    | Provider status, search and import, bulk list imports      |
 | `/members`    | Every member: search, role (admin only), suspend           |
-| `/reports`    | Open review reports: dismiss (staff) or remove the review (admin) |
+| `/reports`    | Open reports on reviews, replies, lists and profiles: dismiss (staff) or remove (admin) |
+| `/audit`      | Every staff action, newest first, read only                |
 | `/sign-in`    | Staff sign-in (Clerk, no sign-up)                          |
 | `/no-access`  | Where a signed-in account without a staff role lands       |
 | `/api/cron/catalog` | The daily sync, called by Vercel cron with `CRON_SECRET` |

@@ -1,4 +1,4 @@
-import { DownloadCloud, Flag, LayoutDashboard, Library, LucideIcon, Users } from "lucide-react";
+import { DownloadCloud, Flag, LayoutDashboard, Library, LucideIcon, ScrollText, Users } from "lucide-react";
 
 export type NavItem = {
   href: string;
@@ -17,4 +17,5 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/imports", label: "Imports", icon: DownloadCloud },
   { href: "/members", label: "Members", icon: Users },
   { href: "/reports", label: "Reports", icon: Flag },
+  { href: "/audit", label: "Audit log", icon: ScrollText },
 ];

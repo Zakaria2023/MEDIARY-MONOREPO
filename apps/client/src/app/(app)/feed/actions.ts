@@ -6,6 +6,7 @@ import {
   deleteComment,
   listComments,
   ReactionSummary,
+  reportSubject,
   subjectOf,
   ThreadComment,
   toggleReaction,
@@ -16,6 +17,8 @@ import {
   commentSchema,
   DeleteCommentInput,
   deleteCommentSchema,
+  ReportInput,
+  reportSchema,
   SocialSubjectInput,
   socialSubjectSchema,
 } from "validators";
@@ -110,5 +113,21 @@ export const deleteCommentAction = async (input: DeleteCommentInput): Promise<Ac
     return { success: true };
   } catch (error) {
     return fail(error, "Could not remove this reply");
+  }
+};
+
+/** A member flagging a review, a reply, a list or a profile for staff. */
+export const reportAction = async (_prevState: ActionResult, input: ReportInput): Promise<ActionResult> => {
+  const user = await requireOnboardedUser();
+  const parsed = reportSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Check the form" };
+  }
+
+  try {
+    await reportSubject(user.uuid, parsed.data);
+    return { success: true };
+  } catch (error) {
+    return fail(error, "Could not send this report");
   }
 };

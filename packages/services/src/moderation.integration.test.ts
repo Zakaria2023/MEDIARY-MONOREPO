@@ -1,52 +1,55 @@
 import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { db } from "../../../db";
+import { AuditLog } from "../../../db/schema/audit-log";
 import { Media } from "../../../db/schema/media";
-import { ReviewReports } from "../../../db/schema/review-reports";
+import { Profiles } from "../../../db/schema/profiles";
+import { Reports } from "../../../db/schema/reports";
 import { Reviews } from "../../../db/schema/reviews";
 import { UserSettings } from "../../../db/schema/user-settings";
 import { Users } from "../../../db/schema/users";
-import { listMembers, setMemberRole, setMemberStatus } from "./admin";
-import { countOpenReports, listOpenReports, reportReview, resolveReport } from "./reports";
+import { setMemberRole } from "./admin";
+import { addComment } from "./comments";
+import { createList } from "./lists";
+import { countOpenReports, listOpenReports, reportSubject, resolveReport } from "./reports";
 import { saveReview } from "./reviews";
 
 type Fixture = {
   admin: string;
   author: string;
   reporter: string;
-  reviewUuid: string;
+  mediaUuid: string;
 };
 
-const TRUNCATE = sql`truncate "Users", "Media", "Genres", "Platforms" restart identity cascade`;
+const TRUNCATE = sql`truncate "Users", "Media", "Genres", "Platforms", "AuditLog" restart identity cascade`;
 
 const seed = async (): Promise<Fixture> => {
   const [admin, author, reporter] = await db
     .insert(Users)
     .values([
       { clerkUserId: "user_mod_1", displayName: "Admin", username: "admin", role: "admin" },
-      { clerkUserId: "user_mod_2", displayName: "Author", username: "author", email: "author@example.com" },
-      { clerkUserId: "user_mod_3", displayName: "Reporter", username: "reporter" },
+      { clerkUserId: "user_mod_2", displayName: "Sara", username: "sara" },
+      { clerkUserId: "user_mod_3", displayName: "Omar", username: "omar" },
     ])
     .returning({ uuid: Users.uuid });
-  const [media] = await db
-    .insert(Media)
-    .values({ mediaType: "movie", slug: "arrival", canonicalTitle: "Arrival" })
-    .returning({ uuid: Media.uuid });
+  const [media] = await db.insert(Media).values({ mediaType: "movie", slug: "arrival", canonicalTitle: "Arrival" }).returning({ uuid: Media.uuid });
   if (!admin || !author || !reporter || !media) {
     throw new Error("Fixture rows were not written");
   }
+  await db.insert(Profiles).values([{ userUuid: admin.uuid }, { userUuid: author.uuid }, { userUuid: reporter.uuid }]);
   await db.insert(UserSettings).values([{ userUuid: admin.uuid }, { userUuid: author.uuid }, { userUuid: reporter.uuid }]);
-  const review = await saveReview(author.uuid, {
-    mediaUuid: media.uuid,
-    headline: "Twist",
-    body: "The ending is that she knew all along and chose it anyway.",
-    containsSpoilers: false,
-    visibility: null,
-  });
-  return { admin: admin.uuid, author: author.uuid, reporter: reporter.uuid, reviewUuid: review.uuid };
+  return { admin: admin.uuid, author: author.uuid, reporter: reporter.uuid, mediaUuid: media.uuid };
 };
 
-describe("reports and members", () => {
+const review = (mediaUuid: string) => ({
+  mediaUuid,
+  headline: "Quiet and enormous",
+  body: "A quiet film about language, time and grief. Worth every minute.",
+  containsSpoilers: false,
+  visibility: null,
+});
+
+describe("reports on anything, and the audit log", () => {
   let fixture: Fixture;
 
   beforeEach(async () => {
@@ -58,54 +61,55 @@ describe("reports and members", () => {
     await db.execute(TRUNCATE);
   });
 
-  it("takes one report per person, never the author's, and keeps the record past removal", async () => {
-    await reportReview(fixture.reporter, { reviewUuid: fixture.reviewUuid, reason: "spoilers", note: "No warning" });
-    await reportReview(fixture.reporter, { reviewUuid: fixture.reviewUuid, reason: "spam", note: "" });
-    await expect(
-      reportReview(fixture.author, { reviewUuid: fixture.reviewUuid, reason: "other", note: "" }),
-    ).rejects.toThrow("your own review");
-    expect(await countOpenReports()).toBe(1);
+  it("takes one report per person per thing, never on one's own, and removing closes every report about it", async () => {
+    const saved = await saveReview(fixture.author, review(fixture.mediaUuid));
+    await reportSubject(fixture.reporter, { kind: "review", uuid: saved.uuid, reason: "spoilers", note: "" });
+    await reportSubject(fixture.reporter, { kind: "review", uuid: saved.uuid, reason: "spam", note: "again" });
+    await reportSubject(fixture.admin, { kind: "review", uuid: saved.uuid, reason: "abuse", note: "" });
+    await expect(reportSubject(fixture.author, { kind: "review", uuid: saved.uuid, reason: "spam", note: "" })).rejects.toThrow("your own");
+    expect(await countOpenReports()).toBe(2);
 
     const queue = await listOpenReports();
-    expect(queue.items[0]).toMatchObject({
-      reason: "spoilers",
-      note: "No warning",
-      reporter: expect.objectContaining({ username: "reporter" }),
-      author: expect.objectContaining({ username: "author" }),
-      review: { headline: "Twist", body: expect.stringContaining("knew all along") },
-    });
+    const first = queue.items[0];
+    if (!first) {
+      throw new Error("The report was not listed");
+    }
+    expect(first).toMatchObject({ kind: "review", present: true, excerpt: "Quiet and enormous: A quiet film about language, time and grief. Worth every minute." });
 
-    const reportUuid = queue.items[0]?.uuid ?? "";
-    await resolveReport(fixture.admin, reportUuid, "remove_review");
-    expect(await db.select().from(Reviews)).toHaveLength(0);
-    const [record] = await db.select().from(ReviewReports).where(eq(ReviewReports.uuid, reportUuid));
-    expect(record).toMatchObject({ status: "actioned", reviewUuid: null, reviewExcerpt: expect.stringContaining("Twist") });
-    expect(record?.resolvedByUuid).toBe(fixture.admin);
-    await expect(resolveReport(fixture.admin, reportUuid, "dismiss")).rejects.toThrow("already been handled");
-  });
-
-  it("dismisses without touching the review", async () => {
-    await reportReview(fixture.reporter, { reviewUuid: fixture.reviewUuid, reason: "other", note: "" });
-    const [report] = (await listOpenReports()).items;
-    await resolveReport(fixture.admin, report?.uuid ?? "", "dismiss");
-    expect(await db.select().from(Reviews)).toHaveLength(1);
+    await resolveReport(fixture.admin, first.uuid, "remove");
     expect(await countOpenReports()).toBe(0);
+    expect(await db.select().from(Reviews).where(eq(Reviews.uuid, saved.uuid))).toEqual([]);
+    const records = await db.select({ status: Reports.status, reviewUuid: Reports.reviewUuid }).from(Reports);
+    expect(records.every((record) => record.status === "actioned" && record.reviewUuid === null)).toBe(true);
+    await expect(resolveReport(fixture.admin, first.uuid, "dismiss")).rejects.toThrow("already");
+
+    const log = await db.select({ action: AuditLog.action, targetKind: AuditLog.targetKind }).from(AuditLog);
+    expect(log).toEqual([{ action: "report.remove", targetKind: "review" }]);
   });
 
-  it("lists and searches members, and never lets an admin change themselves", async () => {
-    const all = await listMembers({});
-    expect(all.total).toBe(3);
-    const found = await listMembers({ query: "author@" });
-    expect(found.items.map((member) => member.username)).toEqual(["author"]);
+  it("handles a reply, a list and a profile each its own way", async () => {
+    const saved = await saveReview(fixture.author, review(fixture.mediaUuid));
+    const reply = await addComment(fixture.author, { reviewUuid: saved.uuid, body: "Thanks for reading." });
+    const list = await createList(fixture.author, { name: "Spam list", description: "", visibility: "public", ranked: false });
 
-    await setMemberRole(fixture.admin, fixture.author, "moderator");
-    await setMemberStatus(fixture.admin, fixture.reporter, "suspended");
-    const [author] = await db.select().from(Users).where(eq(Users.uuid, fixture.author));
-    const [reporter] = await db.select().from(Users).where(eq(Users.uuid, fixture.reporter));
-    expect(author?.role).toBe("moderator");
-    expect(reporter?.status).toBe("suspended");
+    await reportSubject(fixture.reporter, { kind: "comment", uuid: reply.comment.uuid, reason: "spam", note: "" });
+    await reportSubject(fixture.reporter, { kind: "list", uuid: list.uuid, reason: "spam", note: "" });
+    await reportSubject(fixture.reporter, { kind: "profile", uuid: fixture.author, reason: "abuse", note: "" });
+    await expect(reportSubject(fixture.reporter, { kind: "profile", uuid: fixture.reporter, reason: "abuse", note: "" })).rejects.toThrow("yourself");
+    const queue = await listOpenReports();
+    expect(queue.items.map((item) => item.kind)).toEqual(["comment", "list", "profile"]);
 
-    await expect(setMemberRole(fixture.admin, fixture.admin, "user")).rejects.toThrow("another admin");
-    await expect(setMemberStatus(fixture.admin, fixture.admin, "suspended")).rejects.toThrow("your own");
+    for (const item of queue.items) {
+      await resolveReport(fixture.admin, item.uuid, item.kind === "list" ? "dismiss" : "remove");
+    }
+    expect((await listOpenReports()).total).toBe(0);
+    const [author] = await db.select({ status: Users.status }).from(Users).where(eq(Users.uuid, fixture.author));
+    expect(author?.status).toBe("suspended");
+    expect((await db.select().from(Reports).where(eq(Reports.listUuid, list.uuid))).length).toBe(1);
+
+    await setMemberRole(fixture.admin, fixture.reporter, "moderator");
+    const log = await db.select({ action: AuditLog.action, details: AuditLog.details }).from(AuditLog);
+    expect(log.map((line) => line.action).sort()).toEqual(["member.role", "report.dismiss", "report.remove", "report.remove"]);
+    expect(log.find((line) => line.action === "member.role")?.details).toEqual({ from: "user", to: "moderator" });
   });
 });

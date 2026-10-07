@@ -12,6 +12,7 @@ import {
   ProgressUnit,
   Provider,
   ReleaseType,
+  ReportKind,
   ReportReason,
   ReportStatus,
   Season,
@@ -276,6 +277,13 @@ export const REPORT_REASON_LABELS: Record<ReportReason, string> = {
   abuse: "Harassment or hate",
   spoilers: "Unmarked spoilers",
   other: "Something else",
+};
+
+export const REPORT_KIND_LABELS: Record<ReportKind, string> = {
+  review: "Review",
+  comment: "Reply",
+  list: "List",
+  profile: "Profile",
 };
 
 export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {

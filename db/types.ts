@@ -31,6 +31,9 @@ export type ActivityPrefs = {
   listed: boolean;
 };
 
+/** What a staff action notes beside its target: the kind, the old and new value, the report it came from. */
+export type AuditDetails = Record<string, string | number | boolean | null>;
+
 /**
  * A provider's own popularity signals, kept as it gave them. The normalized
  * rank lives on `Media.popularity`; this is the evidence it was computed from.
