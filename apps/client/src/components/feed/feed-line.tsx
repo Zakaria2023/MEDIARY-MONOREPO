@@ -3,6 +3,7 @@ import { FeedItem } from "services";
 import { Poster } from "ui";
 import { formatRelativeTime } from "utils";
 import { UserAvatar } from "@/components/profile/user-avatar";
+import { ResponseBar } from "@/components/social/response-bar";
 import { feedObject, feedSuffix, feedVerb } from "@/lib/feed-copy";
 import { profilePath } from "@/lib/profile-path";
 
@@ -14,14 +15,16 @@ const LINK_CLASSES = "relative z-10 font-medium text-ink transition-colors hover
 
 /**
  * One line of the feed: who, did what, to which title, how long ago, with
- * the poster on the end. The sentence's names are links; the rest is not.
+ * the poster on the end, and under it the heart and the replies. The
+ * sentence's names are links; the rest is not.
  */
 export const FeedLine = ({ item }: FeedLineProps) => {
   const object = feedObject(item);
   const suffix = feedSuffix(item);
 
   return (
-    <li className="relative flex items-center gap-3 px-4 py-3">
+    <li className="relative flex flex-col gap-2 px-4 py-3">
+      <div className="flex items-center gap-3">
       <span className="shrink-0">
         <UserAvatar name={item.actor.displayName} imageUrl={item.actor.imageUrl} size="sm" />
       </span>
@@ -62,6 +65,15 @@ export const FeedLine = ({ item }: FeedLineProps) => {
       <time dateTime={item.createdAt.toISOString()} className="tabular w-8 shrink-0 text-end text-xs text-faint">
         {formatRelativeTime(item.createdAt)}
       </time>
+      </div>
+      <div className="ps-11">
+        <ResponseBar
+          subject={{ activityUuid: item.uuid }}
+          reactions={item.reactions}
+          commentCount={item.commentCount}
+          canRespond
+        />
+      </div>
     </li>
   );
 };

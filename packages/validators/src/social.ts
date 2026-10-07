@@ -7,6 +7,9 @@ export type ListInput = z.infer<typeof listSchema>;
 export type ListTargetInput = z.infer<typeof listTargetSchema>;
 export type ListItemInput = z.infer<typeof listItemSchema>;
 export type FollowInput = z.infer<typeof followSchema>;
+export type SocialSubjectInput = z.infer<typeof socialSubjectSchema>;
+export type CommentInput = z.infer<typeof commentSchema>;
+export type DeleteCommentInput = z.infer<typeof deleteCommentSchema>;
 
 /** A written review: a headline is optional, the body is the review. */
 export const reviewSchema = z.object({
@@ -46,4 +49,33 @@ export const listItemSchema = z.object({
 /** The account a follow is about. */
 export const followSchema = z.object({
   userUuid: z.uuid(),
+});
+
+/** What a reaction or a comment is about: one review or one feed line, never both. */
+export const socialSubjectSchema = z
+  .object({
+    reviewUuid: z.uuid().optional(),
+    activityUuid: z.uuid().optional(),
+  })
+  .refine((subject) => (subject.reviewUuid ? 1 : 0) + (subject.activityUuid ? 1 : 0) === 1, {
+    message: "Say what this is about",
+  });
+
+/** A reply under a review or a feed line. */
+export const commentSchema = z
+  .object({
+    reviewUuid: z.uuid().optional(),
+    activityUuid: z.uuid().optional(),
+    body: z
+      .string()
+      .trim()
+      .min(1, "Write something first")
+      .max(1000, "Keep the comment under 1000 characters"),
+  })
+  .refine((comment) => (comment.reviewUuid ? 1 : 0) + (comment.activityUuid ? 1 : 0) === 1, {
+    message: "Say what this is about",
+  });
+
+export const deleteCommentSchema = z.object({
+  commentUuid: z.uuid(),
 });

@@ -1,4 +1,5 @@
 import { and, asc, eq, inArray, isNull, lt, or } from "drizzle-orm";
+import { mapWithLimit } from "utils";
 import { db } from "../../../db";
 import { MediaType, Provider } from "../../../db/enum";
 import { PROVIDER_LABELS } from "../../../db/label";
@@ -46,6 +47,16 @@ const FRESH_FOR_MS = 24 * 60 * 60 * 1000;
 
 /** Most pages a bulk import may ask for at once; 20 titles each. */
 export const MAX_IMPORT_PAGES = 5;
+
+/** How deep into a list a bulk import may start; past this, lists are noise. */
+export const MAX_IMPORT_START_PAGE = 500;
+
+/**
+ * Titles ingested at once within a page: the app's pool is three, and each
+ * ingest holds one connection for its transaction. The provider's own
+ * ceiling is the adapter's throttle, not this.
+ */
+const INGEST_CONCURRENCY = 3;
 
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : "Unknown error";
@@ -136,33 +147,36 @@ export const importProviderTitle = async (
 };
 
 /**
- * Brings a provider list (trending, popular, upcoming) into the catalog, a
- * page of twenty at a time. A title synced in the last day is skipped, so
- * re-running an import is cheap. One title failing never stops the rest; it
- * is reported in the summary with the provider's reason.
+ * Brings a provider list (trending, popular, highest rated, upcoming) into
+ * the catalog, a page of twenty at a time, starting at `startPage` so a
+ * fill can carry on where the last one stopped. A title synced in the last
+ * day is skipped, so re-running an import is cheap. One title failing never
+ * stops the rest; it is reported in the summary with the provider's reason.
  */
 export const importProviderList = async (
   provider: Provider,
   mediaType: MediaType,
   kind: ProviderListKind,
   pages: number,
+  startPage = 1,
 ): Promise<ImportSummary> => {
   const adapter = usableProvider(provider, mediaType);
   const summary: ImportSummary = { created: 0, updated: 0, skipped: 0, failed: [] };
   const pageCount = Math.min(MAX_IMPORT_PAGES, Math.max(1, Math.floor(pages)));
+  const first = Math.min(MAX_IMPORT_START_PAGE, Math.max(1, Math.floor(startPage)));
 
-  for (let page = 1; page <= pageCount; page += 1) {
+  for (let page = first; page < first + pageCount; page += 1) {
     const candidates = await adapter.getList(mediaType, kind, page);
     const matches = await catalogMatches(
       provider,
       candidates.map((candidate) => candidate.externalId),
     );
-    for (const candidate of candidates) {
+    const due = candidates.filter((candidate) => {
       const synced = matches.get(candidate.externalId)?.lastSyncedAt;
-      if (synced && Date.now() - synced.getTime() < FRESH_FOR_MS) {
-        summary.skipped += 1;
-        continue;
-      }
+      return !(synced && Date.now() - synced.getTime() < FRESH_FOR_MS);
+    });
+    summary.skipped += candidates.length - due.length;
+    await mapWithLimit(due, INGEST_CONCURRENCY, async (candidate) => {
       try {
         const result = await ingestNormalizedMedia(
           await adapter.getById(mediaType, candidate.externalId),
@@ -175,7 +189,7 @@ export const importProviderList = async (
       } catch (error) {
         summary.failed.push({ title: candidate.title, error: errorMessage(error) });
       }
-    }
+    });
   }
   return summary;
 };

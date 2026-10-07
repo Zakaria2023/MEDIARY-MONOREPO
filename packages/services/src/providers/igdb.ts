@@ -329,6 +329,7 @@ const listQuery = (kind: ProviderListKind, offset: number): string => {
   const clauses: Record<ProviderListKind, string> = {
     trending: `where ${MAIN_GAMES} & first_release_date > ${halfYearAgo} & first_release_date <= ${now}; sort total_rating_count desc;`,
     popular: `where ${MAIN_GAMES} & total_rating_count > 50; sort total_rating_count desc;`,
+    top: `where ${MAIN_GAMES} & total_rating_count > 100; sort total_rating desc;`,
     upcoming: `where ${MAIN_GAMES} & first_release_date > ${now}; sort hypes desc;`,
   };
   return `fields ${LIST_FIELDS}; ${clauses[kind]} limit ${PAGE_SIZE}; offset ${offset};`;

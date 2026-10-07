@@ -52,6 +52,32 @@ export type ActionResult = {
 export const generateUuid = (): string => crypto.randomUUID();
 
 /**
+ * Runs `task` over every item with at most `limit` in flight, in order of
+ * start, and answers with every result in the items' order. For work that
+ * is bounded by a connection pool or a provider's ceiling, not by the CPU.
+ */
+export const mapWithLimit = async <T, R>(
+  items: readonly T[],
+  limit: number,
+  task: (item: T) => Promise<R>,
+): Promise<R[]> => {
+  const results: R[] = new Array<R>(items.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const index = next;
+      next += 1;
+      const item = items[index];
+      if (item !== undefined) {
+        results[index] = await task(item);
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, worker));
+  return results;
+};
+
+/**
  * The name a profile shows when Clerk has none for the account yet. A
  * sentinel rather than an empty string, so a later sync can tell "no name
  * known" from "chose to be nameless".

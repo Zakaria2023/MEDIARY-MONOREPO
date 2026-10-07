@@ -90,8 +90,8 @@ export const bulkImportAction = async (
   }
 
   try {
-    const { provider, mediaType, list, pages } = parsed.data;
-    const summary = await importProviderList(provider, mediaType, list, pages);
+    const { provider, mediaType, list, pages, startPage } = parsed.data;
+    const summary = await importProviderList(provider, mediaType, list, pages, startPage);
     revalidatePath("/catalog");
     revalidatePath("/");
     return { summary };

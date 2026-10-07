@@ -13,6 +13,8 @@ import { Reviews, SelectReviews } from "../../../db/schema/reviews";
 import { UserSettings } from "../../../db/schema/user-settings";
 import { Users } from "../../../db/schema/users";
 import { CatalogCard } from "./catalog";
+import { activityCommentCounts } from "./comments";
+import { activityReactions, noReactions, ReactionSummary } from "./reactions";
 import { SocialUser, socialUserColumns } from "./social-user";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -31,6 +33,8 @@ export type FeedItem = Pick<SelectActivities, "uuid" | "kind" | "score" | "creat
   review: Pick<SelectReviews, "uuid" | "headline"> | null;
   list: Pick<SelectCustomLists, "slug" | "name"> | null;
   targetUser: SocialUser | null;
+  reactions: ReactionSummary;
+  commentCount: number;
 };
 
 export type ListFeedParams = {
@@ -153,8 +157,17 @@ export const listFeed = async (
         .where(where)
         .limit(1),
     ]);
+    const uuids = rows.map((row) => row.uuid);
+    const [reactions, comments] = await Promise.all([activityReactions(viewerUuid, uuids), activityCommentCounts(uuids)]);
     // A nested selection off a left join comes back null when the join
     // found nothing, which is exactly the shape a FeedItem wants.
-    return { items: rows, total: total[0]?.value ?? 0 };
+    return {
+      items: rows.map((row) => ({
+        ...row,
+        reactions: reactions.get(row.uuid) ?? noReactions(),
+        commentCount: comments.get(row.uuid) ?? 0,
+      })),
+      total: total[0]?.value ?? 0,
+    };
   });
 };

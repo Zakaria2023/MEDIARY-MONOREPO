@@ -8,9 +8,11 @@ import { ImportSource } from "@/lib/import-sources";
 import { bulkImportAction } from "./actions";
 
 /**
- * The bulk import: a provider's trending, popular or upcoming list, one to
- * five pages of twenty. The action runs the whole import and answers with
- * the tally, which the form shows under itself.
+ * The bulk import: a provider's trending, popular, highest-rated or
+ * upcoming list, one to five pages of twenty from a page on. The action
+ * runs the whole import and answers with the tally, which the form shows
+ * under itself. After a run the start page moves past what was fetched, so
+ * pressing Import again carries on down the list.
  */
 export const useBulkImport = (sources: ImportSource[]) => {
   const start = sources.find((entry) => entry.configured) ?? sources[0];
@@ -26,6 +28,7 @@ export const useBulkImport = (sources: ImportSource[]) => {
       mediaType: start.mediaType,
       list: "trending",
       pages: 1,
+      startPage: 1,
     },
   });
   const provider = useWatch({ control: form.control, name: "provider" });
@@ -44,6 +47,7 @@ export const useBulkImport = (sources: ImportSource[]) => {
     startTransition(() => {
       dispatch(values);
     });
+    form.setValue("startPage", values.startPage + values.pages);
   });
 
   return { form, state, isPending, onSubmit, source, onSourceChange };

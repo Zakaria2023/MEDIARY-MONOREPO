@@ -412,7 +412,7 @@ SEO is a core of the product, with the design. Every public route pays for its p
 ## Catalog Providers
 
 - Every catalog source implements the same `MediaProvider` contract in `packages/services/src/providers/types.ts`: `search`, `getById`, `getList` (trending, popular, upcoming), `isConfigured`, and the `attribution` it requires. Normalizing, mapping external ids and choosing images all happen inside the adapter, which hands back one `NormalizedMedia`; nothing outside `providers/` ever sees what a provider sent. Responses are parsed with zod, so a changed field fails loudly instead of leaking a bad shape.
-- Adapters live in `providers/` (`tmdb.ts` for movies and TV, `igdb.ts` for games) and are listed once in `providers/registry.ts`. Anime has no adapter until the owner picks its source; AniList is ruled out by its terms (`docs/catalog-providers.md`).
+- Adapters live in `providers/` (`tmdb.ts` for movies and TV, `igdb.ts` for games, `kitsu.ts` for anime, `musicbrainz.ts` for music) and are listed once in `providers/registry.ts`. AniList is ruled out by its terms (`docs/catalog-providers.md`); Kitsu's mappings give each anime its MyAnimeList, AniList and AniDB ids as refs, which is what an export from one of them matches on.
 - A provider whose ids are only unique per kind folds the kind into the external id (`movie:550`, `tv:1399`), so the database's unique `(provider, external_id)` holds without a third column.
 - Credentials and rate limits stay inside the adapter. Every request goes through `providerFetch` with that provider's `createThrottle` gate, which retries a 429 after the provider's `Retry-After` and a 5xx with backoff.
 - `ingestNormalizedMedia` is the one writer: it upserts by external mapping inside one transaction, locks the matched refs, picks a slug once and never changes it, and leaves every field or section named in `Media.lockedFields` alone. A lost race ends in a UNIQUE violation that rolls back and retries.
@@ -443,6 +443,12 @@ SEO is a core of the product, with the design. Every public route pays for its p
 - **A list's slug is unique across the site**, because its address is `/lists/[slug]` and a public list is indexed; a taken name gets a counter. The owner's lists page is `/lists` under `(app)`, the public page `/lists/[slug]` under `(site)`. Who may see a list is `canView` on its own visibility, with the viewer's relation to the owner.
 - **Following is idempotent** by the `(follower, following)` UNIQUE; a refused second insert is swallowed. A follow is refused for oneself, an inactive account, or across a block. `relation` on a profile is now `owner`, `follower` or `stranger`, and a blocked viewer gets a 404, not "private".
 - Every social action lives beside the page that offers it: reviews and add-to-list in `app/(site)/[type]/[slug]/actions.ts`, follow in `app/(site)/profile/[username]/actions.ts`, list editing in `app/(site)/lists/[slug]/actions.ts`, list creation in `app/(app)/lists/actions.ts`.
+
+## Reactions And Comments
+
+- **A like or a reply is about one review or one feed line**, by the CHECK on `Reactions` and `Comments`; who may respond is who may read the subject, decided once in `reachSubject` (`packages/services/src/social-reach.ts`): the author, anyone for public, followers for followers-only, nobody across a block, and a refused subject is "not found", never "forbidden". A like is one per (user, subject) by UNIQUE, so `toggleReaction` only decides which way a press goes. Neither writes a feed line.
+- A reply may be removed by its writer or by the author of what it sits under. Threads are flat and load when opened, through a Server Action, never a Route Handler.
+- The actions for both subjects live once, in `app/(app)/feed/actions.ts`; the shared `ResponseBar` (`components/social/`) sits under every review card and feed line, counts readable signed out, the heart and the thread for members.
 
 ## Imports
 

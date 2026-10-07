@@ -29,16 +29,24 @@ export const importTitleSchema = z.object({
   externalId: z.string().trim().min(1).max(120),
 });
 
-/** A provider list to bring in, a few pages of twenty at a time. */
+/** The lists a source offers; the same names the adapters take. */
+export const providerListKinds = ["trending", "popular", "top", "upcoming"] as const;
+
+/** A provider list to bring in, a few pages of twenty at a time, from a page on. */
 export const bulkImportSchema = z.object({
   provider: z.enum(providers),
   mediaType: z.enum(mediaTypes),
-  list: z.enum(["trending", "popular", "upcoming"]),
+  list: z.enum(providerListKinds),
   pages: z
     .number()
     .int()
     .min(1, "At least one page")
     .max(5, "Five pages at most, one hundred titles"),
+  startPage: z
+    .number()
+    .int()
+    .min(1, "Pages start at one")
+    .max(500, "Lists end well before page five hundred"),
 });
 
 /** The orders explore offers, first one the default. */

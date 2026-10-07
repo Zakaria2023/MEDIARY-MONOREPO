@@ -147,8 +147,8 @@ export type ProviderCandidate = {
   posterUrl: string | null;
 };
 
-/** The lists a provider can be asked for, besides search. */
-export type ProviderListKind = "trending" | "popular" | "upcoming";
+/** The lists a provider can be asked for, besides search: what is moving now, what is kept most, what is rated best, what is not out yet. */
+export type ProviderListKind = "trending" | "popular" | "top" | "upcoming";
 
 /**
  * What a provider's terms ask a site to show. KEPT AS DATA, RENDERED NOWHERE:
