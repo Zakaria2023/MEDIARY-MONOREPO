@@ -54,5 +54,6 @@ describe("Open Library normalization", () => {
     expect(book.releaseDate).toBeNull();
     expect(book.status).toBe("unknown");
     expect(book.details).toMatchObject({ publisher: null, isbn13: null });
+    expect(normalizeOpenLibraryWork({ ...DOC, first_publish_year: 0 }).releaseDate).toBeNull();
   });
 });

@@ -132,7 +132,8 @@ export const normalizeOpenLibraryWork = (rawDoc: unknown, rawWork: unknown = nul
   const readers = doc.readinglog_count ?? 0;
   const ratings = doc.ratings_count ?? 0;
   const average = doc.ratings_average;
-  const year = doc.first_publish_year ?? null;
+  // The catalog sometimes holds a year of 0 for an undated work; that is no year.
+  const year = doc.first_publish_year && doc.first_publish_year > 0 ? doc.first_publish_year : null;
   const status: MediaStatus = year === null ? "unknown" : year > new Date().getFullYear() ? "upcoming" : "released";
   const description = typeof work?.description === "string" ? work.description : (work?.description?.value ?? null);
   const cover = bookCoverUrl(doc.cover_i);
