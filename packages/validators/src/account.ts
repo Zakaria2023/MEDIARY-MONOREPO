@@ -4,6 +4,7 @@ export type UsernameInput = z.infer<typeof usernameSchema>;
 export type WelcomeInput = z.infer<typeof welcomeSchema>;
 export type ProfileInput = z.infer<typeof profileSchema>;
 export type PrivacyInput = z.infer<typeof privacySchema>;
+export type AppearanceInput = z.infer<typeof appearanceSchema>;
 
 /**
  * The public handle. Lowercase so `/@Ahmad` and `/@ahmad` are one address,
@@ -62,4 +63,10 @@ export const privacySchema = z.object({
   showAdultContent: z.boolean(),
   emailDigest: z.boolean(),
   activityPrefs: activityPrefsSchema,
+});
+
+/** The appearance page: the theme, and whether motion is turned down here. */
+export const appearanceSchema = z.object({
+  theme: z.enum(["dark", "light", "system"]),
+  reducedMotion: z.boolean(),
 });

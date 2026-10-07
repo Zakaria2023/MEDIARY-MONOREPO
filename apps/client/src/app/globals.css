@@ -250,9 +250,10 @@
 }
 
 /* ---- Light theme ----
-   Added once the dark system is complete. The block exists now so every
-   component is written against tokens that can flip, and the theme-tokens
-   test stays honest about what each theme defines. */
+   The same tokens, flipped. <html> carries .light from the appearance
+   cookie, or .system and the layout's script adds .light when the device
+   prefers it. Every component is written against tokens, so nothing else
+   knows which theme is on. */
 .light {
   --color-page: #f7f8fc;
   --color-surface: #ffffff;
@@ -404,6 +405,16 @@
 /* ---- REDUCED MOTION IS A PRODUCT RULE ----
    Every animation above collapses to its end state. Opacity changes stay
    because a thing appearing is information; a thing sliding is decoration. */
+/* The person's own switch on the appearance page, regardless of the device. */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

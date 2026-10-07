@@ -63,7 +63,7 @@ const animeSchema = z.object({
     synopsis: nullableString,
     titles: z.record(z.string(), z.string().nullish()).nullish(),
     canonicalTitle: z.string(),
-    abbreviatedTitles: z.array(z.string()).nullish(),
+    abbreviatedTitles: z.array(z.string().nullable()).nullish(),
     averageRating: nullableString,
     userCount: z.number().nullish(),
     favoritesCount: z.number().nullish(),
@@ -166,6 +166,7 @@ const titlesFor = (anime: AnimeResource["attributes"]): NormalizedTitle[] => {
   add(names.en_jp, "romaji", "ja");
   add(names.ja_jp, "native", "ja");
   for (const alias of anime.abbreviatedTitles ?? []) {
+    // The catalog has been known to hold a null in this list.
     add(alias, "alias", null);
   }
   return titles;

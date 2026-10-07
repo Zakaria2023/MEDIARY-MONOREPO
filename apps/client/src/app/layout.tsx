@@ -4,7 +4,9 @@ import localFont from "next/font/local";
 import { headers } from "next/headers";
 import { ReactNode } from "react";
 import { JsonLd } from "@/components/seo/json-ld";
+import { ThemeScript } from "@/components/shared/theme-script";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/seo";
+import { appearanceClasses, readAppearance } from "@/lib/server/theme";
 import { graph, organizationNode, webSiteNode } from "@/lib/structured-data";
 import "./globals.css";
 
@@ -104,11 +106,23 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false, address: false, email: false },
 };
 
-export const viewport: Viewport = {
-  themeColor: "#090a10",
-  colorScheme: "dark",
-  width: "device-width",
-  initialScale: 1,
+/** The browser chrome follows the theme the request carries; "system" lets the device decide. */
+export const generateViewport = async (): Promise<Viewport> => {
+  const { theme } = await readAppearance();
+  return {
+    themeColor:
+      theme === "light"
+        ? "#f7f8fc"
+        : theme === "system"
+          ? [
+              { media: "(prefers-color-scheme: light)", color: "#f7f8fc" },
+              { media: "(prefers-color-scheme: dark)", color: "#090a10" },
+            ]
+          : "#090a10",
+    colorScheme: theme === "light" ? "light" : theme === "system" ? "light dark" : "dark",
+    width: "device-width",
+    initialScale: 1,
+  };
 };
 
 // Always render against live data, never a build-time static snapshot: the
@@ -119,9 +133,11 @@ type Props = {
   children: ReactNode;
 };
 
-// Async so it can read the nonce the middleware put on the request.
+// Async so it can read the nonce the middleware put on the request, and the
+// appearance cookies that decide the theme before anything loads.
 const RootLayout = async ({ children }: Props) => {
   const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const appearance = await readAppearance();
 
   return (
     // Clerk loads clerk-js as a <script src>, and the CSP carries
@@ -130,8 +146,9 @@ const RootLayout = async ({ children }: Props) => {
     // refused, clerk-js never boots, and every Clerk control renders but does
     // nothing when clicked.
     <ClerkProvider nonce={nonce}>
-      <html lang="en" className={`h-full antialiased ${FONT_VARIABLES}`}>
+      <html lang="en" className={`h-full antialiased ${FONT_VARIABLES} ${appearanceClasses(appearance)}`}>
         <body className="flex min-h-full flex-col bg-page font-sans text-ink">
+          <ThemeScript nonce={nonce} />
           {/* Site-wide identity: every page inherits it, and per-page nodes
               reference these by @id rather than repeating them. */}
           <JsonLd data={graph([organizationNode(), webSiteNode()])} />
