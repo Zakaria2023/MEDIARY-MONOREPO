@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { yearOf } from "utils";
 import { MediaStatus, MediaType, ReleaseType } from "../../../../db/enum";
+import { ValidationError } from "../errors";
 import { createThrottle, providerFetch } from "./http";
 import {
   MediaProvider,
@@ -243,10 +244,17 @@ const luceneWords = (query: string): string =>
 const dayOffset = (days: number): string =>
   new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
 
-/** Albums first released in a window, the catalog's nearest thing to a chart. */
+/**
+ * Albums first released in a window, the catalog's nearest thing to a
+ * chart. Its search cannot order by rating, so there is no highest-rated
+ * list; asking for one is refused with a reason a person can read.
+ */
 const LIST_QUERIES: Record<ProviderListKind, () => string> = {
   trending: () => `primarytype:album AND status:official AND firstreleasedate:[${dayOffset(-TRENDING_DAYS)} TO ${dayOffset(0)}]`,
   popular: () => `primarytype:album AND status:official AND firstreleasedate:[${dayOffset(-POPULAR_DAYS)} TO ${dayOffset(0)}]`,
+  top: () => {
+    throw new ValidationError(`${SOURCE_LABEL} has no highest-rated list; import by artist or title instead`);
+  },
   upcoming: () => `primarytype:album AND firstreleasedate:[${dayOffset(1)} TO ${dayOffset(365)}]`,
 };
 

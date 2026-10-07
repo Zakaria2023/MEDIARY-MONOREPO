@@ -332,11 +332,13 @@ const LIST_PATHS: Record<TmdbKind, Record<ProviderListKind, string>> = {
   movie: {
     trending: "/trending/movie/week",
     popular: "/movie/popular",
+    top: "/movie/top_rated",
     upcoming: "/movie/upcoming",
   },
   tv: {
     trending: "/trending/tv/week",
     popular: "/tv/popular",
+    top: "/tv/top_rated",
     upcoming: "/tv/on_the_air",
   },
 };

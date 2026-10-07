@@ -44,7 +44,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "image.tmdb.org" },
       { protocol: "https", hostname: "images.igdb.com" },
-      { protocol: "https", hostname: "s4.anilist.co" },
+      { protocol: "https", hostname: "media.kitsu.app" },
       { protocol: "https", hostname: "coverartarchive.org" },
       { protocol: "https", hostname: "*.archive.org" },
       { protocol: "https", hostname: "*.r2.dev" },

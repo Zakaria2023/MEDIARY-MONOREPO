@@ -44,7 +44,7 @@ const ImportsPage = () => {
       <section className="flex flex-col gap-4">
         <SectionTitle
           title="Import a list"
-          description="Fill the catalog from what is trending, popular or coming soon."
+          description="Fill the catalog from what is trending, popular, highest rated or coming soon, a hundred titles at a time."
         />
         <BulkImportForm sources={sources} />
       </section>

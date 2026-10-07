@@ -11,8 +11,36 @@ where the check is recorded.
 | -------- | ------- | -------- |
 | TMDB     | Built: movies and TV | Live against the API; imports, refresh and search tested end to end. |
 | IGDB     | Built: games | Unit-tested against the documented v4 shape only. Not yet called live: the Twitch credentials are not configured. Run one import as soon as they are. |
-| Anime    | Not built | Waiting on the owner's choice of source; see below. |
+| Kitsu    | Built: anime | Live against the API on 2026-10-07; search, lists and imports tested end to end. No key. |
 | MusicBrainz + Cover Art Archive | Built: music (albums, EPs, singles as release groups) | Unit-tested against the documented JSON shape. Live calls need no key; the adapter sends the required User-Agent and keeps to one request a second. |
+
+## Kitsu, checked 2026-10-07
+
+Chosen as the anime catalog on 2026-10-07, when the owner asked for every
+medium's data to be loaded in one go. Of the candidates below it is the only
+one that needs no key, serves reads openly as JSON:API, and carries the
+mappings to the other anime databases, which is what makes a member's
+MyAnimeList export match a title.
+
+- **Data:** community-maintained, read freely without an account; the API
+  is public and documented for third-party apps. Its terms of service do not
+  name trackers; re-read them before launch, as with every source.
+- **Rate limit:** none published; it throttles aggressive clients. The
+  adapter keeps to about three requests a second, two in flight, and pages
+  twenty at a time, the API's maximum.
+- **Images:** posters and banners are hotlinked from `media.kitsu.app`.
+  Every size has its own file name, so the stored URL is the large poster
+  (550 by 780) and the large banner, never rewritten by the image loader.
+- **Mappings:** the record's `mappings` give MyAnimeList, AniList and AniDB
+  ids, stored as refs under `mal`, `anilist` and `anidb`. Studios are not
+  returned on the record and are left empty.
+- **Lists:** "trending" is what members keep most among what is airing,
+  "popular" is the same across everything, "coming soon" is the same among
+  what is not out yet. All three page.
+- **Genres:** the catalog files a title under many categories, from genre to
+  setting; `KITSU_CATEGORIES` keeps the ones a person would filter by.
+- **Attribution:** kept as data on the adapter, rendered nowhere (No Vendor
+  On Screen); it joins the Credits page when that is built.
 
 ## MusicBrainz, checked 2026-10-07
 
@@ -69,8 +97,8 @@ the ids it came with.
 | Anime Offline Database    | Open dataset (GitHub, manami-project) merging ids across MAL, AniList, Kitsu, AniDB and others; refreshed weekly | Licensing of the merged dataset for a product; it carries titles, ids, episodes, pictures and tags but no synopses, so an enrichment source is still needed. |
 | AniDB                     | The oldest anime database; HTTP API with strict limits and a required client registration | Terms are strict on caching and mass requests; likely a mapping source, not a live one.                     |
 
-The decision is the owner's. The adapter interface makes the choice
-replaceable, which is the whole reason it exists.
+Kitsu was chosen on 2026-10-07 (see above). The adapter interface makes the
+choice replaceable, which is the whole reason it exists.
 
 ## What this means for the architecture
 

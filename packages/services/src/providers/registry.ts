@@ -1,6 +1,7 @@
 import { MediaType, Provider } from "../../../../db/enum";
 import { PROVIDER_LABELS } from "../../../../db/label";
 import { igdbProvider } from "./igdb";
+import { kitsuProvider } from "./kitsu";
 import { musicbrainzProvider } from "./musicbrainz";
 import { tmdbProvider } from "./tmdb";
 import { MediaProvider } from "./types";
@@ -15,11 +16,11 @@ export type ProviderStatus = {
 };
 
 /**
- * EVERY CATALOG SOURCE MEDIARY CAN IMPORT FROM. Anime has no entry: AniList
- * is ruled out by its terms and the replacement is the owner's decision
- * (docs/catalog-providers.md). Adding it is one adapter and one line here.
+ * EVERY CATALOG SOURCE MEDIARY CAN IMPORT FROM. Anime comes from Kitsu;
+ * AniList is ruled out by its terms (docs/catalog-providers.md). Adding a
+ * source is one adapter and one line here.
  */
-const ADAPTERS: MediaProvider[] = [tmdbProvider, igdbProvider, musicbrainzProvider];
+const ADAPTERS: MediaProvider[] = [tmdbProvider, igdbProvider, kitsuProvider, musicbrainzProvider];
 
 /** The adapter for a provider, or an error naming what is missing. */
 export const getProvider = (provider: Provider): MediaProvider => {
