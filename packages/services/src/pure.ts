@@ -16,6 +16,9 @@
 
 export { ValidationError, NotFoundError } from "./errors";
 
+export { computeMilestones } from "./milestone-rules";
+export type { Milestone, MilestoneMeasure, MilestoneSummary } from "./milestone-rules";
+
 export { STAFF_ROLES, isStaffRole, isAdminRole } from "./roles";
 export type { StaffRole } from "./roles";
 

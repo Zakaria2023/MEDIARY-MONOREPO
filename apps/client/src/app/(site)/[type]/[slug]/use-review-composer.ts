@@ -5,7 +5,7 @@ import { startTransition, useActionState, useState, useTransition } from "react"
 import { useForm } from "react-hook-form";
 import { OwnReview } from "services";
 import { ReviewInput, reviewSchema } from "validators";
-import { deleteReviewAction, ReviewActionResult, saveReviewAction } from "./actions";
+import { deleteReviewAction, featureReviewAction, ReviewActionResult, saveReviewAction } from "./actions";
 
 type ReviewComposerOptions = {
   mediaUuid: string;
@@ -33,6 +33,7 @@ export const useReviewComposer = ({ mediaUuid, initial }: ReviewComposerOptions)
   );
   const [isDeleting, startDelete] = useTransition();
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isFeaturing, startFeature] = useTransition();
 
   const form = useForm<ReviewInput>({
     resolver: zodResolver(reviewSchema),
@@ -68,6 +69,23 @@ export const useReviewComposer = ({ mediaUuid, initial }: ReviewComposerOptions)
     });
   };
 
+  /** Leads the profile with this review, or stops: shown at once, undone on a refusal. */
+  const onToggleFeatured = () => {
+    if (!review) {
+      return;
+    }
+    const before = review;
+    setReview({ ...before, featured: !before.featured });
+    setDeleteError(null);
+    startFeature(async () => {
+      const result = await featureReviewAction({ reviewUuid: before.featured ? null : before.uuid });
+      if (!result.success) {
+        setReview(before);
+        setDeleteError(result.error ?? "Could not change your featured review");
+      }
+    });
+  };
+
   return {
     review,
     open,
@@ -76,7 +94,9 @@ export const useReviewComposer = ({ mediaUuid, initial }: ReviewComposerOptions)
     error: state.error ?? deleteError ?? undefined,
     isPending,
     isDeleting,
+    isFeaturing,
     onSubmit,
     onDelete,
+    onToggleFeatured,
   };
 };

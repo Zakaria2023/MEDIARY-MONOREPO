@@ -1,13 +1,17 @@
 import { and, avg, count, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { ReviewInput } from "validators";
+import { paginate, PaginatedResult } from "utils";
 import { db } from "../../../db";
 import { Follows } from "../../../db/schema/follows";
+import { Media } from "../../../db/schema/media";
+import { Profiles } from "../../../db/schema/profiles";
 import { Reviews, SelectReviews } from "../../../db/schema/reviews";
 import { UserMedia } from "../../../db/schema/user-media";
 import { UserSettings } from "../../../db/schema/user-settings";
 import { Users } from "../../../db/schema/users";
 import { recordActivity } from "./activities";
 import { reviewCommentCounts } from "./comments";
+import { CatalogCard } from "./catalog";
 import { NotFoundError } from "./errors";
 import { noReactions, ReactionSummary, reviewReactions } from "./reactions";
 import { SocialUser, socialUserColumns } from "./social-user";
@@ -23,11 +27,26 @@ export type TitleReview = Pick<
   commentCount: number;
 };
 
-/** The owner's own review, for the composer. */
+/** The owner's own review, for the composer, and whether it is the one on their profile. */
 export type OwnReview = Pick<
   SelectReviews,
   "uuid" | "headline" | "body" | "score" | "containsSpoilers" | "visibility" | "updatedAt"
->;
+> & {
+  featured: boolean;
+};
+
+/** A review as a profile lists it: with the title it is about. */
+export type UserReview = TitleReview & {
+  title: CatalogCard;
+};
+
+export type ListUserReviewsParams = {
+  page?: number | string;
+  pageSize?: number;
+};
+
+/** Reviews per page on a profile's reviews page. */
+export const USER_REVIEWS_PAGE_SIZE = 20;
 
 /** Mediary members' scores on a title, for the page and its structured data. */
 export type RatingSummary = {
@@ -120,10 +139,117 @@ export const getOwnReview = async (userUuid: string, mediaUuid: string): Promise
       containsSpoilers: Reviews.containsSpoilers,
       visibility: Reviews.visibility,
       updatedAt: Reviews.updatedAt,
+      featured: sql<boolean>`coalesce(${Profiles.featuredReviewUuid} = ${Reviews.uuid}, false)`,
     })
     .from(Reviews)
+    .leftJoin(Profiles, eq(Profiles.userUuid, Reviews.userUuid))
     .where(and(eq(Reviews.userUuid, userUuid), eq(Reviews.mediaUuid, mediaUuid)));
   return row ?? null;
+};
+
+/** The one review pinned to the top of a profile: this one, or none. Only one's own may be. */
+export const setFeaturedReview = async (userUuid: string, reviewUuid: string | null): Promise<void> => {
+  if (reviewUuid !== null) {
+    const [own] = await db
+      .select({ uuid: Reviews.uuid })
+      .from(Reviews)
+      .where(and(eq(Reviews.uuid, reviewUuid), eq(Reviews.userUuid, userUuid)));
+    if (!own) {
+      throw new NotFoundError("That review could not be found");
+    }
+  }
+  await db.update(Profiles).set({ featuredReviewUuid: reviewUuid }).where(eq(Profiles.userUuid, userUuid));
+};
+
+/** The reviews this viewer may read from this author: the visibility rule, as a condition. */
+const readableBy = (viewerUuid: string | null) => {
+  const effective = sql`coalesce(${Reviews.visibility}, ${UserSettings.activityVisibility})`;
+  return viewerUuid
+    ? or(
+        eq(Reviews.userUuid, viewerUuid),
+        eq(effective, "public"),
+        and(
+          eq(effective, "followers"),
+          inArray(
+            Reviews.userUuid,
+            db.select({ uuid: Follows.followingUuid }).from(Follows).where(eq(Follows.followerUuid, viewerUuid)),
+          ),
+        ),
+      )
+    : eq(effective, "public");
+};
+
+const TITLE_COLUMNS = {
+  uuid: Media.uuid,
+  slug: Media.slug,
+  mediaType: Media.mediaType,
+  canonicalTitle: Media.canonicalTitle,
+  releaseYear: Media.releaseYear,
+  coverUrl: Media.coverUrl,
+  dominantColor: Media.dominantColor,
+  providerScore: Media.providerScore,
+};
+
+/** The review a profile features, when the viewer may read it. */
+export const getFeaturedReview = async (ownerUuid: string, viewerUuid: string | null): Promise<UserReview | null> => {
+  const [row] = await db
+    .select({ ...REVIEW_COLUMNS, author: socialUserColumns(Users), title: TITLE_COLUMNS })
+    .from(Profiles)
+    .innerJoin(Reviews, eq(Reviews.uuid, Profiles.featuredReviewUuid))
+    .innerJoin(Users, eq(Users.uuid, Reviews.userUuid))
+    .innerJoin(UserSettings, eq(UserSettings.userUuid, Reviews.userUuid))
+    .innerJoin(Media, eq(Media.uuid, Reviews.mediaUuid))
+    .where(and(eq(Profiles.userUuid, ownerUuid), eq(Users.status, "active"), readableBy(viewerUuid)));
+  if (!row) {
+    return null;
+  }
+  const [reactions, comments] = await Promise.all([reviewReactions(viewerUuid, [row.uuid]), reviewCommentCounts([row.uuid])]);
+  return {
+    ...row,
+    isOwn: row.author.uuid === viewerUuid,
+    reactions: reactions.get(row.uuid) ?? noReactions(),
+    commentCount: comments.get(row.uuid) ?? 0,
+  };
+};
+
+/** A person's reviews the viewer may read, newest first, with their titles. */
+export const listUserReviews = async (
+  ownerUuid: string,
+  viewerUuid: string | null,
+  { page, pageSize = USER_REVIEWS_PAGE_SIZE }: ListUserReviewsParams = {},
+): Promise<PaginatedResult<UserReview>> => {
+  const where = and(eq(Reviews.userUuid, ownerUuid), eq(Users.status, "active"), readableBy(viewerUuid));
+  return paginate({ page, pageSize }, async ({ limit, offset }) => {
+    const [rows, totals] = await Promise.all([
+      db
+        .select({ ...REVIEW_COLUMNS, author: socialUserColumns(Users), title: TITLE_COLUMNS })
+        .from(Reviews)
+        .innerJoin(Users, eq(Users.uuid, Reviews.userUuid))
+        .innerJoin(UserSettings, eq(UserSettings.userUuid, Reviews.userUuid))
+        .innerJoin(Media, eq(Media.uuid, Reviews.mediaUuid))
+        .where(where)
+        .orderBy(desc(Reviews.createdAt))
+        .limit(limit)
+        .offset(offset),
+      db
+        .select({ value: count() })
+        .from(Reviews)
+        .innerJoin(Users, eq(Users.uuid, Reviews.userUuid))
+        .innerJoin(UserSettings, eq(UserSettings.userUuid, Reviews.userUuid))
+        .where(where),
+    ]);
+    const uuids = rows.map((row) => row.uuid);
+    const [reactions, comments] = await Promise.all([reviewReactions(viewerUuid, uuids), reviewCommentCounts(uuids)]);
+    return {
+      items: rows.map((row) => ({
+        ...row,
+        isOwn: row.author.uuid === viewerUuid,
+        reactions: reactions.get(row.uuid) ?? noReactions(),
+        commentCount: comments.get(row.uuid) ?? 0,
+      })),
+      total: totals[0]?.value ?? 0,
+    };
+  });
 };
 
 /**
@@ -173,6 +299,7 @@ export const saveReview = async (userUuid: string, input: ReviewInput): Promise<
     if (!saved) {
       throw new Error("The review was not written");
     }
+    const [profile] = await tx.select({ featured: Profiles.featuredReviewUuid }).from(Profiles).where(eq(Profiles.userUuid, userUuid));
     if (!existing) {
       await recordActivity(
         tx,
@@ -180,7 +307,7 @@ export const saveReview = async (userUuid: string, input: ReviewInput): Promise<
         settings?.activityPrefs ?? null,
       );
     }
-    return saved;
+    return { ...saved, featured: profile?.featured === saved.uuid };
   });
 
 /** Removes the person's review. The feed line about it goes with it. */

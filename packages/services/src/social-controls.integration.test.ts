@@ -76,16 +76,18 @@ describe("blocking and muting", () => {
       containsSpoilers: false,
       visibility: null,
     });
-    expect((await listFeed(fixture.ahmad)).total).toBe(1);
+    // The follow itself is Ahmad's own line; Sara's review is the one a mute removes.
+    const saraLines = async () => (await listFeed(fixture.ahmad)).items.filter((item) => item.actor.uuid === fixture.sara).length;
+    expect(await saraLines()).toBe(1);
 
     await muteUser(fixture.ahmad, fixture.sara);
     await muteUser(fixture.ahmad, fixture.sara);
-    expect((await listFeed(fixture.ahmad)).total).toBe(0);
+    expect(await saraLines()).toBe(0);
     expect(await isFollowing(fixture.ahmad, fixture.sara)).toBe(true);
     expect(await getSocialStanding(fixture.ahmad, fixture.sara)).toEqual({ blocked: false, muted: true });
     expect((await getPublicProfile("ahmad", fixture.sara))?.relation).toBe("stranger");
 
     await unmuteUser(fixture.ahmad, fixture.sara);
-    expect((await listFeed(fixture.ahmad)).total).toBe(1);
+    expect(await saraLines()).toBe(1);
   });
 });

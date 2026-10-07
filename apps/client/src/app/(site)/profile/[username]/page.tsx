@@ -9,8 +9,11 @@ import { ProfileCounts } from "@/components/profile/profile-counts";
 import { ProfileCountsSkeleton } from "@/components/profile/profile-counts-skeleton";
 import { ProfileCurrent } from "@/components/profile/profile-current";
 import { ProfileFavorites } from "@/components/profile/profile-favorites";
+import { ProfileFeaturedReview } from "@/components/profile/profile-featured-review";
 import { ProfileHeader } from "@/components/profile/profile-header";
 import { ProfileLists } from "@/components/profile/profile-lists";
+import { ProfileMilestones } from "@/components/profile/profile-milestones";
+import { ProfileReviews } from "@/components/profile/profile-reviews";
 import { ProfileSectionSkeleton } from "@/components/profile/profile-section-skeleton";
 import { ProfileSplit } from "@/components/profile/profile-split";
 import { ProfileTaste } from "@/components/profile/profile-taste";
@@ -79,6 +82,9 @@ const ProfilePage = async ({ params }: Props) => {
             <AsyncSection reloadKey={`current-${profile.uuid}`} skeleton={<ProfileSectionSkeleton posters={4} />}>
               <ProfileCurrent profile={profile} />
             </AsyncSection>
+            <AsyncSection reloadKey={`milestones-${profile.uuid}`} skeleton={<ProfileSectionSkeleton posters={0} />}>
+              <ProfileMilestones profile={profile} />
+            </AsyncSection>
             <div className="grid gap-6 lg:grid-cols-2">
               <AsyncSection reloadKey={`taste-${profile.uuid}`} skeleton={<ProfileSectionSkeleton posters={0} />}>
                 <ProfileTaste profile={profile} />
@@ -89,8 +95,14 @@ const ProfilePage = async ({ params }: Props) => {
             </div>
           </>
         )}
+        <AsyncSection reloadKey={`featured-${profile.uuid}-${profile.relation}`} skeleton={<ProfileSectionSkeleton posters={0} />}>
+          <ProfileFeaturedReview profile={profile} />
+        </AsyncSection>
         <AsyncSection reloadKey={`lists-${profile.uuid}-${profile.relation}`} skeleton={<ProfileSectionSkeleton posters={5} />}>
           <ProfileLists profile={profile} />
+        </AsyncSection>
+        <AsyncSection reloadKey={`reviews-${profile.uuid}-${profile.relation}`} skeleton={<ProfileSectionSkeleton posters={0} />}>
+          <ProfileReviews profile={profile} page={null} />
         </AsyncSection>
         {profile.access.activity && (
           <AsyncSection reloadKey={`activity-${profile.uuid}`} skeleton={<DiaryLinesSkeleton rows={5} />}>

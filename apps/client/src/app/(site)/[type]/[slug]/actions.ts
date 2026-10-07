@@ -10,6 +10,7 @@ import {
   removeFromList,
   reportReview,
   saveReview,
+  setFeaturedReview,
 } from "services";
 import { ActionResult, fail } from "utils";
 import {
@@ -23,6 +24,8 @@ import {
   ReportReviewInput,
   reviewSchema,
   ReviewInput,
+  featureReviewSchema,
+  FeatureReviewInput,
 } from "validators";
 import { requireOnboardedUser } from "@/lib/auth";
 
@@ -155,5 +158,22 @@ export const reportReviewAction = async (
     return { success: true };
   } catch (error) {
     return fail(error, "Could not send this report");
+  }
+};
+
+/** Leads the profile with this review, or with none. */
+export const featureReviewAction = async (input: FeatureReviewInput): Promise<ActionResult> => {
+  const user = await requireOnboardedUser();
+  const parsed = featureReviewSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: "That review could not be found" };
+  }
+
+  try {
+    await setFeaturedReview(user.uuid, parsed.data.reviewUuid);
+    revalidatePath("/profile/[username]", "page");
+    return { success: true };
+  } catch (error) {
+    return fail(error, "Could not change your featured review");
   }
 };

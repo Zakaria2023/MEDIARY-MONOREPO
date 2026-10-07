@@ -34,6 +34,8 @@ export const CustomLists = pgTable(
     name: varchar("name", { length: 80 }).notNull(),
     description: text("description"),
     visibility: visibilityEnum("visibility").default("public").notNull(),
+    // Set when the owner pins it to the top of their profile; null otherwise.
+    pinnedAt: timestamp("pinned_at", { withTimezone: true }),
 
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()

@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createList } from "services";
+import { createList, pinList } from "services";
 import { ActionResult, fail } from "utils";
-import { listSchema, ListInput } from "validators";
+import { listSchema, ListInput, pinListSchema, PinListInput } from "validators";
 import { requireOnboardedUser } from "@/lib/auth";
 
 /** Makes a list and opens it. */
@@ -27,4 +27,22 @@ export const createListAction = async (
 
   revalidatePath("/lists", "layout");
   redirect(`/lists/${slug}`);
+};
+
+/** The pin on a list card: to the top of the profile, or off it. */
+export const pinListAction = async (input: PinListInput): Promise<ActionResult> => {
+  const user = await requireOnboardedUser();
+  const parsed = pinListSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: "That list could not be found" };
+  }
+
+  try {
+    await pinList(user.uuid, parsed.data.listUuid, parsed.data.pinned);
+    revalidatePath("/lists");
+    revalidatePath("/profile/[username]", "page");
+    return { success: true };
+  } catch (error) {
+    return fail(error, "Could not change the pin");
+  }
 };

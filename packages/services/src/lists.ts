@@ -24,7 +24,7 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 /** A list as a card on a profile or the owner's lists page. */
 export type ListSummary = Pick<
   SelectCustomLists,
-  "uuid" | "slug" | "name" | "description" | "visibility" | "updatedAt"
+  "uuid" | "slug" | "name" | "description" | "visibility" | "updatedAt" | "pinnedAt"
 > & {
   owner: SocialUser;
   itemCount: number;
@@ -61,6 +61,7 @@ const SUMMARY_COLUMNS = {
   description: CustomLists.description,
   visibility: CustomLists.visibility,
   updatedAt: CustomLists.updatedAt,
+  pinnedAt: CustomLists.pinnedAt,
   owner: socialUserColumns(Users),
   itemCount: sql<number>`(select count(*)::int from ${CustomListItems} where ${CustomListItems.listUuid} = ${CustomLists.uuid})`,
 };
@@ -128,8 +129,20 @@ export const listOwnLists = async (userUuid: string): Promise<ListSummary[]> => 
     .from(CustomLists)
     .innerJoin(Users, eq(Users.uuid, CustomLists.userUuid))
     .where(eq(CustomLists.userUuid, userUuid))
-    .orderBy(desc(CustomLists.updatedAt));
+    .orderBy(sql`${CustomLists.pinnedAt} desc nulls last`, desc(CustomLists.updatedAt));
   return withPreviews(rows);
+};
+
+/** Pins a list to the top of the owner's profile, or takes the pin out. */
+export const pinList = async (userUuid: string, listUuid: string, pinned: boolean): Promise<void> => {
+  const updated = await db
+    .update(CustomLists)
+    .set({ pinnedAt: pinned ? new Date() : null })
+    .where(and(eq(CustomLists.uuid, listUuid), eq(CustomLists.userUuid, userUuid)))
+    .returning({ uuid: CustomLists.uuid });
+  if (updated.length === 0) {
+    throw new NotFoundError("That list could not be found");
+  }
 };
 
 /** The lists on a profile the viewer may see. */
@@ -145,7 +158,7 @@ export const listProfileLists = async (
     .from(CustomLists)
     .innerJoin(Users, eq(Users.uuid, CustomLists.userUuid))
     .where(and(eq(CustomLists.userUuid, ownerUuid), inArray(CustomLists.visibility, allowed)))
-    .orderBy(desc(CustomLists.updatedAt));
+    .orderBy(sql`${CustomLists.pinnedAt} desc nulls last`, desc(CustomLists.updatedAt));
   return withPreviews(rows);
 };
 

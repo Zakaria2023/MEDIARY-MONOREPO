@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, PenLine, Trash2 } from "lucide-react";
+import { Pencil, PenLine, Pin, PinOff, Trash2 } from "lucide-react";
 import { Controller } from "react-hook-form";
 import { OwnReview } from "services";
 import { Button, Checkbox, Dropdown, FormError, Input, Textarea } from "ui";
@@ -26,8 +26,10 @@ export const ReviewComposer = ({ mediaUuid, initial }: ReviewComposerProps) => {
     error,
     isPending,
     isDeleting,
+    isFeaturing,
     onSubmit,
     onDelete,
+    onToggleFeatured,
   } = useReviewComposer({ mediaUuid, initial });
 
   if (!open && !review) {
@@ -45,6 +47,10 @@ export const ReviewComposer = ({ mediaUuid, initial }: ReviewComposerProps) => {
         <header className="flex items-center justify-between gap-3">
           <span className="text-xs font-medium uppercase tracking-wide text-faint">Your review</span>
           <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={onToggleFeatured} disabled={isFeaturing} aria-pressed={review.featured}>
+              {review.featured ? <PinOff size={14} /> : <Pin size={14} />}
+              {review.featured ? "Featured on your profile" : "Feature on profile"}
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
               <Pencil size={14} />
               Edit

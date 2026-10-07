@@ -8,6 +8,8 @@ export type ListTargetInput = z.infer<typeof listTargetSchema>;
 export type ListItemInput = z.infer<typeof listItemSchema>;
 export type FollowInput = z.infer<typeof followSchema>;
 export type UserTargetInput = z.infer<typeof userTargetSchema>;
+export type PinListInput = z.infer<typeof pinListSchema>;
+export type FeatureReviewInput = z.infer<typeof featureReviewSchema>;
 export type SocialSubjectInput = z.infer<typeof socialSubjectSchema>;
 export type CommentInput = z.infer<typeof commentSchema>;
 export type DeleteCommentInput = z.infer<typeof deleteCommentSchema>;
@@ -84,4 +86,15 @@ export const deleteCommentSchema = z.object({
 /** Another account, for blocking or muting it. */
 export const userTargetSchema = z.object({
   userUuid: z.uuid(),
+});
+
+/** A list pinned to the profile, or unpinned. */
+export const pinListSchema = z.object({
+  listUuid: z.uuid(),
+  pinned: z.boolean(),
+});
+
+/** The review to feature on the profile, or none. */
+export const featureReviewSchema = z.object({
+  reviewUuid: z.uuid().nullable(),
 });

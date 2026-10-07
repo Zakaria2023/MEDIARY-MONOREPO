@@ -17,6 +17,8 @@ export * from "./follows";
 export * from "./import-parsers";
 export * from "./imports";
 export * from "./lists";
+export * from "./milestone-rules";
+export * from "./milestones";
 export * from "./notifications";
 export * from "./profiles";
 export * from "./providers/registry";

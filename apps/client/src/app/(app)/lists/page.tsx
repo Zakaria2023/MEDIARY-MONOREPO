@@ -28,7 +28,7 @@ const ListsPage = async () => {
       <SectionHeading
         size="page"
         title="Your lists"
-        description="Any titles, any media, in the order you put them."
+        description="Any titles, any media, in the order you put them. Pin one to lead your profile."
       />
       <ListForm />
       {lists.length === 0 ? (
@@ -38,7 +38,7 @@ const ListsPage = async () => {
           action={{ label: "Explore the catalog", href: "/explore" }}
         />
       ) : (
-        <ListGrid lists={lists} />
+        <ListGrid lists={lists} pinnable />
       )}
     </main>
   );
