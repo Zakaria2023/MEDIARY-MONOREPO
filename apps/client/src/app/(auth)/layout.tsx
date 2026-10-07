@@ -16,9 +16,9 @@ const AuthLayout = ({ children }: Props) => (
     <Link href="/" aria-label="Mediary home" className="mb-10">
       <Logo />
     </Link>
-    <div className="flex w-full max-w-md flex-1 flex-col items-center justify-start">
+    <main className="flex w-full max-w-md flex-1 flex-col items-center justify-start">
       {children}
-    </div>
+    </main>
   </div>
 );
 

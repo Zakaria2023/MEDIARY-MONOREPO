@@ -182,6 +182,30 @@ export const breadcrumbNode = (id: string, crumbs: Crumb[]): JsonLdNode => ({
   })),
 });
 
+/** A page's questions and answers, for the FAQ result in search. */
+export const faqNode = (path: string, items: { question: string; answer: string }[]): JsonLdNode => ({
+  "@type": "FAQPage",
+  "@id": `${absoluteUrl(path)}#faq`,
+  isPartOf: { "@id": WEBSITE_ID },
+  mainEntity: items.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: { "@type": "Answer", text: item.answer },
+  })),
+});
+
+/** The about page, about the organization itself. */
+export const aboutNode = (path: string, description: string): JsonLdNode => ({
+  "@type": "AboutPage",
+  "@id": absoluteUrl(path),
+  url: absoluteUrl(path),
+  name: `About ${SITE_NAME}`,
+  description,
+  isPartOf: { "@id": WEBSITE_ID },
+  about: { "@id": ORGANIZATION_ID },
+  mainEntity: { "@id": ORGANIZATION_ID },
+});
+
 /** A discovery page's grid, as an ordered list of links to its titles. */
 export const itemListNode = (path: string, name: string, cards: CatalogCard[]): JsonLdNode => ({
   "@type": "ItemList",

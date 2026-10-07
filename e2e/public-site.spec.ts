@@ -9,10 +9,11 @@ import { expect, test } from "@playwright/test";
 
 test("the home opens with the promise and the way into every medium", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText(/entertainment/i);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("one story");
   await expect(page.getByRole("link", { name: /create your mediary/i }).first()).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Browse by medium" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /^Movies/ }).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Every medium, in its own words." })).toBeVisible();
+  await expect(page.locator('main a[href="/movies"]').first()).toBeVisible();
+  await expect(page.getByText("What can I track on Mediary?")).toBeVisible();
 });
 
 test("explore lists every medium as a tab and each tab is its own address", async ({ page }) => {
@@ -56,8 +57,22 @@ test("search answers from the catalog", async ({ page }) => {
   await expect(page.locator("main").getByRole("link").first()).toBeVisible();
 });
 
+test("the landing tells search engines its questions", async ({ request }) => {
+  const html = await (await request.get("/")).text();
+  expect(html).toContain('"@type":"FAQPage"');
+});
+
+test("the about page says what Mediary is, with the catalog in numbers", async ({ page, request }) => {
+  await page.goto("/about");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("one home");
+  await expect(page.getByRole("heading", { name: "Six rules we build by." })).toBeVisible();
+  await expect(page.getByText(/titles, and counting/)).toBeVisible();
+  const html = await (await request.get("/about")).text();
+  expect(html).toContain('"@type":"AboutPage"');
+});
+
 test("the pages every site must have exist and name the product, not a vendor", async ({ request }) => {
-  for (const path of ["/terms", "/privacy", "/support", "/credits"]) {
+  for (const path of ["/about", "/terms", "/privacy", "/support", "/credits"]) {
     const response = await request.get(path);
     expect(response.status(), path).toBe(200);
     const html = await response.text();

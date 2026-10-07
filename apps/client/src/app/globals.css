@@ -119,6 +119,10 @@
   --animate-menu-in: menu-in 140ms var(--ease-out-quint) both;
   --animate-shimmer: shimmer 1.6s linear infinite;
   --animate-float: float 7s ease-in-out infinite;
+  /* The landing's poster wall: a slow drift, one row each way. Decoration,
+     so reduced motion stops it where it stands. */
+  --animate-marquee: marquee 90s linear infinite;
+  --animate-marquee-reverse: marquee 110s linear infinite reverse;
 }
 
 /* ---- THE BRAND GRADIENT ----
@@ -239,6 +243,21 @@
     transparent 0%,
     var(--color-page) 100%
   );
+}
+
+/* THE EDGES OF THE POSTER WALL. A transparency mask, not a color: the
+   wall dissolves into the page at both ends instead of being cut off, the
+   same reading job the backdrop fade does on a hero. */
+@utility mask-fade-x {
+  mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+}
+
+/* THE STAGE UNDER A PRODUCT STILL on the landing: a dot grid in the
+   hairline color, a texture and not a color run, so a still reads as a
+   piece of the app laid on a table. */
+@utility bg-dot-grid {
+  background-image: radial-gradient(var(--color-hairline-strong) 1px, transparent 1px);
+  background-size: 20px 20px;
 }
 
 /* A hairline ring on a selected poster, in the accent, drawn outside the box
@@ -389,6 +408,17 @@
   }
   to {
     transform: translateX(-66.67%);
+  }
+}
+
+/* One full copy of a row slides past; the row is drawn twice, so the
+   second copy lands exactly where the first began. */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
   }
 }
 

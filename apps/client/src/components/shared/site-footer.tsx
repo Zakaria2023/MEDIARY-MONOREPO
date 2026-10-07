@@ -55,6 +55,7 @@ const VISITOR_COLUMN: FooterColumn = {
 const ABOUT_COLUMN: FooterColumn = {
   heading: "About",
   links: [
+    { label: "About Mediary", href: "/about" },
     { label: "Credits", href: "/credits" },
     { label: "Terms", href: "/terms" },
     { label: "Privacy", href: "/privacy" },
