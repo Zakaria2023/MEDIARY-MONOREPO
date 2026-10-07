@@ -15,7 +15,9 @@
     "test": "vitest run --passWithNoTests",
     "test:db:setup": "dotenv -e .env.local -- tsx scripts/setup-test-db.ts",
     "test:integration": "dotenv -e .env.local -- vitest run --config vitest.integration.config.ts",
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright test --project=desktop --project=phone",
+    "test:visual": "pnpm --filter client build && dotenv -v VISUAL=1 -- playwright test --project=visual-desktop --project=visual-phone",
+    "test:visual:update": "pnpm --filter client build && dotenv -v VISUAL=1 -- playwright test --project=visual-desktop --project=visual-phone --update-snapshots",
     "db:push": "dotenv -e .env.local -- tsx scripts/ensure-extensions.ts && dotenv -e .env.local -- drizzle-kit push",
     "db:studio": "dotenv -e .env.local -- drizzle-kit studio"
   },

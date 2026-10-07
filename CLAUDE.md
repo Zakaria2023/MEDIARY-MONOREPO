@@ -58,7 +58,7 @@ The schema and connection live in the repo-root `db/` folder, not in a package â
 - Catalog sources are named on screen by what they are, from `PROVIDER_LABELS` in `db/label.ts` ("Movie and TV database"), never by the vendor. Error messages a person may read use the same descriptive wording; an adapter's `SOURCE_LABEL` is the name its errors use.
 - An identity error is shown through `authErrorMessage`, never as the service sent it.
 - Vendor names are fine in code, comments, docs, env files and machine-only markup (JSON-LD `sameAs`, image URLs).
-- **Provider attribution is rendered on one page only**: `/credits` names every catalog source with the credit its terms ask for, read from each adapter's `attribution` through `listProviderAttributions`. That page is the exception to this section, built on 2026-10-07 when the owner asked for every remaining feature; nowhere else names a vendor. Terms, privacy and support live beside it as plain-words drafts the owner should have reviewed before launch.
+- **Provider attribution is rendered on one page only**: `/credits` names every catalog source with the credit its terms ask for, read from each adapter's `attribution` through `listProviderAttributions`. That page is the exception to this section, built on 2026-10-07 when the owner asked for every remaining feature; nowhere else names a vendor. Terms, privacy and support live beside it as plain-words drafts, every claim checked against the code on 2026-10-08; a change to what is stored, shared or kept changes the privacy page in the same commit. They still want a lawyer's read before launch.
 
 ## Product Rules
 
@@ -91,6 +91,7 @@ SEO is a core of the product, with the design. Every public route pays for its p
 ## Testing
 
 - Three suites. `pnpm test` is the fast, offline one (`*.test.ts`) â€” pure functions, no credentials needed. `pnpm test:integration` (`*.integration.test.ts`) runs against a real PostgreSQL; run `pnpm test:db:setup` once first to build `${DB_NAME}_test` on the same Aiven service. `pnpm test:e2e` (`e2e/*.spec.ts`, Playwright) walks the public site in a real browser, desktop and phone, against the client on port 3000 (started if none is running) or `E2E_BASE_URL`; it runs three workers because the app's pool is three connections. Signed-in flows are not driven there; they need an account on the identity service.
+- `pnpm test:visual` is the screenshot suite (`e2e/visual.spec.ts`, projects `visual-desktop` and `visual-phone`): it builds the client and compares against a production server on port 3100, never the dev server, whose on-demand compiles and streaming make one page look two ways. It captures only what does not change with the catalog (legal pages, sign-in, the 404, the landing's and about page's fixed sections) as clips of a full-page shot, after streaming settles and every image in the clip has loaded, with floating chrome hidden by `e2e/visual.css` and a 50-pixel allowance. After an intended design change run `pnpm test:visual:update` and review the new baselines before committing them; they are Windows baselines, and a Linux runner needs its own.
 - Put a test in the integration suite when the thing being checked is a property of the **database** and a mocked one would agree with either answer: a UNIQUE constraint, a foreign key, transaction isolation, a row lock.
 - Every path that reads, decides, then writes needs a locking read (`.for("update")`) and, wherever a business key exists, a UNIQUE constraint behind it. Prefer the database refusing over a code path remembering to check. The `(user, media)` pair on `UserMedia` is the first of these.
 - A concurrency test written as two calls fired with `Promise.all` proves nothing. Hold the rows deliberately with a second connection. Before trusting any test of a fix, take the fix out and watch it fail.
@@ -418,6 +419,7 @@ SEO is a core of the product, with the design. Every public route pays for its p
 - Credentials and rate limits stay inside the adapter. Every request goes through `providerFetch` with that provider's `createThrottle` gate, which retries a 429 after the provider's `Retry-After` and a 5xx with backoff.
 - `ingestNormalizedMedia` is the one writer: it upserts by external mapping inside one transaction, locks the matched refs, picks a slug once and never changes it, and leaves every field or section named in `Media.lockedFields` alone. A lost race ends in a UNIQUE violation that rolls back and retries.
 - Genres map onto Mediary's one vocabulary in `providers/vocabulary.ts`; a provider genre with no entry is dropped, never invented. Popularity is put on one 0 to 100 scale across providers, with the raw signals kept beside it.
+- **A page that shows every medium asks once**: `listCatalogShowcase` returns the first few titles of each medium by any sort in one query, ranked by a window function, and recommendation candidates are pooled the same way. Seven calls of `listCatalog` at once queue on the three-connection pool and time out ("timeout exceeded when trying to connect"); the landing, the about page, the home's rails and the "For you" rail all hit that before.
 - Never call a provider on a public page view. The public site reads PostgreSQL only. Providers are called from the admin's Imports screen, its Refresh button, and the daily cron (`/api/cron/catalog` in `apps/admin`, guarded by `CRON_SECRET`).
 - Store only what the provider's terms permit. Image URLs are stored for providers that allow hotlinking under attribution, and rendered through `CatalogImage`/`Poster` from `ui`, whose loader asks the provider's CDN for the size the slot needs instead of re-encoding through Next's optimizer. Attribution is data on the adapter and is currently rendered nowhere (see No Vendor On Screen).
 - Before any provider goes to production, re-check its terms, attribution rules, image rights and rate limits. They change.
@@ -517,9 +519,10 @@ One or two accents per screen. The spectrum belongs to the logo and the five gra
 
 | Route                   | Purpose                                     |
 | ----------------------- | ------------------------------------------- |
-| `/`                     | Marketing when signed out, home when signed in |
+| `/`                     | The landing page when signed out (`components/landing/`, its questions also sent as `FAQPage`), the home when signed in (`MemberHome`) |
 | `/explore`              | Cross-media discovery hub                   |
-| `/terms`, `/privacy`, `/support`, `/credits` | The plain-words legal pages and the one page that names the catalog sources |
+| `/about`                | What Mediary is, why, its rules, the catalog in live numbers (`AboutPage` structured data) |
+| `/terms`, `/privacy`, `/support`, `/credits` | The plain-words legal pages and the one page that names the catalog sources; the address people write to is `SUPPORT_EMAIL`, falling back to `support@` the site's domain |
 | `/anime`, `/games`, `/movies`, `/tv`, `/music`, `/manga`, `/books` | One medium's hub: its own design, rails, facet filter and the member's own titles with statuses as filters (`app/(site)/[type]/page.tsx`, slugs in `src/lib/hub-path.ts`) |
 | `/explore/[type]`       | Permanent redirect to the medium's hub      |
 | `/search?q=`            | Universal search with type filters (noindex) |

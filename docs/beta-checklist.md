@@ -13,8 +13,8 @@ What stands between the code on `main` and a public beta. Each line names who de
 - **The webhook secret** (`CLERK_WEBHOOK_SIGNING_SECRET`) and the webhook endpoint in the identity service's dashboard, so account changes land without the on-demand sync.
 - **Vercel crons.** `apps/admin/vercel.json` schedules the daily catalog sync; `CRON_SECRET` must be set in the project.
 - **An error monitor and an analytics client.** Both seams are empty (`docs/runbooks.md`, Monitoring); pick the providers and wire them, named nowhere on screen.
-- **Read the legal drafts.** `/terms` and `/privacy` are drafts written from the product's own rules, not legal advice; have them read before the site is public. `/support` writes to `support@` on the site's domain, which must exist.
-- **Visual regression.** The end-to-end suite checks what renders, not how it looks. Screenshot comparison needs a stable deployment to compare against; add it on top of `e2e/` once a preview URL is fixed.
+- **Have the legal pages read.** `/terms` and `/privacy` were checked line by line against the code on 2026-10-08 (what is stored, who sees it, what deletion removes, cookies, the minimum age of 13), but they are not legal advice. Have them read for the countries Mediary is offered in, and decide the minimum age.
+- **A real support mailbox.** Set `SUPPORT_EMAIL` to an inbox someone reads, or create `support@` on the production domain.
 
 ## Judgment calls to confirm
 
@@ -33,6 +33,9 @@ What stands between the code on `main` and a public beta. Each line names who de
 - Terms, privacy, support and credits pages, linked from the footer; the credits page is the one screen that names the catalog sources.
 - An end-to-end suite (`pnpm test:e2e`) over the public site, desktop and phone, and `docs/runbooks.md` for whoever runs the site.
 - Feature flags (`FEATURES_OFF`) for social, recommendations and Taste Match, enforced in the services.
+- A landing page for visitors (poster wall of real titles, the seven media in their own words, product stills from real titles, imports, privacy promises, live rails, FAQ with structured data) and an About page.
+- Screenshot regression (`pnpm test:visual`) on a production build, stable across repeated runs and shown to fail on a one-word change.
+- The home and the "For you" rail ask for every medium in one query each, ending the connection timeouts a signed-in home hit.
 - Game playthroughs: each run with its platform, difficulty, dates, hours and score, on the game's page. Not seen live yet, because the game catalog is empty until the Twitch keys exist.
 
 ## Done in hardening

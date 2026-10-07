@@ -34,6 +34,7 @@ Mediary; nothing here needs more than the repo and the environment file.
 - `pnpm test`: the fast unit suite, no credentials.
 - `pnpm test:integration`: against `${DB_NAME}_test` on the same Aiven service; run it alone, because it shares the connection ceiling with anything else talking to the service.
 - `pnpm test:e2e`: the public site in a real browser, against a running dev server on 3000 (started if none is running) or `E2E_BASE_URL`. First time: `npx playwright install chromium`.
+- `pnpm test:visual`: screenshots of the fixed parts of the site, against a production build on port 3100. After a deliberate design change, `pnpm test:visual:update`, then look at every changed image in the diff before committing it.
 - Type-check and lint: `pnpm type-check`, `pnpm lint`.
 
 ## Identity
@@ -50,6 +51,10 @@ Mediary; nothing here needs more than the repo and the environment file.
 
 - `FEATURES_OFF` in the environment, comma separated, takes a finished feature off the site on the next request: `social` (follows, likes, replies), `recommendations` (the "For you" rails), `taste_match` (Compare taste). Read at request time, so on Vercel a change needs only a redeploy of the variable, not of the code.
 - The services refuse what is off with "This is switched off for now", and the screens hide the controls, so turning one off loses no data; turning it back on brings everything back as it was.
+
+## Support mailbox
+
+- `SUPPORT_EMAIL` sets the address on the support, terms, privacy and about pages. Without it the pages show `support@` the site's domain, so either set the variable to a mailbox that is read, or create that one before launch.
 
 ## Monitoring
 

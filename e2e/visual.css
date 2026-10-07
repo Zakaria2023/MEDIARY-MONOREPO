@@ -1,0 +1,13 @@
+/* Applied only while a screenshot is taken (playwright.config.ts). Things
+   that float over the page land on a different part of a section depending
+   on where it was scrolled to, so they are hidden: the sticky site header
+   and the development server's own badge. */
+body > header,
+header.sticky,
+nextjs-portal {
+  visibility: hidden !important;
+}
+
+* {
+  backdrop-filter: none !important;
+}
