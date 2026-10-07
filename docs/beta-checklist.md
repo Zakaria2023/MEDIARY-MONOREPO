@@ -22,6 +22,7 @@ What stands between the code on `main` and a public beta. Each line names who de
 
 - Kitsu is the anime catalog; bulk imports offer a highest-rated list and a start page, and ingest three titles at a time.
 - Likes and replies on reviews and feed lines.
+- "For you" recommendations on the home and in every hub, each pick explained by a loved title.
 
 ## Done in hardening
 
@@ -33,7 +34,6 @@ What stands between the code on `main` and a public beta. Each line names who de
 
 ## Still ahead, by design
 
-- Taste recommendations beyond a pair ("because you finished…").
 - Notifications and the email digest.
 - The light theme.
 - `apps/api` for a mobile client.

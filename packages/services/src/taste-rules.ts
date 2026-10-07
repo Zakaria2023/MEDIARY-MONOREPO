@@ -41,8 +41,33 @@ export type TasteMatch = {
   youLove: string[];
 };
 
+/** A title the recommendations may pick from: not in the library, with its genres and standing. */
+export type TasteCandidate = {
+  mediaUuid: string;
+  mediaType: MediaType;
+  genres: string[];
+  /** 0-100. */
+  popularity: number;
+  /** 0-10 or null. */
+  providerScore: number | null;
+};
+
+/** One pick, and the library entry that explains it. */
+export type TastePick = {
+  mediaUuid: string;
+  /** The loved title it is most like, or null when the pick rests on taste as a whole. */
+  becauseUuid: string | null;
+  /** The genres the pick and that title share, the pick's order. */
+  sharedGenres: string[];
+  /** 0-100, for ordering. */
+  value: number;
+};
+
 /** How many bars a Taste DNA shows. */
 export const TASTE_TRAIT_LIMIT = 7;
+
+/** How many picks one loved title may explain, so a rail is not one title's echo. */
+const PICKS_PER_REASON = 3;
 
 /** A score at or above this is "loved", for shared favorites and recommendations. */
 export const LOVED_SCORE = 8;
@@ -201,4 +226,80 @@ export const computeTasteMatch = (mine: TasteEntry[], theirs: TasteEntry[]): Tas
     theyLove,
     youLove,
   };
+};
+
+/** The genres a library leans on, the heaviest at 1 and the rest in proportion. */
+const tasteWeights = (entries: TasteEntry[]): Map<string, number> => {
+  const vector = genreVector(entries);
+  const max = Math.max(0, ...vector.values());
+  return new Map([...vector.entries()].map(([slug, weight]) => [slug, max === 0 ? 0 : weight / max]));
+};
+
+/** Whether an entry is one the person loved: scored high, or finished and never scored. */
+const isLoved = (entry: TasteEntry): boolean =>
+  entry.score !== null ? entry.score >= LOVED_SCORE : entry.status === "completed";
+
+/**
+ * RECOMMENDATIONS FROM A LIBRARY: "because you loved X". A candidate's
+ * affinity is how much the library leans on its genres, lifted a little
+ * by how widely it is held and how well its source community rates it,
+ * so that among equally fitting titles the known ones come first. Each
+ * pick is explained by the loved title it shares the most genres with,
+ * and one loved title may explain only a few picks, so the rail reads as
+ * a spread of reasons rather than one. Titles already in the library are
+ * never picked. Pure, so the same rule runs in a test and on the server.
+ */
+export const computeTastePicks = (entries: TasteEntry[], candidates: TasteCandidate[], limit: number): TastePick[] => {
+  const weights = tasteWeights(entries);
+  if (weights.size === 0) {
+    return [];
+  }
+  const owned = new Set(entries.map((entry) => entry.mediaUuid));
+  const loved = entries.filter(isLoved);
+  const scored = candidates
+    .filter((candidate) => !owned.has(candidate.mediaUuid) && candidate.genres.length > 0)
+    .map((candidate) => {
+      const affinity =
+        candidate.genres.reduce((sum, genre) => sum + (weights.get(genre) ?? 0), 0) / candidate.genres.length;
+      if (affinity === 0) {
+        return null;
+      }
+      const standing = candidate.popularity / 100;
+      const quality = candidate.providerScore === null ? 0.5 : candidate.providerScore / 10;
+      const value = Math.round(affinity * (0.7 + 0.2 * standing + 0.1 * quality) * 100);
+      let because: TasteEntry | null = null;
+      let shared: string[] = [];
+      for (const entry of loved) {
+        if (entry.mediaType !== candidate.mediaType) {
+          continue;
+        }
+        const common = candidate.genres.filter((genre) => entry.genres.includes(genre));
+        if (
+          common.length > shared.length ||
+          (common.length === shared.length && common.length > 0 && (entry.score ?? 0) > (because?.score ?? 0))
+        ) {
+          because = entry;
+          shared = common;
+        }
+      }
+      return { mediaUuid: candidate.mediaUuid, becauseUuid: because?.mediaUuid ?? null, sharedGenres: shared, value };
+    })
+    .filter((pick): pick is TastePick => pick !== null)
+    .sort((a, b) => b.value - a.value || a.mediaUuid.localeCompare(b.mediaUuid));
+
+  const perReason = new Map<string, number>();
+  const picks: TastePick[] = [];
+  for (const pick of scored) {
+    if (picks.length >= limit) {
+      break;
+    }
+    const reason = pick.becauseUuid ?? "";
+    const used = perReason.get(reason) ?? 0;
+    if (reason && used >= PICKS_PER_REASON) {
+      continue;
+    }
+    perReason.set(reason, used + 1);
+    picks.push(pick);
+  }
+  return picks;
 };

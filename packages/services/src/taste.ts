@@ -46,7 +46,7 @@ const CARD_COLUMNS = {
 };
 
 /** A library as the taste rules read it: every entry with its genre slugs. */
-const tasteEntries = async (userUuid: string): Promise<TasteEntry[]> =>
+export const tasteEntries = async (userUuid: string): Promise<TasteEntry[]> =>
   db
     .select({
       mediaUuid: UserMedia.mediaUuid,
