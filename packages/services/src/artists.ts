@@ -164,3 +164,9 @@ export const listMoreFromArtist = async (artistUuid: string, exceptMediaUuid: st
 /** Every artist's address, for the sitemap. */
 export const listSitemapArtists = async (): Promise<Pick<SelectArtists, "slug" | "updatedAt">[]> =>
   db.select({ slug: Artists.slug, updatedAt: Artists.updatedAt }).from(Artists).orderBy(asc(Artists.id));
+
+/** An artist's name by their slug, for a filter that names who it is narrowed to; null for an unknown slug. */
+export const findArtistBySlug = async (slug: string): Promise<Pick<SelectArtists, "slug" | "name"> | null> => {
+  const [artist] = await db.select({ slug: Artists.slug, name: Artists.name }).from(Artists).where(eq(Artists.slug, slug));
+  return artist ?? null;
+};

@@ -15,6 +15,8 @@ export type HubQuery = {
   score: number | undefined;
   /** A release year, or "older" for everything before the recent ones. */
   year: string | undefined;
+  /** Music only: one artist's records, by the artist's slug. */
+  artist: string | undefined;
   page: number;
   /** The member's section, narrowed to one status. */
   mine: TrackingStatus | undefined;
@@ -30,6 +32,7 @@ export const parseHubQuery = (mediaType: LaunchMediaType, params: SearchParams):
   facet: firstParam(params.facet) || undefined,
   score: SCORE_STEPS.find((step) => String(step) === firstParam(params.score)),
   year: parseYearFilter(firstParam(params.year)),
+  artist: mediaType === "music" ? firstParam(params.artist) || undefined : undefined,
   page: Number(firstParam(params.page)) || 1,
   mine: parseTrackingStatus(firstParam(params.mine)),
 });
@@ -42,6 +45,7 @@ export const hubHref = (query: HubQuery): string =>
     facet: query.facet,
     score: query.score,
     year: query.year,
+    artist: query.artist,
     page: query.page,
     mine: query.mine,
   });

@@ -23,14 +23,15 @@ export const HubGrid = async ({ query }: HubGridProps) => {
     facet: hubFacet(copy.facet.kind, query.facet),
     minScore: query.score,
     years: hubYears(query.year),
+    artist: query.artist,
     page: query.page,
   });
 
   if (result.total === 0) {
-    return query.genre || query.facet || query.score || query.year || query.sort !== "trending" ? (
+    return query.genre || query.facet || query.score || query.year || query.artist || query.sort !== "trending" ? (
       <CatalogEmptyState
         heading="Nothing here yet"
-        body={`No ${copy.noun} match this view right now. Try another order, ${copy.facet.label.toLowerCase()}, genre, score or year.`}
+        body={`No ${copy.noun} match this view right now. Try another order, ${copy.facet.label.toLowerCase()}, genre, score${query.artist ? ", year or artist" : " or year"}.`}
         action={{ label: `All ${copy.noun}`, href: hubPath(query.mediaType) }}
       />
     ) : (

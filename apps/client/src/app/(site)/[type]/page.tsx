@@ -69,7 +69,7 @@ const HubPage = async ({ params, searchParams }: Props) => {
   const viewer = await getCurrentUser();
   const copy = HUB_COPY[mediaType];
   const path = hubPath(mediaType);
-  const gridKey = [query.sort, query.genre, query.facet, query.score, query.year, query.page].join("|");
+  const gridKey = [query.sort, query.genre, query.facet, query.score, query.year, query.artist, query.page].join("|");
 
   return (
     <main className="flex flex-col gap-10 pb-10">
@@ -116,8 +116,10 @@ const HubPage = async ({ params, searchParams }: Props) => {
 
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 sm:px-8">
         <div className="flex flex-col gap-0.5">
-          <h2 className="font-display text-lg text-ink sm:text-xl">Every {copy.noun}</h2>
-          <p className="text-sm text-muted">Narrow it by {copy.facet.label.toLowerCase()} and genre.</p>
+          <h2 className="font-display text-lg text-ink sm:text-xl">All {copy.noun}</h2>
+          <p className="text-sm text-muted">
+            Narrow it by {copy.facet.label.toLowerCase()}, genre{mediaType === "music" ? " and artist" : ""}.
+          </p>
         </div>
         <AsyncSection reloadKey={`filters-${mediaType}`} skeleton={<HubFilterBarSkeleton />}>
           <HubFilterBar query={query} />

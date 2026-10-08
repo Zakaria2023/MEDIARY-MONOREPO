@@ -146,6 +146,8 @@ export type ListCatalogParams = {
   /** Only titles the source community scores at least this, out of ten. */
   minScore?: number;
   years?: YearSpan;
+  /** Only records filed under this artist, by the artist's slug. */
+  artist?: string;
   page?: number | string;
   pageSize?: number;
 };
@@ -312,6 +314,7 @@ export const listCatalog = async ({
   facet,
   minScore,
   years,
+  artist,
   page,
   pageSize,
 }: ListCatalogParams): Promise<PaginatedResult<CatalogCard>> => {
@@ -324,6 +327,16 @@ export const listCatalog = async ({
     minScore !== undefined ? gte(Media.providerScore, minScore) : undefined,
     years?.from !== undefined ? gte(Media.releaseYear, years.from) : undefined,
     years?.to !== undefined ? lte(Media.releaseYear, years.to) : undefined,
+    artist
+      ? inArray(
+          Media.uuid,
+          db
+            .select({ uuid: MusicDetails.mediaUuid })
+            .from(MusicDetails)
+            .innerJoin(Artists, eq(Artists.uuid, MusicDetails.artistUuid))
+            .where(eq(Artists.slug, artist)),
+        )
+      : undefined,
     SORTS[sort].where(),
   );
   const [items, [total]] = await Promise.all([
