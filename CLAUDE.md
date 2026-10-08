@@ -48,7 +48,7 @@ The schema and connection live in the repo-root `db/` folder, not in a package â
 
 - No business logic inside a Server Action or Route Handler â€” only in `packages/services`.
 - No direct database access from client components or anywhere outside `packages/services`.
-- Never modify `db/index.ts` (the database connection/pool setup). The Aiven service allows 20 connections in total; the pool is sized for that. Leave this file exactly as-is unless the user explicitly asks to change it.
+- Never modify `db/index.ts` (the database connection/pool setup). The Aiven service allows 20 connections in total; the pool is sized for that. Leave this file exactly as-is unless the user explicitly asks to change it. The owner asked on 2026-10-09 for `attachDatabasePool` (`@vercel/functions`): production runs on Vercel, whose frozen functions otherwise keep their idle connections open until the 20 slots fill and pages fail to render.
 - Never commit `.env.local`. Every secret the app reads is listed in `.env.example` with an empty value.
 
 ## No Vendor On Screen

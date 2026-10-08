@@ -1,3 +1,4 @@
+import { attachDatabasePool } from "@vercel/functions";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "./schema";
@@ -12,8 +13,8 @@ if (
   throw new Error("Database credentials are not set in environment variables.");
 }
 
-const createPool = () =>
-  new Pool({
+const createPool = () => {
+  const pool = new Pool({
     host: process.env.DB_HOST,
     port: Number(process.env.DB_PORT),
     user: process.env.DB_USER,
@@ -40,6 +41,15 @@ const createPool = () =>
     connectionTimeoutMillis: 10_000,
     keepAlive: true,
   });
+  // ON VERCEL, A FUNCTION IS FROZEN BETWEEN REQUESTS, and a frozen instance
+  // never runs the 30-second idle timer above: its connections stay open on
+  // the server until the instance dies, and a few warm instances fill all 20
+  // slots, which pages then report as a failed render. This keeps the
+  // instance alive just long enough to close its idle connections first.
+  // It does nothing anywhere but on Vercel (owner's decision, 2026-10-09).
+  attachDatabasePool(pool);
+  return pool;
+};
 
 // Reuse one pool across Next.js dev hot-reloads. Without this, every code
 // change re-evaluates this module and leaks a fresh pool of connections.
