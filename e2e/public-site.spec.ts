@@ -14,6 +14,10 @@ test("the home opens with the promise and the way into every medium", async ({ p
   await expect(page.getByRole("heading", { name: "Every medium, in its own words." })).toBeVisible();
   await expect(page.locator('main a[href="/movies"]').first()).toBeVisible();
   await expect(page.getByText("What can I track on Mediary?")).toBeVisible();
+  // The guide and Name that song, each leading into its page.
+  await expect(page.getByRole("heading", { name: "Not sure what to start? Ask." })).toBeVisible();
+  await expect(page.locator('main a[href="/ask"]')).toBeVisible();
+  await expect(page.locator('main a[href="/listen"]')).toBeVisible();
 });
 
 test("explore lists every medium as a tab and each tab is its own address", async ({ page }) => {

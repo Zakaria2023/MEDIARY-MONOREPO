@@ -2,6 +2,8 @@ import { AsyncSection } from "ui";
 import { TitleRailSkeleton } from "@/components/catalog/title-rail-skeleton";
 import { CatalogProof } from "@/components/landing/catalog-proof";
 import { LandingCta } from "@/components/landing/landing-cta";
+import { LandingDiscover } from "@/components/landing/landing-discover";
+import { LandingDiscoverSkeleton } from "@/components/landing/landing-discover-skeleton";
 import { LandingFaq } from "@/components/landing/landing-faq";
 import { LandingFeatures } from "@/components/landing/landing-features";
 import { LandingFeaturesSkeleton } from "@/components/landing/landing-features-skeleton";
@@ -43,6 +45,10 @@ export const Landing = () => (
 
     <AsyncSection reloadKey="landing-features" skeleton={<LandingFeaturesSkeleton />}>
       <LandingFeatures />
+    </AsyncSection>
+
+    <AsyncSection reloadKey="landing-discover" skeleton={<LandingDiscoverSkeleton />}>
+      <LandingDiscover />
     </AsyncSection>
 
     <LandingImports />

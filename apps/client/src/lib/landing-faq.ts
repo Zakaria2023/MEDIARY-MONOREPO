@@ -17,7 +17,17 @@ export const LANDING_FAQ: LandingQuestion[] = [
   },
   {
     question: "Is Mediary free?",
-    answer: "Yes. Tracking, the diary, stats, lists, reviews and Taste Match are free, with no ads.",
+    answer: "Yes. Tracking, the diary, stats, lists, reviews, Taste Match, the guide and Name that song are free, with no ads.",
+  },
+  {
+    question: "Can Mediary recommend something for me?",
+    answer:
+      "Yes. Ask the guide in your own words what you are in the mood for. It searches every medium in Mediary, leaves out what is already in your library, uses what you loved to understand your taste, and says why each pick fits.",
+  },
+  {
+    question: "Can Mediary tell me what song is playing?",
+    answer:
+      "Yes. Open Name that song and let it listen for a few seconds. It finds the song and opens the record it is on. The microphone is used only while you tap to listen, and the recording is not kept.",
   },
   {
     question: "Can I import my lists from other sites?",
