@@ -228,10 +228,11 @@ export type MediaProvider = {
     page?: number,
   ) => Promise<ProviderCandidate[]>;
   /**
-   * One page of EVERY RECORD WORTH HOLDING, most popular first; an empty
-   * page is the end. What a full catalog load walks (`seedCatalog`). It
-   * reads the source's open listings, so walking needs no key; only
-   * `getById` may. A source without it is filled from its lists instead.
+   * One page of EVERY RECORD WORTH HOLDING, most popular first; null is
+   * the end, and an empty page (every entry on it filtered out) is passed
+   * over. What a full catalog load walks (`seedCatalog`). It reads the
+   * source's open listings, so walking needs no key; only `getById` may.
+   * A source without it is filled from its lists instead.
    */
-  catalogPage?: (mediaType: MediaType, page: number) => Promise<CatalogSeed[]>;
+  catalogPage?: (mediaType: MediaType, page: number) => Promise<CatalogSeed[] | null>;
 };

@@ -335,9 +335,13 @@ export const seedCatalog = async ({
   let walked = 0;
   let writing: Promise<void> = Promise.resolve();
   for (let page = Math.max(1, Math.floor(startPage)); walked < limit; page += 1) {
-    const seeds = (await catalogPage(mediaType, page)).slice(0, limit - walked);
-    if (seeds.length === 0) {
+    const found = await catalogPage(mediaType, page);
+    if (!found) {
       break;
+    }
+    const seeds = found.slice(0, limit - walked);
+    if (seeds.length === 0) {
+      continue;
     }
     walked += seeds.length;
     const held = await catalogMatches(

@@ -56,15 +56,23 @@ const USER_AGENT = "Mediary/0.1 (https://mediary.com)";
 
 /**
  * THE RANKING A FULL LOAD WALKS. The catalog itself has no charts, so the
- * order comes from ListenBrainz, MetaBrainz's open listening data: the most
- * listened release groups of all time, by their catalog ids, no key needed.
- * A gentle second throttle keeps it under that service's own limits.
+ * order comes from ListenBrainz, MetaBrainz's open listening data, by the
+ * catalog's own ids and with no key. Its all-time charts stop at a
+ * thousand entries, so the walk is in two parts: first the thousand most
+ * listened records, then the thousand most listened artists, each with
+ * their most listened albums and EPs. A gentle second throttle keeps it
+ * under that service's own limits.
  */
-const LISTENS_API = "https://api.listenbrainz.org/1/stats/sitewide/release-groups";
+const LISTENS_API = "https://api.listenbrainz.org/1";
 const LISTENS_PAGE_SIZE = 100;
+const CHART_DEPTH = 1000;
+const CHART_PAGES = CHART_DEPTH / LISTENS_PAGE_SIZE;
+const ARTISTS_PER_PAGE = 5;
+const RECORDS_PER_ARTIST = 10;
+const ARTIST_RECORD_TYPES = new Set(["album", "ep"]);
 const listensThrottle = createThrottle({ minIntervalMs: 1000, maxConcurrent: 1 });
 
-const listensSchema = z.object({
+const chartSchema = z.object({
   payload: z.object({
     release_groups: z.array(
       z.object({
@@ -74,6 +82,19 @@ const listensSchema = z.object({
     ),
   }),
 });
+
+const artistChartSchema = z.object({
+  payload: z.object({
+    artists: z.array(z.object({ artist_mbid: z.string().nullish() })),
+  }),
+});
+
+const artistRecordsSchema = z.array(
+  z.object({
+    release_group_mbid: z.string().nullish(),
+    release_group: z.object({ name: z.string(), type: z.string().nullish() }).nullish(),
+  }),
+);
 
 const nullableString = z.string().nullish().transform((value) => value || null);
 
@@ -145,6 +166,64 @@ const isFuture = (isoDate: string | null): boolean =>
 /** The catalog writes partial dates ("2024", "2024-03"); a full day is kept, the rest is the year. */
 const fullDate = (value: string | null): string | null =>
   value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : value && /^\d{4}$/.test(value) ? `${value}-01-01` : value && /^\d{4}-\d{2}$/.test(value) ? `${value}-01` : null;
+
+const listensFetch = async (path: string, params: Record<string, string> = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return providerFetch(
+    `${LISTENS_API}${path}${query ? `?${query}` : ""}`,
+    { headers: { "User-Agent": USER_AGENT, Accept: "application/json" } },
+    { throttle: listensThrottle, label: SOURCE_LABEL },
+  );
+};
+
+/** One page of the all-time record chart. */
+const chartPage = async (page: number): Promise<CatalogSeed[]> => {
+  const data = chartSchema.parse(
+    await listensFetch("/stats/sitewide/release-groups", {
+      range: "all_time",
+      count: String(LISTENS_PAGE_SIZE),
+      offset: String((page - 1) * LISTENS_PAGE_SIZE),
+    }),
+  );
+  return data.payload.release_groups.flatMap((entry) =>
+    entry.release_group_mbid ? [{ externalId: entry.release_group_mbid, title: entry.release_group_name }] : [],
+  );
+};
+
+let topArtists: Promise<string[]> | null = null;
+
+/** The most listened artists of all time, by catalog id; read once per process, forgotten if it fails. */
+const artistChart = (): Promise<string[]> => {
+  topArtists ??= (async () => {
+    const ids: string[] = [];
+    for (let offset = 0; offset < CHART_DEPTH; offset += LISTENS_PAGE_SIZE) {
+      const data = artistChartSchema.parse(
+        await listensFetch("/stats/sitewide/artists", {
+          range: "all_time",
+          count: String(LISTENS_PAGE_SIZE),
+          offset: String(offset),
+        }),
+      );
+      ids.push(...data.payload.artists.flatMap((artist) => (artist.artist_mbid ? [artist.artist_mbid] : [])));
+    }
+    return ids;
+  })();
+  topArtists.catch(() => {
+    topArtists = null;
+  });
+  return topArtists;
+};
+
+/** An artist's most listened albums and EPs. */
+const artistRecords = async (artistMbid: string): Promise<CatalogSeed[]> =>
+  artistRecordsSchema
+    .parse(await listensFetch(`/popularity/top-release-groups-for-artist/${artistMbid}`))
+    .flatMap((entry) =>
+      entry.release_group_mbid && entry.release_group && ARTIST_RECORD_TYPES.has((entry.release_group.type ?? "").toLowerCase())
+        ? [{ externalId: entry.release_group_mbid, title: entry.release_group.name }]
+        : [],
+    )
+    .slice(0, RECORDS_PER_ARTIST);
 
 const musicbrainzFetch = async (path: string, params: Record<string, string> = {}) => {
   const query = new URLSearchParams({ fmt: "json", ...params });
@@ -332,22 +411,22 @@ export const musicbrainzProvider: MediaProvider = {
     );
     return data["release-groups"].map(toCandidate);
   },
-  catalogPage: async (mediaType, page): Promise<CatalogSeed[]> => {
+  // Pages 1 to 10 are the record chart; every page after holds five
+  // artists' records. A record already walked is skipped as held.
+  catalogPage: async (mediaType, page) => {
     kindOf(mediaType);
-    const query = new URLSearchParams({
-      range: "all_time",
-      count: String(LISTENS_PAGE_SIZE),
-      offset: String((page - 1) * LISTENS_PAGE_SIZE),
-    });
-    const data = listensSchema.parse(
-      await providerFetch(
-        `${LISTENS_API}?${query.toString()}`,
-        { headers: { "User-Agent": USER_AGENT, Accept: "application/json" } },
-        { throttle: listensThrottle, label: SOURCE_LABEL },
-      ),
-    );
-    return data.payload.release_groups.flatMap((entry) =>
-      entry.release_group_mbid ? [{ externalId: entry.release_group_mbid, title: entry.release_group_name }] : [],
-    );
+    if (page <= CHART_PAGES) {
+      return chartPage(page);
+    }
+    const artists = await artistChart();
+    const first = (page - CHART_PAGES - 1) * ARTISTS_PER_PAGE;
+    if (first >= artists.length) {
+      return null;
+    }
+    const seeds: CatalogSeed[] = [];
+    for (const artist of artists.slice(first, first + ARTISTS_PER_PAGE)) {
+      seeds.push(...(await artistRecords(artist)));
+    }
+    return seeds;
   },
 };

@@ -176,7 +176,8 @@ beyond the keys `getById` already uses.
   come through the API with the read token. TMDB's six-month limit on cached
   data now covers tens of thousands of titles: the daily cron refreshes the
   stalest several hundred, three at a time.
-- **Music:** the order comes from ListenBrainz's all-time most listened
-  release groups (MetaBrainz, open data, no key); the records come from
-  MusicBrainz as before, at its one request a second, so 10,000 albums take
-  about six hours.
+- **Music:** the order comes from ListenBrainz (MetaBrainz, open data, no
+  key), whose all-time charts stop at 1,000 entries: first its 1,000 most
+  listened records, then its 1,000 most listened artists with each one's ten
+  most listened albums and EPs. The records come from MusicBrainz as
+  before, at its one request a second, so 10,000 albums take hours.

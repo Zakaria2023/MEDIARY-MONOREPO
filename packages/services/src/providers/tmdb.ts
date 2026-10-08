@@ -500,6 +500,7 @@ export const tmdbProvider: MediaProvider = {
     exportCache.set(kind, pending);
     pending.catch(() => exportCache.delete(kind));
     const all = await pending;
-    return all.slice((page - 1) * CATALOG_PAGE_SIZE, page * CATALOG_PAGE_SIZE);
+    const slice = all.slice((page - 1) * CATALOG_PAGE_SIZE, page * CATALOG_PAGE_SIZE);
+    return slice.length === 0 ? null : slice;
   },
 };

@@ -388,6 +388,6 @@ export const kitsuProvider: MediaProvider = {
     const data = listSchema.parse(
       await kitsuFetch(`/${kitsuKind}`, { ...LIST_PARAMS.popular, ...pageParams(page) }),
     );
-    return data.data.map((record) => toCandidate(kitsuKind, record));
+    return data.data.length === 0 ? null : data.data.map((record) => toCandidate(kitsuKind, record));
   },
 };
