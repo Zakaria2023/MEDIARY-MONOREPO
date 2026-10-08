@@ -5,7 +5,6 @@ What stands between the code on `main` and a public beta. Each line names who de
 ## Needs the owner
 
 - **Push the schema to the live database.** `pnpm db:push` from a terminal (drizzle-kit asks a question only a TTY can answer). It will ask about `uq_media_external_refs_provider_id` on `MediaExternalRefs`: answer "No, add constraint without truncating". The constraint already exists and the table has no duplicates; the prompt is drizzle-kit's own confusion. Steps 5 to 8 added `Reviews`, `CustomLists`, `CustomListItems`, `Follows`, `Activities`, `Imports`, `ImportItems` and `ReviewReports`.
-- **Push `main` to GitHub.** Nothing since the JSON-LD fix has been pushed.
 - **TMDB attribution.** TMDB's terms require visible credit once the site is public. The attribution text is on the adapter (`providers/tmdb.ts`); decide where it goes (a Credits page is the minimum) and lift the "no attribution rendered" rule for that one place.
 - **Identity service branding.** In its dashboard: the sender name and the email templates for the verification codes, and your own Google OAuth credentials so the consent screen names Mediary.
 - **Twitch keys** (`TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`) so the game adapter can run; it has never been exercised live.
