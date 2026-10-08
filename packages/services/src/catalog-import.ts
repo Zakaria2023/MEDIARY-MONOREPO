@@ -5,11 +5,11 @@ import { MediaType, Provider } from "../../../db/enum";
 import { PROVIDER_LABELS } from "../../../db/label";
 import { MediaExternalRefs } from "../../../db/schema/media-external-refs";
 import { Media, SelectMedia } from "../../../db/schema/media";
-import { IngestResult, ingestNormalizedMedia } from "./catalog-ingest";
+import { IngestResult, ingestNormalizedBatch, ingestNormalizedMedia } from "./catalog-ingest";
 import { NotFoundError, ValidationError } from "./errors";
 import { getProvider, listProviderStatuses, providerForType } from "./providers/registry";
 import { lookupSeriesAiring, tmdbProvider } from "./providers/tmdb";
-import { MediaProvider, NormalizedMedia, ProviderCandidate, ProviderListKind } from "./providers/types";
+import { CatalogSeed, MediaProvider, NormalizedMedia, ProviderCandidate, ProviderListKind } from "./providers/types";
 
 /** A provider hit, with the catalog title it already is, if any. */
 export type ImportCandidate = ProviderCandidate & {
@@ -37,10 +37,29 @@ type SourceRef = {
   mediaType: MediaType;
 };
 
-/** How far back the background refresh looks, and how much it takes on. */
+/** How far back the background refresh looks, how much it takes on, and how long it may run. */
 export type RefreshStaleOptions = {
   olderThanDays: number;
   limit: number;
+  /** No new title is started after this many milliseconds. */
+  budgetMs?: number;
+};
+
+/** Where a full catalog load stands, reported after every page. */
+export type SeedProgress = ImportSummary & {
+  /** Records walked so far, held or not. */
+  walked: number;
+  page: number;
+};
+
+/** One full catalog load: which source, which medium, how deep. */
+export type SeedCatalogOptions = {
+  mediaType: MediaType;
+  /** How many of the source's most popular records to hold. */
+  limit: number;
+  /** The page of the walk to start on, to pick up a stopped load quickly. */
+  startPage?: number;
+  onProgress?: (progress: SeedProgress) => void;
 };
 
 /** A title synced within this window is skipped by a bulk import. */
@@ -58,6 +77,22 @@ export const MAX_IMPORT_START_PAGE = 500;
  * ceiling is the adapter's throttle, not this.
  */
 const INGEST_CONCURRENCY = 3;
+
+/**
+ * Records a full load asks its source for at once. The adapter's throttle
+ * is the real ceiling; this only keeps enough requests open to reach it.
+ */
+const SEED_FETCH_CONCURRENCY = 4;
+
+/**
+ * The daily job's limits inside the cron's five minutes: after the trending
+ * pages, the refresh takes the stalest titles until four minutes have gone
+ * from the start, three at a time. That is several hundred a day, enough to
+ * keep a catalog of 60,000 movies and shows inside the six months the
+ * movie and TV source allows, with a minute spare for the slowest request.
+ */
+const REFRESH_LIMIT = 900;
+const SYNC_BUDGET_MS = 240_000;
 
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : "Unknown error";
@@ -233,6 +268,93 @@ export const importProviderList = async (
   return summary;
 };
 
+/**
+ * Fetches each record of a page from the source, its throttle setting the
+ * pace; a record the source will not give is recorded as failed, never
+ * thrown, and the rest come back.
+ */
+const fetchRecords = async (
+  summary: ImportSummary,
+  adapter: MediaProvider,
+  mediaType: MediaType,
+  seeds: CatalogSeed[],
+): Promise<NormalizedMedia[]> => {
+  const fetched = await mapWithLimit(seeds, SEED_FETCH_CONCURRENCY, async (seed) => {
+    try {
+      return await withAiring(await adapter.getById(mediaType, seed.externalId));
+    } catch (error) {
+      summary.failed.push({ title: seed.title, error: errorMessage(error) });
+      return null;
+    }
+  });
+  return fetched.flatMap((record) => (record ? [record] : []));
+};
+
+/** Writes a page's records together and counts each outcome into the tally. */
+const writeRecords = async (summary: ImportSummary, records: NormalizedMedia[]): Promise<void> => {
+  for (const outcome of await ingestNormalizedBatch(records)) {
+    if (outcome.result) {
+      summary.created += outcome.result.created ? 1 : 0;
+      summary.updated += outcome.result.created ? 0 : 1;
+    } else {
+      summary.failed.push({ title: outcome.record.canonicalTitle, error: errorMessage(outcome.error) });
+    }
+  }
+};
+
+/**
+ * A FULL CATALOG LOAD: walks the source's whole catalog, most popular
+ * first, and brings in every record not already held until `limit` records
+ * have been walked. Run from a terminal (`pnpm catalog:seed`), never from a
+ * request: at the sources' own rate limits a deep load takes hours.
+ *
+ * Each page is written as one batch (`ingestNormalizedBatch`), and the next
+ * page is fetched from the source while the last one is being written, so
+ * the load runs at the source's pace rather than the database's distance.
+ * Anything already in the catalog is skipped whatever its age (keeping it
+ * fresh is the daily refresh's job), so a stopped load is simply started
+ * again and spends its time only on what is missing. One record failing is
+ * recorded and the walk carries on.
+ */
+export const seedCatalog = async ({
+  mediaType,
+  limit,
+  startPage = 1,
+  onProgress,
+}: SeedCatalogOptions): Promise<ImportSummary> => {
+  const source = providerForType(mediaType);
+  if (!source) {
+    throw new ValidationError(`No source supplies ${mediaType} titles yet`);
+  }
+  const adapter = usableProvider(source.provider, mediaType);
+  const { catalogPage } = adapter;
+  if (!catalogPage) {
+    throw new ValidationError(`The ${PROVIDER_LABELS[source.provider].toLowerCase()} cannot be walked in full`);
+  }
+  const summary: ImportSummary = { created: 0, updated: 0, skipped: 0, failed: [] };
+  let walked = 0;
+  let writing: Promise<void> = Promise.resolve();
+  for (let page = Math.max(1, Math.floor(startPage)); walked < limit; page += 1) {
+    const seeds = (await catalogPage(mediaType, page)).slice(0, limit - walked);
+    if (seeds.length === 0) {
+      break;
+    }
+    walked += seeds.length;
+    const held = await catalogMatches(
+      source.provider,
+      seeds.map((seed) => seed.externalId),
+    );
+    const missing = seeds.filter((seed) => !held.has(seed.externalId));
+    summary.skipped += seeds.length - missing.length;
+    const records = await fetchRecords(summary, adapter, mediaType, missing);
+    await writing;
+    const progress = { walked, page };
+    writing = writeRecords(summary, records).then(() => onProgress?.({ ...summary, ...progress }));
+  }
+  await writing;
+  return summary;
+};
+
 /** The provider ref a title was imported from: the oldest adapter-backed one. */
 const sourceRef = async (mediaUuid: string): Promise<SourceRef | null> => {
   const [media] = await db
@@ -273,14 +395,18 @@ export const refreshCatalogTitle = async (mediaUuid: string): Promise<IngestResu
 
 /**
  * The background refresh: the titles synced longest ago (or never), oldest
- * first, up to `limit`. TMDB's terms cap cached data at six months; run
- * daily with a modest limit, this keeps every title well inside that.
+ * first, up to `limit`, three at a time, starting no new one once `budgetMs`
+ * has passed. TMDB's terms cap cached data at six months; with a catalog of
+ * tens of thousands loaded, the daily run has to refresh a few hundred to
+ * stay inside that, which is what the limit and the budget are sized for.
  * Titles of a medium whose provider is not configured are left alone.
  */
 export const refreshStaleCatalog = async ({
   olderThanDays,
   limit,
+  budgetMs = Number.POSITIVE_INFINITY,
 }: RefreshStaleOptions): Promise<ImportSummary> => {
+  const startedAt = Date.now();
   const cutoff = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
   const stale = await db
     .select({ uuid: Media.uuid, title: Media.canonicalTitle })
@@ -290,7 +416,10 @@ export const refreshStaleCatalog = async ({
     .limit(limit);
 
   const summary: ImportSummary = { created: 0, updated: 0, skipped: 0, failed: [] };
-  for (const title of stale) {
+  await mapWithLimit(stale, INGEST_CONCURRENCY, async (title) => {
+    if (Date.now() - startedAt > budgetMs) {
+      return;
+    }
     try {
       await refreshCatalogTitle(title.uuid);
       summary.updated += 1;
@@ -301,7 +430,7 @@ export const refreshStaleCatalog = async ({
         summary.failed.push({ title: title.title, error: errorMessage(error) });
       }
     }
-  }
+  });
   return summary;
 };
 
@@ -317,9 +446,10 @@ const addSummary = (total: ImportSummary, part: ImportSummary): ImportSummary =>
  * THE DAILY CATALOG JOB. For every configured source, the first page of
  * what is trending (so explore's rails stay current), then the stalest
  * titles across the catalog. One source failing is recorded and the rest
- * carry on. Sized to finish well inside a five-minute function.
+ * carry on. Sized to finish inside a five-minute function (SYNC_BUDGET_MS).
  */
 export const runCatalogSync = async (): Promise<ImportSummary> => {
+  const startedAt = Date.now();
   let summary: ImportSummary = { created: 0, updated: 0, skipped: 0, failed: [] };
   for (const status of listProviderStatuses()) {
     if (!status.configured) {
@@ -339,5 +469,12 @@ export const runCatalogSync = async (): Promise<ImportSummary> => {
       }
     }
   }
-  return addSummary(summary, await refreshStaleCatalog({ olderThanDays: 30, limit: 60 }));
+  return addSummary(
+    summary,
+    await refreshStaleCatalog({
+      olderThanDays: 30,
+      limit: REFRESH_LIMIT,
+      budgetMs: Math.max(0, SYNC_BUDGET_MS - (Date.now() - startedAt)),
+    }),
+  );
 };

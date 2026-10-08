@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { headers } from "next/headers";
+import { listSitemapParts } from "services";
 import { isIndexableHost } from "security-headers";
+import { sitemapPartPath } from "@/lib/sitemap-part";
 
 /**
  * Auth-gated routes: a crawler only ever gets a redirect to sign-in, so
@@ -35,7 +37,14 @@ const robots = async (): Promise<MetadataRoute.Robots> => {
 
   return {
     rules: [{ userAgent: "*", allow: "/", disallow: PRIVATE_PATHS }],
-    ...(isPublic && { sitemap: `${siteUrl}/sitemap.xml`, host: siteUrl }),
+    ...(isPublic && {
+      // The pages' sitemap, then every file of the titles' one.
+      sitemap: [
+        `${siteUrl}/sitemap.xml`,
+        ...(await listSitemapParts()).map((part) => `${siteUrl}${sitemapPartPath(part)}`),
+      ],
+      host: siteUrl,
+    }),
   };
 };
 

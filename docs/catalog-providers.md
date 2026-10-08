@@ -163,3 +163,20 @@ choice replaceable, which is the whole reason it exists.
 | TMDB     | developer.themoviedb.org/docs/rate-limiting, /docs/image-basics, /docs/faq; themoviedb.org/api-terms-of-use                                        |
 | IGDB     | api-docs.igdb.com (Account Creation, Authentication, Rate Limits)                                                                                   |
 | AniList  | docs.anilist.co/guide/terms-of-use, /guide/rate-limiting, /guide/introduction                                                                       |
+
+## Full catalog loads (2026-10-08)
+
+`pnpm catalog:seed <medium> <how many>` loads a medium in full, most
+popular first. The walk reads only open listings; nothing new is needed
+beyond the keys `getById` already uses.
+
+- **Anime (and manga):** Kitsu's own catalog sorted by members, to the end.
+- **Movies and TV:** TMDB's daily id exports (`files.tmdb.org/p/exports`,
+  no key, one gzip a day of every id with its popularity); the details still
+  come through the API with the read token. TMDB's six-month limit on cached
+  data now covers tens of thousands of titles: the daily cron refreshes the
+  stalest several hundred, three at a time.
+- **Music:** the order comes from ListenBrainz's all-time most listened
+  release groups (MetaBrainz, open data, no key); the records come from
+  MusicBrainz as before, at its one request a second, so 10,000 albums take
+  about six hours.

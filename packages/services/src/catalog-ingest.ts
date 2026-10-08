@@ -18,7 +18,7 @@ import { MediaTitles } from "../../../db/schema/media-titles";
 import { InsertMedia, Media, SelectMedia } from "../../../db/schema/media";
 import { GamePlatforms, Platforms } from "../../../db/schema/platforms";
 import { isUniqueViolation } from "./db-result";
-import { NormalizedMedia, NormalizedRef } from "./providers/types";
+import { NormalizedGenre, NormalizedMedia, NormalizedPlatform, NormalizedRef } from "./providers/types";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -29,6 +29,17 @@ export type IngestResult = {
   mediaType: SelectMedia["mediaType"];
   canonicalTitle: SelectMedia["canonicalTitle"];
   created: boolean;
+};
+
+/** What became of one record in a batch: written, or the reason it was not. */
+export type BatchIngestOutcome =
+  | { record: NormalizedMedia; result: IngestResult; error?: undefined }
+  | { record: NormalizedMedia; result?: undefined; error: unknown };
+
+/** A new record and the title row it was created as. */
+type WrittenRecord = {
+  record: NormalizedMedia;
+  uuid: string;
 };
 
 /** The Media columns a provider sync writes, and an admin can lock. */
@@ -92,31 +103,11 @@ const withoutLocked = (fields: SyncedFields, locked: string[]): Partial<SyncedFi
     Object.entries(fields).filter(([key]) => !locked.includes(key)),
   ) as Partial<SyncedFields>;
 
-/**
- * A slug free within the medium: the title, then the title and year, then a
- * counter. Chosen once, when the title is created; a slug never changes
- * after it is public, so an update never calls this.
- */
-const freeSlug = async (
-  tx: Tx,
-  mediaType: MediaType,
-  title: string,
-  year: number | null,
-): Promise<string> => {
-  const base = (slugify(title) || "untitled").slice(0, MAX_SLUG_LENGTH);
-  const taken = new Set(
-    (
-      await tx
-        .select({ slug: Media.slug })
-        .from(Media)
-        .where(
-          and(
-            eq(Media.mediaType, mediaType),
-            or(eq(Media.slug, base), like(Media.slug, `${base}-%`)),
-          ),
-        )
-    ).map((row) => row.slug),
-  );
+/** The slug a title starts from, before the year or a counter. */
+const slugBase = (title: string): string => (slugify(title) || "untitled").slice(0, MAX_SLUG_LENGTH);
+
+/** The first slug not in `taken`: the base, then base and year, then a counter. */
+const pickSlug = (taken: Set<string>, base: string, year: number | null): string => {
   const candidates = [base, ...(year ? [`${base}-${year}`] : [])];
   for (const candidate of candidates) {
     if (!taken.has(candidate)) {
@@ -130,6 +121,37 @@ const freeSlug = async (
       return candidate;
     }
   }
+};
+
+/** The slugs of a medium that a title starting from any of these bases could collide with. */
+const takenSlugs = async (tx: Tx, mediaType: MediaType, bases: string[]): Promise<Set<string>> =>
+  new Set(
+    (
+      await tx
+        .select({ slug: Media.slug })
+        .from(Media)
+        .where(
+          and(
+            eq(Media.mediaType, mediaType),
+            or(inArray(Media.slug, bases), ...bases.map((base) => like(Media.slug, `${base}-%`))),
+          ),
+        )
+    ).map((row) => row.slug),
+  );
+
+/**
+ * A slug free within the medium: the title, then the title and year, then a
+ * counter. Chosen once, when the title is created; a slug never changes
+ * after it is public, so an update never calls this.
+ */
+const freeSlug = async (
+  tx: Tx,
+  mediaType: MediaType,
+  title: string,
+  year: number | null,
+): Promise<string> => {
+  const base = slugBase(title);
+  return pickSlug(await takenSlugs(tx, mediaType, [base]), base, year);
 };
 
 /**
@@ -205,10 +227,10 @@ const writeRefs = async (tx: Tx, mediaUuid: string, record: NormalizedMedia) => 
     );
 };
 
-const writeTitles = async (tx: Tx, mediaUuid: string, record: NormalizedMedia) => {
-  await tx.delete(MediaTitles).where(eq(MediaTitles.mediaUuid, mediaUuid));
+/** A record's names as MediaTitles rows, one per (type, spelling). */
+const titleRows = (mediaUuid: string, record: NormalizedMedia) => {
   const seen = new Set<string>();
-  const rows = record.titles
+  return record.titles
     .filter((entry) => {
       const key = `${entry.titleType}:${entry.title.toLowerCase()}`;
       if (seen.has(key)) {
@@ -223,6 +245,11 @@ const writeTitles = async (tx: Tx, mediaUuid: string, record: NormalizedMedia) =
       titleType: entry.titleType,
       language: entry.language,
     }));
+};
+
+const writeTitles = async (tx: Tx, mediaUuid: string, record: NormalizedMedia) => {
+  await tx.delete(MediaTitles).where(eq(MediaTitles.mediaUuid, mediaUuid));
+  const rows = titleRows(mediaUuid, record);
   if (rows.length > 0) {
     await tx.insert(MediaTitles).values(rows);
   }
@@ -240,21 +267,49 @@ const writeImages = async (tx: Tx, mediaUuid: string, record: NormalizedMedia) =
   }
 };
 
+/** Each genre's id by slug, adding any the vocabulary has not stored yet. */
+const genreIds = async (tx: Tx, genres: NormalizedGenre[]): Promise<Map<string, number>> => {
+  await tx.insert(Genres).values(genres).onConflictDoNothing();
+  const rows = await tx
+    .select({ id: Genres.id, slug: Genres.slug })
+    .from(Genres)
+    .where(inArray(Genres.slug, genres.map((genre) => genre.slug)));
+  return new Map(rows.map((row) => [row.slug, row.id]));
+};
+
+/** Each platform's id by slug, adding any not stored yet. */
+const platformIds = async (tx: Tx, platforms: NormalizedPlatform[]): Promise<Map<string, number>> => {
+  await tx
+    .insert(Platforms)
+    .values(platforms.map(({ slug, name, abbreviation }) => ({ slug, name, abbreviation })))
+    .onConflictDoNothing();
+  const rows = await tx
+    .select({ id: Platforms.id, slug: Platforms.slug })
+    .from(Platforms)
+    .where(inArray(Platforms.slug, platforms.map((platform) => platform.slug)));
+  return new Map(rows.map((row) => [row.slug, row.id]));
+};
+
+/** A record's genres as MediaGenres links, in the provider's order. */
+const genreLinks = (mediaUuid: string, record: NormalizedMedia, idBySlug: Map<string, number>) =>
+  record.genres.flatMap((genre, position) => {
+    const genreId = idBySlug.get(genre.slug);
+    return genreId ? [{ mediaUuid, genreId, position }] : [];
+  });
+
+/** A game's platforms as GamePlatforms links. */
+const platformLinks = (mediaUuid: string, record: NormalizedMedia, idBySlug: Map<string, number>) =>
+  record.platforms.flatMap((platform) => {
+    const platformId = idBySlug.get(platform.slug);
+    return platformId ? [{ mediaUuid, platformId, releaseDate: platform.releaseDate }] : [];
+  });
+
 const writeGenres = async (tx: Tx, mediaUuid: string, record: NormalizedMedia) => {
   await tx.delete(MediaGenres).where(eq(MediaGenres.mediaUuid, mediaUuid));
   if (record.genres.length === 0) {
     return;
   }
-  await tx.insert(Genres).values(record.genres).onConflictDoNothing();
-  const rows = await tx
-    .select({ id: Genres.id, slug: Genres.slug })
-    .from(Genres)
-    .where(inArray(Genres.slug, record.genres.map((genre) => genre.slug)));
-  const idBySlug = new Map(rows.map((row) => [row.slug, row.id]));
-  const links = record.genres.flatMap((genre, position) => {
-    const genreId = idBySlug.get(genre.slug);
-    return genreId ? [{ mediaUuid, genreId, position }] : [];
-  });
+  const links = genreLinks(mediaUuid, record, await genreIds(tx, record.genres));
   if (links.length > 0) {
     await tx.insert(MediaGenres).values(links);
   }
@@ -265,23 +320,7 @@ const writePlatforms = async (tx: Tx, mediaUuid: string, record: NormalizedMedia
   if (record.platforms.length === 0) {
     return;
   }
-  await tx
-    .insert(Platforms)
-    .values(
-      record.platforms.map(({ slug, name, abbreviation }) => ({ slug, name, abbreviation })),
-    )
-    .onConflictDoNothing();
-  const rows = await tx
-    .select({ id: Platforms.id, slug: Platforms.slug })
-    .from(Platforms)
-    .where(inArray(Platforms.slug, record.platforms.map((platform) => platform.slug)));
-  const idBySlug = new Map(rows.map((row) => [row.slug, row.id]));
-  const links = record.platforms.flatMap((platform) => {
-    const platformId = idBySlug.get(platform.slug);
-    return platformId
-      ? [{ mediaUuid, platformId, releaseDate: platform.releaseDate }]
-      : [];
-  });
+  const links = platformLinks(mediaUuid, record, await platformIds(tx, record.platforms));
   if (links.length > 0) {
     await tx.insert(GamePlatforms).values(links);
   }
@@ -410,4 +449,233 @@ export const ingestNormalizedMedia = async (
       }
     }
   }
+};
+
+/** "tmdb:movie:550": a ref as one comparable key. */
+const refKey = (ref: Pick<NormalizedRef, "provider" | "externalId">): string => `${ref.provider}:${ref.externalId}`;
+
+/** A detail row's values without the union's tag. */
+const withoutKind = <T extends { kind: string }>({ kind: _kind, ...values }: T): Omit<T, "kind"> => values;
+
+/** Which of these refs are already held, with the medium of the title each belongs to. */
+const heldRefs = async (refs: NormalizedRef[]): Promise<Map<string, MediaType>> => {
+  if (refs.length === 0) {
+    return new Map();
+  }
+  const rows = await db
+    .select({
+      provider: MediaExternalRefs.provider,
+      externalId: MediaExternalRefs.externalId,
+      mediaType: Media.mediaType,
+    })
+    .from(MediaExternalRefs)
+    .innerJoin(Media, eq(Media.uuid, MediaExternalRefs.mediaUuid))
+    .where(
+      or(
+        ...refs.map((ref) =>
+          and(eq(MediaExternalRefs.provider, ref.provider), eq(MediaExternalRefs.externalId, ref.externalId)),
+        ),
+      ),
+    );
+  return new Map(rows.map((row) => [refKey(row), row.mediaType]));
+};
+
+/** Each medium's detail rows for a batch, one insert per medium that has any. */
+const insertDetails = async (tx: Tx, written: WrittenRecord[]) => {
+  const details = written.map(({ uuid, record }) => ({ mediaUuid: uuid, details: record.details }));
+  const movies = details.flatMap(({ mediaUuid, details: entry }) =>
+    entry.kind === "movie" ? [{ mediaUuid, ...withoutKind(entry) }] : [],
+  );
+  const shows = details.flatMap(({ mediaUuid, details: entry }) =>
+    entry.kind === "tv" ? [{ mediaUuid, ...withoutKind(entry) }] : [],
+  );
+  const music = details.flatMap(({ mediaUuid, details: entry }) =>
+    entry.kind === "music" ? [{ mediaUuid, ...withoutKind(entry) }] : [],
+  );
+  const games = details.flatMap(({ mediaUuid, details: entry }) =>
+    entry.kind === "game" ? [{ mediaUuid, ...withoutKind(entry) }] : [],
+  );
+  const manga = details.flatMap(({ mediaUuid, details: entry }) =>
+    entry.kind === "manga" ? [{ mediaUuid, ...withoutKind(entry) }] : [],
+  );
+  const books = details.flatMap(({ mediaUuid, details: entry }) =>
+    entry.kind === "book" ? [{ mediaUuid, ...withoutKind(entry) }] : [],
+  );
+  const anime = details.flatMap(({ mediaUuid, details: entry }) =>
+    entry.kind === "anime" ? [{ mediaUuid, ...withoutKind(entry) }] : [],
+  );
+  if (movies.length > 0) {
+    await tx.insert(MovieDetails).values(movies);
+  }
+  if (shows.length > 0) {
+    await tx.insert(TvDetails).values(shows);
+  }
+  if (music.length > 0) {
+    await tx.insert(MusicDetails).values(music);
+  }
+  if (games.length > 0) {
+    await tx.insert(GameDetails).values(games);
+  }
+  if (manga.length > 0) {
+    await tx.insert(MangaDetails).values(manga);
+  }
+  if (books.length > 0) {
+    await tx.insert(BookDetails).values(books);
+  }
+  if (anime.length > 0) {
+    await tx.insert(AnimeDetails).values(anime);
+  }
+};
+
+/** Every distinct item of a list by its slug, first seen kept. */
+const distinctBySlug = <T extends { slug: string }>(items: T[]): T[] => [
+  ...new Map(items.map((item) => [item.slug, item])).values(),
+];
+
+/**
+ * Creates every record of a batch, none of whose ids is held, in ONE
+ * transaction of about a dozen statements, whatever the batch's size. The
+ * primary refs go in without ON CONFLICT, so a record someone else created
+ * meanwhile refuses the whole batch on the UNIQUE, exactly as a single
+ * ingest that lost the race would.
+ */
+const insertNewBatch = async (records: NormalizedMedia[]): Promise<BatchIngestOutcome[]> =>
+  db.transaction(async (tx) => {
+    const now = new Date();
+    const taken = new Map<MediaType, Set<string>>();
+    for (const mediaType of new Set(records.map((record) => record.mediaType))) {
+      const bases = records
+        .filter((record) => record.mediaType === mediaType)
+        .map((record) => slugBase(record.canonicalTitle));
+      taken.set(mediaType, await takenSlugs(tx, mediaType, bases));
+    }
+    const planned = records.map((record) => {
+      const fields = syncedFields(record);
+      const slugs = taken.get(record.mediaType) ?? new Set<string>();
+      const slug = pickSlug(slugs, slugBase(record.canonicalTitle), fields.releaseYear ?? null);
+      slugs.add(slug);
+      taken.set(record.mediaType, slugs);
+      return { record, values: { mediaType: record.mediaType, slug, ...fields, lastSyncedAt: now } };
+    });
+
+    // RETURNING promises no order, so each row finds its record by its
+    // (medium, slug), which the batch made unique above.
+    const inserted = await tx
+      .insert(Media)
+      .values(planned.map((entry) => entry.values))
+      .returning(WRITTEN_COLUMNS);
+    const rowBySlug = new Map(inserted.map((row) => [`${row.mediaType}:${row.slug}`, row]));
+    const written = planned.map(({ record, values }) => {
+      const row = rowBySlug.get(`${values.mediaType}:${values.slug}`);
+      if (!row) {
+        throw new Error(`The catalog did not accept ${record.canonicalTitle}`);
+      }
+      return { uuid: row.uuid, record, row };
+    });
+
+    await tx.insert(MediaExternalRefs).values(
+      written.map(({ uuid, record: { primaryRef } }) => ({
+        mediaUuid: uuid,
+        provider: primaryRef.provider,
+        externalId: primaryRef.externalId,
+        externalUrl: primaryRef.externalUrl,
+        lastVerifiedAt: now,
+      })),
+    );
+    const otherRefs = written.flatMap(({ uuid, record }) =>
+      record.otherRefs.map((ref) => ({
+        mediaUuid: uuid,
+        provider: ref.provider,
+        externalId: ref.externalId,
+        externalUrl: ref.externalUrl,
+        lastVerifiedAt: now,
+      })),
+    );
+    if (otherRefs.length > 0) {
+      await tx.insert(MediaExternalRefs).values(otherRefs).onConflictDoNothing();
+    }
+
+    const titles = written.flatMap(({ uuid, record }) => titleRows(uuid, record));
+    if (titles.length > 0) {
+      await tx.insert(MediaTitles).values(titles);
+    }
+    const images = written.flatMap(({ uuid, record }) =>
+      record.images.map((image) => ({ mediaUuid: uuid, ...image })),
+    );
+    if (images.length > 0) {
+      await tx.insert(MediaImages).values(images);
+    }
+
+    const genres = distinctBySlug(records.flatMap((record) => record.genres));
+    if (genres.length > 0) {
+      const idBySlug = await genreIds(tx, genres);
+      const links = written.flatMap(({ uuid, record }) => genreLinks(uuid, record, idBySlug));
+      if (links.length > 0) {
+        await tx.insert(MediaGenres).values(links);
+      }
+    }
+    const platforms = distinctBySlug(records.flatMap((record) => record.platforms));
+    if (platforms.length > 0) {
+      const idBySlug = await platformIds(tx, platforms);
+      const links = written.flatMap(({ uuid, record }) => platformLinks(uuid, record, idBySlug));
+      if (links.length > 0) {
+        await tx.insert(GamePlatforms).values(links);
+      }
+    }
+
+    await insertDetails(tx, written);
+    return written.map(({ record, row }) => ({ record, result: { ...row, created: true } }));
+  });
+
+/** One record through the single writer, its failure kept rather than thrown. */
+const ingestOne = async (record: NormalizedMedia): Promise<BatchIngestOutcome> => {
+  try {
+    return { record, result: await ingestNormalizedMedia(record) };
+  } catch (error) {
+    return { record, error };
+  }
+};
+
+/**
+ * WRITES MANY RECORDS AT ONCE, for a full catalog load, where the database
+ * is a long round trip away and a dozen statements per title would take
+ * the load days. Records that are new are created together in one
+ * transaction; a record any of whose ids is already held (or claimed by an
+ * earlier record of the same batch) goes through `ingestNormalizedMedia`,
+ * so it updates the title it already is, as it would alone. If the batch
+ * fails for any reason (a race lost on a UNIQUE, one bad value), it rolls
+ * back whole and every record is written one by one, so one bad record
+ * costs only itself.
+ */
+export const ingestNormalizedBatch = async (records: NormalizedMedia[]): Promise<BatchIngestOutcome[]> => {
+  const held = await heldRefs(records.flatMap((record) => [record.primaryRef, ...record.otherRefs]));
+  const claimed = new Set<string>();
+  const fresh: NormalizedMedia[] = [];
+  const known: NormalizedMedia[] = [];
+  for (const record of records) {
+    const keys = [record.primaryRef, ...record.otherRefs].map(refKey);
+    const isKnown =
+      held.has(refKey(record.primaryRef)) ||
+      record.otherRefs.some((ref) => held.get(refKey(ref)) === record.mediaType) ||
+      keys.some((key) => claimed.has(key));
+    if (isKnown) {
+      known.push(record);
+    } else {
+      fresh.push(record);
+      keys.forEach((key) => claimed.add(key));
+    }
+  }
+
+  let outcomes: BatchIngestOutcome[] = [];
+  if (fresh.length > 0) {
+    try {
+      outcomes = await insertNewBatch(fresh);
+    } catch {
+      known.unshift(...fresh);
+    }
+  }
+  for (const record of known) {
+    outcomes.push(await ingestOne(record));
+  }
+  return outcomes;
 };

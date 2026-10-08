@@ -381,4 +381,13 @@ export const kitsuProvider: MediaProvider = {
     );
     return data.data.map((record) => toCandidate(kitsuKind, record));
   },
+  // The whole catalog is the "kept most" list read to the end: it pages
+  // through every record, 20 at a time, and an empty page is the end.
+  catalogPage: async (mediaType, page) => {
+    const kitsuKind = kindOf(mediaType);
+    const data = listSchema.parse(
+      await kitsuFetch(`/${kitsuKind}`, { ...LIST_PARAMS.popular, ...pageParams(page) }),
+    );
+    return data.data.map((record) => toCandidate(kitsuKind, record));
+  },
 };

@@ -181,6 +181,9 @@ export type ProviderCandidate = {
 /** The lists a provider can be asked for, besides search: what is moving now, what is kept most, what is rated best, what is not out yet. */
 export type ProviderListKind = "trending" | "popular" | "top" | "upcoming";
 
+/** One record a full catalog load will fetch: the adapter's key, and a name for the progress log. */
+export type CatalogSeed = Pick<ProviderCandidate, "externalId" | "title">;
+
 /**
  * What a provider's terms ask a site to show. KEPT AS DATA, RENDERED NOWHERE:
  * the owner has decided no vendor is named on screen (CLAUDE.md, "No vendor
@@ -224,4 +227,11 @@ export type MediaProvider = {
     kind: ProviderListKind,
     page?: number,
   ) => Promise<ProviderCandidate[]>;
+  /**
+   * One page of EVERY RECORD WORTH HOLDING, most popular first; an empty
+   * page is the end. What a full catalog load walks (`seedCatalog`). It
+   * reads the source's open listings, so walking needs no key; only
+   * `getById` may. A source without it is filled from its lists instead.
+   */
+  catalogPage?: (mediaType: MediaType, page: number) => Promise<CatalogSeed[]>;
 };

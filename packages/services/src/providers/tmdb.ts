@@ -1,8 +1,10 @@
+import { gunzipSync } from "node:zlib";
 import { z } from "zod";
 import { yearOf } from "utils";
 import { MediaStatus, MediaType } from "../../../../db/enum";
 import { createThrottle, providerFetch, requireEnv } from "./http";
 import {
+  CatalogSeed,
   MediaProvider,
   NormalizedImage,
   NormalizedMedia,
@@ -60,6 +62,27 @@ const listItemSchema = z.object({
 });
 
 const listSchema = z.object({ results: z.array(listItemSchema) });
+
+/**
+ * THE DAILY EXPORTS: every movie and every show TMDB holds, one JSON line
+ * each with its current popularity, published as a gzip a day with no key.
+ * A full catalog load walks this instead of 500-page-capped lists.
+ */
+const EXPORT_BASE = "https://files.tmdb.org/p/exports";
+const EXPORT_FILES: Record<TmdbKind, string> = { movie: "movie_ids", tv: "tv_series_ids" };
+const CATALOG_PAGE_SIZE = 100;
+
+const exportEntrySchema = z.object({
+  id: z.number(),
+  original_title: z.string().optional(),
+  original_name: z.string().optional(),
+  popularity: z.number().optional(),
+  adult: z.boolean().optional(),
+  video: z.boolean().optional(),
+});
+
+/** One download per kind per process; a failed one is forgotten so the next call retries. */
+const exportCache = new Map<TmdbKind, Promise<CatalogSeed[]>>();
 
 const sharedDetailFields = {
   id: z.number(),
@@ -166,6 +189,51 @@ const imageUrl = (path: string | null, size: string): string | null =>
 /** A release date in the future means not out yet, whatever TMDB's status says. */
 const isFuture = (isoDate: string | null): boolean =>
   isoDate !== null && isoDate > new Date().toISOString().slice(0, 10);
+
+/** "10_07_2026": how an export published `daysAgo` days back (UTC) is named. */
+const exportDate = (daysAgo: number): string => {
+  const day = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+  return [day.getUTCMonth() + 1, day.getUTCDate()]
+    .map((part) => String(part).padStart(2, "0"))
+    .concat(String(day.getUTCFullYear()))
+    .join("_");
+};
+
+/** One export line, or null for a line that is not a usable record. */
+const parseExportLine = (line: string): z.infer<typeof exportEntrySchema> | null => {
+  try {
+    const parsed = exportEntrySchema.safeParse(JSON.parse(line));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Every record of a kind, most popular first, adult titles and video
+ * extras left out. The newest export is published each morning (UTC), so
+ * yesterday's is asked for first and two older ones after it.
+ */
+const downloadExport = async (kind: TmdbKind): Promise<CatalogSeed[]> => {
+  for (const daysAgo of [1, 2, 3]) {
+    const response = await fetch(`${EXPORT_BASE}/${EXPORT_FILES[kind]}_${exportDate(daysAgo)}.json.gz`);
+    if (!response.ok) {
+      continue;
+    }
+    const lines = gunzipSync(Buffer.from(await response.arrayBuffer())).toString("utf8").split("\n");
+    return lines
+      .flatMap((line) => {
+        const entry = line ? parseExportLine(line) : null;
+        return entry && !entry.adult && !entry.video ? [entry] : [];
+      })
+      .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0))
+      .map((entry) => ({
+        externalId: tmdbExternalId(kind, entry.id),
+        title: entry.original_title ?? entry.original_name ?? String(entry.id),
+      }));
+  }
+  throw new Error(`${SOURCE_LABEL} has no recent catalog export`);
+};
 
 const tmdbFetch = async (path: string, params: Record<string, string> = {}) => {
   const query = new URLSearchParams({ language: "en-US", ...params });
@@ -425,5 +493,13 @@ export const tmdbProvider: MediaProvider = {
       await tmdbFetch(LIST_PATHS[tmdbKind][kind], { page: String(page) }),
     );
     return data.results.map((item) => toCandidate(tmdbKind, item));
+  },
+  catalogPage: async (mediaType, page) => {
+    const kind = kindOf(mediaType);
+    const pending = exportCache.get(kind) ?? downloadExport(kind);
+    exportCache.set(kind, pending);
+    pending.catch(() => exportCache.delete(kind));
+    const all = await pending;
+    return all.slice((page - 1) * CATALOG_PAGE_SIZE, page * CATALOG_PAGE_SIZE);
   },
 };

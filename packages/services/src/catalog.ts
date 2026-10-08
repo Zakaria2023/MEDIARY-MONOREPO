@@ -172,6 +172,12 @@ export type AdminCatalogParams = {
 
 export type SitemapTitle = Pick<SelectMedia, "mediaType" | "slug" | "updatedAt">;
 
+/** One file of the titles sitemap: a medium's public titles, cut into parts of SITEMAP_PART_SIZE. */
+export type SitemapPart = {
+  mediaType: MediaType;
+  part: number;
+};
+
 export type CatalogShowcaseParams = {
   /** The order and filter a listing with this sort uses. */
   sort: CatalogSort;
@@ -195,8 +201,8 @@ const CARD_COLUMNS = {
 /** Shortest query worth running; a single letter matches half the catalog. */
 const MIN_QUERY_LENGTH = 2;
 
-/** The sitemap protocol's ceiling for one file. */
-const SITEMAP_LIMIT = 45000;
+/** Titles per sitemap file, under the protocol's ceiling of 50,000 URLs. */
+export const SITEMAP_PART_SIZE = 45000;
 
 const today = (): string => new Date().toISOString().slice(0, 10);
 
@@ -695,14 +701,34 @@ export const listRelatedTitles = async (
     .limit(limit);
 };
 
-/** Every public title's URL parts for the sitemap, most recently changed first. */
-export const listSitemapTitles = async (): Promise<SitemapTitle[]> =>
+/**
+ * The files the titles sitemap is cut into: each medium with public titles,
+ * in parts of SITEMAP_PART_SIZE, so no file passes the protocol's limit
+ * however large the catalog grows.
+ */
+export const listSitemapParts = async (): Promise<SitemapPart[]> => {
+  const rows = await db
+    .select({ mediaType: Media.mediaType, value: count() })
+    .from(Media)
+    .where(isPublic)
+    .groupBy(Media.mediaType);
+  return rows.flatMap((row) =>
+    Array.from({ length: Math.ceil(row.value / SITEMAP_PART_SIZE) }, (_, part) => ({ mediaType: row.mediaType, part })),
+  );
+};
+
+/**
+ * One part's public titles for the sitemap, in the order they were added,
+ * so a title stays in the same file as the catalog grows.
+ */
+export const listSitemapTitles = async ({ mediaType, part }: SitemapPart): Promise<SitemapTitle[]> =>
   db
     .select({ mediaType: Media.mediaType, slug: Media.slug, updatedAt: Media.updatedAt })
     .from(Media)
-    .where(isPublic)
-    .orderBy(desc(Media.updatedAt))
-    .limit(SITEMAP_LIMIT);
+    .where(and(isPublic, eq(Media.mediaType, mediaType)))
+    .orderBy(asc(Media.id))
+    .offset(part * SITEMAP_PART_SIZE)
+    .limit(SITEMAP_PART_SIZE);
 
 /** How many titles each medium has, for the admin overview. */
 /**

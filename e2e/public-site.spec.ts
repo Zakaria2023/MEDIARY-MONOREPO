@@ -99,4 +99,8 @@ test("robots and the sitemap are served", async ({ request }) => {
   const sitemap = await request.get("/sitemap.xml");
   expect(sitemap.status()).toBe(200);
   expect(await sitemap.text()).toContain("/movies");
+  // The titles have their own files, one per medium and part.
+  const titles = await request.get("/titles/sitemap/movie-0.xml");
+  expect(titles.status()).toBe(200);
+  expect(await titles.text()).toMatch(/\/movie\/[a-z0-9-]+</);
 });

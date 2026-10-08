@@ -4,6 +4,7 @@ import { MediaStatus, MediaType, ReleaseType } from "../../../../db/enum";
 import { ValidationError } from "../errors";
 import { createThrottle, providerFetch } from "./http";
 import {
+  CatalogSeed,
   MediaProvider,
   NormalizedMedia,
   ProviderCandidate,
@@ -52,6 +53,27 @@ const PAGE_SIZE = 20;
 const throttle = createThrottle({ minIntervalMs: 1100, maxConcurrent: 1 });
 
 const USER_AGENT = "Mediary/0.1 (https://mediary.com)";
+
+/**
+ * THE RANKING A FULL LOAD WALKS. The catalog itself has no charts, so the
+ * order comes from ListenBrainz, MetaBrainz's open listening data: the most
+ * listened release groups of all time, by their catalog ids, no key needed.
+ * A gentle second throttle keeps it under that service's own limits.
+ */
+const LISTENS_API = "https://api.listenbrainz.org/1/stats/sitewide/release-groups";
+const LISTENS_PAGE_SIZE = 100;
+const listensThrottle = createThrottle({ minIntervalMs: 1000, maxConcurrent: 1 });
+
+const listensSchema = z.object({
+  payload: z.object({
+    release_groups: z.array(
+      z.object({
+        release_group_mbid: z.string().nullish(),
+        release_group_name: z.string(),
+      }),
+    ),
+  }),
+});
 
 const nullableString = z.string().nullish().transform((value) => value || null);
 
@@ -309,5 +331,23 @@ export const musicbrainzProvider: MediaProvider = {
       }),
     );
     return data["release-groups"].map(toCandidate);
+  },
+  catalogPage: async (mediaType, page): Promise<CatalogSeed[]> => {
+    kindOf(mediaType);
+    const query = new URLSearchParams({
+      range: "all_time",
+      count: String(LISTENS_PAGE_SIZE),
+      offset: String((page - 1) * LISTENS_PAGE_SIZE),
+    });
+    const data = listensSchema.parse(
+      await providerFetch(
+        `${LISTENS_API}?${query.toString()}`,
+        { headers: { "User-Agent": USER_AGENT, Accept: "application/json" } },
+        { throttle: listensThrottle, label: SOURCE_LABEL },
+      ),
+    );
+    return data.payload.release_groups.flatMap((entry) =>
+      entry.release_group_mbid ? [{ externalId: entry.release_group_mbid, title: entry.release_group_name }] : [],
+    );
   },
 };
