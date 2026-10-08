@@ -25,7 +25,9 @@ Mediary; nothing here needs more than the repo and the environment file.
 ## Catalog
 
 - The daily sync is `/api/cron/catalog` on the admin, scheduled in `apps/admin/vercel.json`: the first page of every configured source's trending list, then the stalest titles. TMDB's terms cap cached data at six months; the refresh keeps every title inside that.
-- Filling a medium from scratch: the admin's Imports screen, the source's lists five pages at a time from a start page. The first fill of a few thousand titles was done with throwaway scripts that call `importProviderList` in a loop; the Imports screen does the same a page at a time.
+- Filling a medium from scratch: `pnpm catalog:seed <medium> <how many>` from a terminal (`pnpm catalog:seed anime 22500`, `movie 40000`, `tv 20000`, `music 10000` were the loads of 2026-10-08). It walks the source's whole catalog, most popular first, and skips what is held, so it is safe to run again: a second pass picks up whatever failed in the first. Run at most two at once: each holds three of the service's 20 connections.
+- A load that loses its network restarts itself from the last page it wrote. A connection that dies without closing (a VPN changing servers does this) stays open on the database until the server notices, and enough of them fill all 20 slots ("remaining connection slots are reserved"). Stop the loads, then end the dead sessions: `select pg_terminate_backend(pid) from pg_stat_activity where usename = current_user and pid <> pg_backend_pid() and now() - state_change > interval '2 minutes';` from the Aiven console's query editor. Don't run that while the site is serving: it ends the app's idle connections too.
+- For a single list, the admin's Imports screen still brings in a source's list five pages at a time.
 - A title that is wrong: open it in the admin's catalog, lock the fields you correct, and press Refresh; locked fields are left alone by every later sync.
 - Games need `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`; anime, manga, music and books need no key. Every source's terms are in `docs/catalog-providers.md`; re-read them before launch.
 
@@ -34,7 +36,7 @@ Mediary; nothing here needs more than the repo and the environment file.
 - `pnpm test`: the fast unit suite, no credentials.
 - `pnpm test:integration`: against `${DB_NAME}_test` on the same Aiven service; run it alone, because it shares the connection ceiling with anything else talking to the service.
 - `pnpm test:e2e`: the public site in a real browser, against a running dev server on 3000 (started if none is running) or `E2E_BASE_URL`. First time: `npx playwright install chromium`.
-- `pnpm test:visual`: screenshots of the fixed parts of the site, against a production build on port 3100. After a deliberate design change, `pnpm test:visual:update`, then look at every changed image in the diff before committing it.
+- `pnpm test:visual`: screenshots of the fixed parts of the site, against a production build on port 3190. After a deliberate design change, `pnpm test:visual:update`, then look at every changed image in the diff before committing it.
 - Type-check and lint: `pnpm type-check`, `pnpm lint`.
 
 ## Identity
@@ -49,8 +51,14 @@ Mediary; nothing here needs more than the repo and the environment file.
 
 ## Feature flags
 
-- `FEATURES_OFF` in the environment, comma separated, takes a finished feature off the site on the next request: `social` (follows, likes, replies), `recommendations` (the "For you" rails), `taste_match` (Compare taste). Read at request time, so on Vercel a change needs only a redeploy of the variable, not of the code.
+- `FEATURES_OFF` in the environment, comma separated, takes a finished feature off the site on the next request: `social` (follows, likes, replies), `recommendations` (the "For you" rails), `taste_match` (Compare taste), `ask` (the guide at /ask), `listen` (Name that song). Read at request time, so on Vercel a change needs only a redeploy of the variable, not of the code.
 - The services refuse what is off with "This is switched off for now", and the screens hide the controls, so turning one off loses no data; turning it back on brings everything back as it was.
+
+## Ask and Listen
+
+- The guide at `/ask` needs `ANTHROPIC_API_KEY` (console.anthropic.com); song matching at `/listen` needs `AUDD_API_TOKEN` (dashboard.audd.io). Without one, its page says it isn't available right now; nothing else changes.
+- Both are paid per use. A member gets 60 guide messages and 40 song clips a day (the counter is in-process until the shared rate-limit store is configured, so on several instances the real ceiling is that times the instances). Set a monthly spend limit on both accounts.
+- To stop either at once without removing the key: `FEATURES_OFF=ask` or `FEATURES_OFF=listen`.
 
 ## Support mailbox
 

@@ -348,6 +348,9 @@ export const featureFlags = [
   "social",
   "recommendations",
   "taste_match",
+  // The recommendation chat at /ask, and naming a song by ear at /listen.
+  "ask",
+  "listen",
 ] as const satisfies readonly string[];
 
 export type FeatureFlag = (typeof featureFlags)[number];

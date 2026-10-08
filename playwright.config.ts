@@ -13,10 +13,14 @@ import { defineConfig, devices } from "@playwright/test";
  * The screenshot suite runs against a production server on its own port:
  * the development server compiles on demand and streams slowly, so the
  * same page can be caught in two different moments. `pnpm test:visual`
- * builds the client first and sets VISUAL.
+ * builds the client first and sets VISUAL. It always starts its own
+ * server and refuses a port something else holds: a server it did not
+ * start may be another app, and its pictures would compare against the
+ * wrong site.
  */
+const VISUAL_PORT = 3190;
 const visual = process.env.VISUAL === "1";
-const baseURL = process.env.E2E_BASE_URL ?? (visual ? "http://localhost:3100" : "http://localhost:3000");
+const baseURL = process.env.E2E_BASE_URL ?? (visual ? `http://localhost:${VISUAL_PORT}` : "http://localhost:3000");
 
 export default defineConfig({
   testDir: "./e2e",
@@ -50,9 +54,9 @@ export default defineConfig({
   webServer: process.env.E2E_BASE_URL
     ? undefined
     : {
-        command: visual ? "pnpm --filter client exec next start --port 3100" : "pnpm --filter client dev",
+        command: visual ? `pnpm --filter client exec next start --port ${VISUAL_PORT}` : "pnpm --filter client dev",
         url: baseURL,
-        reuseExistingServer: true,
+        reuseExistingServer: !visual,
         timeout: 120_000,
       },
 });

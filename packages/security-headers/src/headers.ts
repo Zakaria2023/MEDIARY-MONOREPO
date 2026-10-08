@@ -28,11 +28,12 @@ export const SECURITY_HEADERS: { key: string; value: string }[] = [
     value: "max-age=31536000; includeSubDomains",
   },
   {
-    // Nothing here needs a camera, a microphone or a location, so nothing gets
-    // to ask. Also covers features a compromised embed might reach for.
+    // Nothing here needs a camera or a location, so nothing gets to ask. The
+    // microphone is the site's own, for naming a song by ear (/listen), and
+    // never an embed's. Also covers features a compromised embed might reach for.
     key: "Permissions-Policy",
     value:
-      "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=()",
+      "camera=(), microphone=(self), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=()",
   },
   {
     // Legacy clickjacking defence, kept alongside CSP's frame-ancestors because

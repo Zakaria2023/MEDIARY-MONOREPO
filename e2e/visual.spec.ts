@@ -1,10 +1,5 @@
 import { expect, Locator, Page, test } from "@playwright/test";
 
-type ShootOptions = {
-  /** Parts inside the shot that change with the catalog, painted over. */
-  mask?: Locator[];
-};
-
 /**
  * VISUAL REGRESSION: screenshots of what must not drift, compared with the
  * baselines committed beside this file. Only surfaces whose look does not
@@ -58,7 +53,7 @@ const open = async (page: Page, path: string) => {
  * screenshot scrolls, and a sticky header or a fractional offset then moves
  * by a pixel between runs; a clip of the whole page does not.
  */
-const shoot = async (page: Page, target: Locator, name: string, { mask = [] }: ShootOptions = {}) => {
+const shoot = async (page: Page, target: Locator, name: string) => {
   await target.evaluate((element) => {
     for (const image of Array.from(element.querySelectorAll("img"))) {
       image.loading = "eager";
@@ -75,7 +70,6 @@ const shoot = async (page: Page, target: Locator, name: string, { mask = [] }: S
   await expect(page).toHaveScreenshot(name, {
     fullPage: true,
     clip: { x: 0, y: Math.round(box.y), width, height: Math.floor(box.height) },
-    mask,
   });
 };
 
@@ -112,10 +106,18 @@ test.describe("landing", () => {
   });
 
   test("the hero's words and actions", async ({ page }) => {
-    // The wall behind the words is gone (see open); the live count under
-    // the actions is masked.
+    // The wall behind the words is gone (see open). The live count under
+    // the actions grows with the catalog, and a masked box would grow with
+    // it, so its numbers are set to fixed ones before the shot.
     const hero = page.locator("main > section").first();
-    await shoot(page, hero, "landing-hero.png", { mask: [hero.getByText(/titles across/)] });
+    await hero.getByText(/titles across/).evaluate((line) => {
+      const [count, media] = Array.from(line.querySelectorAll(".tabular"));
+      if (count && media) {
+        count.textContent = "12,345";
+        media.textContent = "7";
+      }
+    });
+    await shoot(page, hero, "landing-hero.png");
   });
 
   for (const heading of ["Bring years of history in a minute.", "A private library is a complete product.", "Good to know.", "Start your story."]) {

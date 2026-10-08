@@ -1,5 +1,5 @@
 import { UserMenu } from "auth";
-import { BarChart3, Bell, BookMarked, ListChecks, NotebookPen, Settings, UserRound } from "lucide-react";
+import { AudioLines, BarChart3, Bell, BookMarked, ListChecks, NotebookPen, Settings, Sparkles, UserRound } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AuthUser } from "services";
@@ -17,7 +17,8 @@ type SiteHeaderProps = {
  * The header: the mark, Explore, search everywhere, and either the sign-in
  * links or the account menu. The viewer is passed in because the header is
  * a server component and knows who is looking from the request. A member
- * also sees Library; adding happens on a title's own page.
+ * also sees Library, Feed and Ask; naming a song is in the account menu,
+ * which phones reach too. Adding happens on a title's own page.
  */
 export const SiteHeader = ({ user }: SiteHeaderProps) => (
   <header className="sticky top-0 z-40 border-b border-hairline bg-page/80 backdrop-blur-md">
@@ -53,6 +54,15 @@ export const SiteHeader = ({ user }: SiteHeaderProps) => (
             Feed
           </Link>
         )}
+        {user && (
+          <Link
+            href="/ask"
+            className="hidden h-9 items-center gap-1.5 rounded-control px-3 text-sm font-medium text-muted transition-colors hover:bg-hover hover:text-ink sm:flex"
+          >
+            <Sparkles size={14} className="text-accent" />
+            Ask
+          </Link>
+        )}
       </nav>
       <div className="ms-auto flex items-center gap-2">
         <SearchPalette />
@@ -82,6 +92,8 @@ export const SiteHeader = ({ user }: SiteHeaderProps) => (
                 ? [{ label: "Profile", href: profilePath(user.username), icon: <UserRound size={16} /> }]
                 : []),
               { label: "Notifications", href: "/notifications", icon: <Bell size={16} /> },
+              { label: "Ask the guide", href: "/ask", icon: <Sparkles size={16} /> },
+              { label: "Name that song", href: "/listen", icon: <AudioLines size={16} /> },
               { label: "Library", href: "/library", icon: <BookMarked size={16} /> },
               { label: "Lists", href: "/lists", icon: <ListChecks size={16} /> },
               { label: "Diary", href: "/diary", icon: <NotebookPen size={16} /> },

@@ -4,7 +4,7 @@ import { LegalPage } from "@/components/shared/legal-page";
 import { pageMetadata } from "@/lib/seo";
 import { SUPPORT_EMAIL } from "@/lib/support-email";
 
-const UPDATED = "7 October 2026";
+const UPDATED = "8 October 2026";
 
 export const metadata: Metadata = pageMetadata({
   title: "Privacy policy",
@@ -83,9 +83,28 @@ const PrivacyPage = () => (
     </section>
 
     <section className="flex flex-col gap-2">
+      <h2>The guide and Name that song</h2>
+      <ul>
+        <li>
+          <strong>The guide.</strong> When you ask the guide for a recommendation, what you write in that conversation, together with the
+          titles you loved or finished, your scores for them and the genres you lean toward, is sent to an AI service that writes the
+          answer. Mediary does not keep the conversation: it lives on the page and is gone when you leave or start over. The service handles
+          it only to answer you, under its own terms for business customers, and does not use it to train its models.
+        </li>
+        <li>
+          <strong>Name that song.</strong> When you press listen, your microphone records about eight seconds, and only then. The recording is
+          sent to a song recognition service to find the song, and Mediary does not keep it. Your browser asks before Mediary can use the
+          microphone at all.
+        </li>
+      </ul>
+      <p>Neither is used unless you open it, and Mediary counts how often you use each in a day only to keep the cost in check.</p>
+    </section>
+
+    <section className="flex flex-col gap-2">
       <h2>Who runs it</h2>
       <p>
-        Mediary runs on a hosting provider, a database provider and the identity service above. Each handles your data only to run Mediary. Your address and the time of each request reach the hosting provider&apos;s logs, as
+        Mediary runs on a hosting provider, a database provider and the identity service above, with the AI service and the song
+        recognition service for the guide and Name that song. Each handles your data only to run Mediary. Your address and the time of each request reach the hosting provider&apos;s logs, as
         on any website. Mediary uses your address for about a minute to stop runaway requests, and does not keep it. The catalog&apos;s
         titles and artwork come from the sources on the <Link href="/credits">credits page</Link>. That information is not about you, and those
         sources are not sent anything about you.

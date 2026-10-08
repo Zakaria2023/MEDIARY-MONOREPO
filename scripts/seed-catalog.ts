@@ -27,7 +27,7 @@ type Totals = {
 };
 
 const MAX_RESTARTS = 50;
-const RESTART_DELAY_MS = 15_000;
+const RESTART_DELAY_MS = 60_000;
 
 const isMediaType = (value: string): value is MediaType => (mediaTypes as readonly string[]).includes(value);
 

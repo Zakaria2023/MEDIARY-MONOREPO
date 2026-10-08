@@ -14,7 +14,7 @@ afterEach(() => {
 describe("feature flags", () => {
   it("every flag is on when nothing is named", () => {
     delete process.env.FEATURES_OFF;
-    expect(getFeatureFlags()).toEqual({ social: true, recommendations: true, taste_match: true });
+    expect(getFeatureFlags()).toEqual({ social: true, recommendations: true, taste_match: true, ask: true, listen: true });
     expect(() => assertFeature("social")).not.toThrow();
   });
 
