@@ -20,6 +20,7 @@ import { db } from "../../../db";
 import { MediaStatus, MediaType, Provider, Season } from "../../../db/enum";
 import { ANIME_FORMAT_LABELS, MEDIA_STATUS_LABELS, MANGA_FORMAT_LABELS,
   RELEASE_TYPE_LABELS, SEASON_LABELS } from "../../../db/label";
+import { Artists, SelectArtists } from "../../../db/schema/artists";
 import { Genres, MediaGenres, SelectGenres } from "../../../db/schema/genres";
 import {
   AnimeDetails,
@@ -80,7 +81,10 @@ export type CatalogDetails =
   | ({ kind: "tv" } & Omit<SelectTvDetails, "id" | "mediaUuid">)
   | ({ kind: "game" } & Omit<SelectGameDetails, "id" | "mediaUuid">)
   | ({ kind: "anime" } & Omit<SelectAnimeDetails, "id" | "mediaUuid">)
-  | ({ kind: "music" } & Omit<SelectMusicDetails, "id" | "mediaUuid">)
+  | ({ kind: "music" } & Omit<SelectMusicDetails, "id" | "mediaUuid"> & {
+      /** The artist page the record is filed under, when there is one. */
+      artistPage: Pick<SelectArtists, "uuid" | "slug" | "name"> | null;
+    })
   | ({ kind: "manga" } & Omit<SelectMangaDetails, "id" | "mediaUuid">)
   | ({ kind: "book" } & Omit<SelectBookDetails, "id" | "mediaUuid">);
 
@@ -554,12 +558,16 @@ const detailsFor = async (
     return { kind: "anime", ...values };
   }
   if (mediaType === "music") {
-    const [row] = await db.select().from(MusicDetails).where(eq(MusicDetails.mediaUuid, mediaUuid));
+    const [row] = await db
+      .select({ details: MusicDetails, artistPage: { uuid: Artists.uuid, slug: Artists.slug, name: Artists.name } })
+      .from(MusicDetails)
+      .leftJoin(Artists, eq(Artists.uuid, MusicDetails.artistUuid))
+      .where(eq(MusicDetails.mediaUuid, mediaUuid));
     if (!row) {
       return null;
     }
-    const { id: _id, mediaUuid: _mediaUuid, ...values } = row;
-    return { kind: "music", ...values };
+    const { id: _id, mediaUuid: _mediaUuid, ...values } = row.details;
+    return { kind: "music", ...values, artistPage: row.artistPage };
   }
   if (mediaType === "manga") {
     const [row] = await db.select().from(MangaDetails).where(eq(MangaDetails.mediaUuid, mediaUuid));

@@ -178,6 +178,12 @@ beyond the keys `getById` already uses.
   stalest several hundred, three at a time.
 - **Music:** the order comes from ListenBrainz (MetaBrainz, open data, no
   key), whose all-time charts stop at 1,000 entries: first its 1,000 most
-  listened records, then its 1,000 most listened artists with each one's ten
-  most listened albums and EPs. The records come from MusicBrainz as
-  before, at its one request a second, so 10,000 albums take hours.
+  listened records, then its 1,000 most listened artists, each with their
+  studio albums and EPs from MusicBrainz's own browse of what they made
+  (live records, compilations and the like left out). ListenBrainz's
+  per-artist popularity endpoint began refusing anonymous calls under load
+  on 2026-10-09 ("Due to bad actors and AI scrapers... provide an Auth
+  token"), which is why the discography comes from MusicBrainz. The records
+  come from MusicBrainz at its one request a second, so a full walk takes
+  hours. Each record now stores its songs (titles, positions, lengths) and
+  its first credited artist.

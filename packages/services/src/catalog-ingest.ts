@@ -2,6 +2,7 @@ import { and, eq, inArray, isNull, like, or } from "drizzle-orm";
 import { slugify } from "utils";
 import { db } from "../../../db";
 import { MediaType } from "../../../db/enum";
+import { Artists } from "../../../db/schema/artists";
 import { Genres, MediaGenres } from "../../../db/schema/genres";
 import {
   AnimeDetails,
@@ -18,7 +19,13 @@ import { MediaTitles } from "../../../db/schema/media-titles";
 import { InsertMedia, Media, SelectMedia } from "../../../db/schema/media";
 import { GamePlatforms, Platforms } from "../../../db/schema/platforms";
 import { isUniqueViolation } from "./db-result";
-import { NormalizedGenre, NormalizedMedia, NormalizedPlatform, NormalizedRef } from "./providers/types";
+import {
+  NormalizedArtist,
+  NormalizedGenre,
+  NormalizedMedia,
+  NormalizedPlatform,
+  NormalizedRef,
+} from "./providers/types";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -290,6 +297,44 @@ const platformIds = async (tx: Tx, platforms: NormalizedPlatform[]): Promise<Map
   return new Map(rows.map((row) => [row.slug, row.id]));
 };
 
+/**
+ * Each artist's uuid by catalog id, adding the ones not held yet with a slug
+ * picked once from the name. A slug lost to a concurrent insert fails the
+ * transaction on its UNIQUE, and the writer's retry finds the winner's row.
+ */
+const artistUuids = async (tx: Tx, artists: NormalizedArtist[]): Promise<Map<string, string>> => {
+  const wanted = [...new Map(artists.map((artist) => [artist.mbid, artist])).values()];
+  if (wanted.length === 0) {
+    return new Map();
+  }
+  const held = async () =>
+    tx
+      .select({ mbid: Artists.mbid, uuid: Artists.uuid })
+      .from(Artists)
+      .where(inArray(Artists.mbid, wanted.map((artist) => artist.mbid)));
+  const byMbid = new Map((await held()).map((row) => [row.mbid, row.uuid]));
+  const missing = wanted.filter((artist) => !byMbid.has(artist.mbid));
+  if (missing.length === 0) {
+    return byMbid;
+  }
+  const bases = missing.map((artist) => slugBase(artist.name));
+  const taken = new Set(
+    (
+      await tx
+        .select({ slug: Artists.slug })
+        .from(Artists)
+        .where(or(inArray(Artists.slug, bases), ...bases.map((base) => like(Artists.slug, `${base}-%`))))
+    ).map((row) => row.slug),
+  );
+  const rows = missing.map((artist, index) => {
+    const slug = pickSlug(taken, bases[index] ?? "artist", null);
+    taken.add(slug);
+    return { mbid: artist.mbid, name: artist.name, slug };
+  });
+  await tx.insert(Artists).values(rows).onConflictDoNothing({ target: Artists.mbid });
+  return new Map((await held()).map((row) => [row.mbid, row.uuid]));
+};
+
 /** A record's genres as MediaGenres links, in the provider's order. */
 const genreLinks = (mediaUuid: string, record: NormalizedMedia, idBySlug: Map<string, number>) =>
   record.genres.flatMap((genre, position) => {
@@ -342,7 +387,9 @@ const writeDetails = async (tx: Tx, mediaUuid: string, record: NormalizedMedia) 
       .values({ mediaUuid, ...values })
       .onConflictDoUpdate({ target: TvDetails.mediaUuid, set: values });
   } else if (details.kind === "music") {
-    const { kind: _kind, ...values } = details;
+    const { kind: _kind, primaryArtist, ...rest } = details;
+    const artists = await artistUuids(tx, primaryArtist ? [primaryArtist] : []);
+    const values = { ...rest, artistUuid: primaryArtist ? (artists.get(primaryArtist.mbid) ?? null) : null };
     await tx
       .insert(MusicDetails)
       .values({ mediaUuid, ...values })
@@ -489,9 +536,17 @@ const insertDetails = async (tx: Tx, written: WrittenRecord[]) => {
   const shows = details.flatMap(({ mediaUuid, details: entry }) =>
     entry.kind === "tv" ? [{ mediaUuid, ...withoutKind(entry) }] : [],
   );
-  const music = details.flatMap(({ mediaUuid, details: entry }) =>
-    entry.kind === "music" ? [{ mediaUuid, ...withoutKind(entry) }] : [],
+  const artists = await artistUuids(
+    tx,
+    details.flatMap(({ details: entry }) => (entry.kind === "music" && entry.primaryArtist ? [entry.primaryArtist] : [])),
   );
+  const music = details.flatMap(({ mediaUuid, details: entry }) => {
+    if (entry.kind !== "music") {
+      return [];
+    }
+    const { primaryArtist, ...rest } = withoutKind(entry);
+    return [{ mediaUuid, ...rest, artistUuid: primaryArtist ? (artists.get(primaryArtist.mbid) ?? null) : null }];
+  });
   const games = details.flatMap(({ mediaUuid, details: entry }) =>
     entry.kind === "game" ? [{ mediaUuid, ...withoutKind(entry) }] : [],
   );

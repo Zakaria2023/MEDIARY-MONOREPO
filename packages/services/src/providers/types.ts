@@ -9,6 +9,7 @@ import {
   Season,
   TitleType,
 } from "../../../../db/enum";
+import { MusicTrack } from "../../../../db/types";
 
 /** One name a title goes by, as it lands in MediaTitles. */
 export type NormalizedTitle = {
@@ -96,10 +97,20 @@ export type SeriesAiring = {
   ended: boolean;
 };
 
+/** The artist a record is filed under: its first credit. */
+export type NormalizedArtist = {
+  mbid: string;
+  name: string;
+};
+
 export type NormalizedMusicDetails = {
   kind: "music";
   artist: string;
   artistMbid: string | null;
+  /** Null when the credit names no catalogued artist; the record then has no artist page. */
+  primaryArtist: NormalizedArtist | null;
+  /** The songs, in order, from the record's first official release. */
+  tracks: MusicTrack[];
   releaseType: ReleaseType;
   trackCount: number | null;
   durationMinutes: number | null;

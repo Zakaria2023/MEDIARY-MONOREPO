@@ -5,6 +5,9 @@ import { AsyncSection, Badge } from "ui";
 import { parseLaunchMediaType } from "validators";
 import { MEDIA_TYPE_LABELS } from "@/db/label";
 import { RelatedTitles } from "@/components/catalog/related-titles";
+import { AlbumArtist } from "@/components/music/album-artist";
+import { AlbumTracklist } from "@/components/music/album-tracklist";
+import { MoreFromArtist } from "@/components/music/more-from-artist";
 import { TitleHero } from "@/components/catalog/title-hero";
 import { TitleRailSkeleton } from "@/components/catalog/title-rail-skeleton";
 import { TitleReviews } from "@/components/reviews/title-reviews";
@@ -64,6 +67,7 @@ const TitlePage = async ({ params }: Props) => {
     ? await Promise.all([getTitleTracking(viewer.uuid, title.uuid), listChoicesForTitle(viewer.uuid, title.uuid)])
     : [null, []];
   const facts = catalogFacts(title);
+  const music = title.details?.kind === "music" ? title.details : null;
   const launchType = parseLaunchMediaType(title.mediaType);
   const section = launchType ? EXPLORE_COPY[launchType].heading : MEDIA_TYPE_LABELS[title.mediaType];
 
@@ -103,6 +107,12 @@ const TitlePage = async ({ params }: Props) => {
             </section>
           )}
 
+          {music?.artistPage && (
+            <AlbumArtist name={music.artistPage.name} slug={music.artistPage.slug} credit={music.artist} />
+          )}
+
+          {music && music.tracks.length > 0 && <AlbumTracklist tracks={music.tracks} />}
+
           {title.platforms.length > 0 && (
             <section className="flex flex-col gap-3">
               <h2 className="text-xs font-medium uppercase tracking-wide text-faint">Platforms</h2>
@@ -125,6 +135,19 @@ const TitlePage = async ({ params }: Props) => {
           </AsyncSection>
         </div>
       </div>
+
+      {music?.artistPage && (
+        <div className="mx-auto w-full max-w-7xl pb-4">
+          <AsyncSection reloadKey={`more-${title.uuid}`} skeleton={<TitleRailSkeleton />}>
+            <MoreFromArtist
+              artistUuid={music.artistPage.uuid}
+              artistName={music.artistPage.name}
+              artistSlug={music.artistPage.slug}
+              mediaUuid={title.uuid}
+            />
+          </AsyncSection>
+        </div>
+      )}
 
       <div className="mx-auto w-full max-w-7xl pb-8">
         <AsyncSection reloadKey={title.uuid} skeleton={<TitleRailSkeleton />}>

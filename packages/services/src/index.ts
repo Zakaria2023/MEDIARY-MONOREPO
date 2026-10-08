@@ -49,3 +49,4 @@ export * from "./tracking-rules";
 export * from "./visibility";
 export * from "./guide";
 export * from "./song-match";
+export * from "./artists";

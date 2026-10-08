@@ -13,6 +13,7 @@ export * from "./media-images";
 export * from "./genres";
 export * from "./tags";
 export * from "./platforms";
+export * from "./artists";
 export * from "./media-details";
 export * from "./user-media";
 export * from "./game-playthroughs";

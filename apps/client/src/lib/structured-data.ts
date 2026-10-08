@@ -1,6 +1,8 @@
-import { CatalogCard, CatalogTitle, ProfileCounts, PublicProfile, RatingSummary, TitleReview } from "services";
+import { ArtistPage, CatalogCard, CatalogTitle, ProfileCounts, PublicProfile, RatingSummary, TitleReview } from "services";
 import { catalogImageUrl } from "utils";
+import { artistPath } from "@/lib/artist-path";
 import { absoluteUrl, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { isoTrackLength } from "@/lib/track-length";
 import { profilePath } from "@/lib/profile-path";
 import { titlePath } from "@/lib/title-path";
 
@@ -111,8 +113,30 @@ const mediumFields = (title: CatalogTitle): Record<string, unknown> => {
   }
   if (details?.kind === "music") {
     return {
-      byArtist: { "@type": "MusicGroup", name: details.artist },
+      byArtist: {
+        "@type": "MusicGroup",
+        name: details.artistPage?.name ?? details.artist,
+        ...(details.artistPage && {
+          "@id": `${absoluteUrl(artistPath(details.artistPage.slug))}#artist`,
+          url: absoluteUrl(artistPath(details.artistPage.slug)),
+        }),
+      },
       ...(details.trackCount && { numTracks: details.trackCount }),
+      ...(details.tracks.length > 0 && {
+        track: {
+          "@type": "ItemList",
+          numberOfItems: details.tracks.length,
+          itemListElement: details.tracks.map((track, index) => ({
+            "@type": "ListItem",
+            position: index + 1,
+            item: {
+              "@type": "MusicRecording",
+              name: track.title,
+              ...(track.lengthSeconds && { duration: isoTrackLength(track.lengthSeconds) }),
+            },
+          })),
+        },
+      }),
       ...(details.durationMinutes && { duration: `PT${details.durationMinutes}M` }),
       ...(details.label && { recordLabel: { "@type": "Organization", name: details.label } }),
     };
@@ -294,4 +318,24 @@ export const communityNodes = (
     });
   }
   return nodes;
+};
+
+/** An artist's page: the artist as a MusicGroup, with every record of theirs on it. */
+export const artistNode = (artist: ArtistPage): JsonLdNode => {
+  const url = absoluteUrl(artistPath(artist.slug));
+  return {
+    "@type": "MusicGroup",
+    "@id": `${url}#artist`,
+    name: artist.name,
+    url,
+    ...(artist.coverUrl && { image: catalogImageUrl(artist.coverUrl, 640) }),
+    ...(artist.genres.length > 0 && { genre: artist.genres.map((genre) => genre.name) }),
+    mainEntityOfPage: { "@type": "WebPage", "@id": url, isPartOf: { "@id": WEBSITE_ID } },
+    album: artist.records.map((record) => ({
+      "@type": "MusicAlbum",
+      name: record.canonicalTitle,
+      url: absoluteUrl(titlePath(record)),
+      ...(record.releaseYear && { datePublished: String(record.releaseYear) }),
+    })),
+  };
 };

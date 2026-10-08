@@ -302,6 +302,17 @@ export const RELEASE_TYPE_LABELS: Record<ReleaseType, string> = {
   other: "Release",
 };
 
+/** A kind of record as a heading over several: an artist's page groups their records by these. */
+export const RELEASE_TYPE_PLURAL_LABELS: Record<ReleaseType, string> = {
+  album: "Albums",
+  ep: "EPs",
+  single: "Singles",
+  compilation: "Compilations",
+  live: "Live",
+  soundtrack: "Soundtracks",
+  other: "Other releases",
+};
+
 /**
  * What a notification says someone did: "Sara followed you", "Sara liked
  * your review", "Sara replied to your line". The object follows the verb.

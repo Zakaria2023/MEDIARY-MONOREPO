@@ -20,7 +20,8 @@
     "test:visual:update": "pnpm --filter client build && dotenv -v VISUAL=1 -- playwright test --project=visual-desktop --project=visual-phone --update-snapshots",
     "db:push": "dotenv -e .env.local -- tsx scripts/ensure-extensions.ts && dotenv -e .env.local -- drizzle-kit push",
     "db:studio": "dotenv -e .env.local -- drizzle-kit studio",
-    "catalog:seed": "dotenv -e .env.local -- tsx scripts/seed-catalog.ts"
+    "catalog:seed": "dotenv -e .env.local -- tsx scripts/seed-catalog.ts",
+    "catalog:refresh": "dotenv -e .env.local -- tsx scripts/refresh-catalog.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

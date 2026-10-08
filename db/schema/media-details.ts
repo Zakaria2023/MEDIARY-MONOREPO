@@ -2,12 +2,16 @@ import { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import {
   boolean,
   date,
+  index,
   integer,
+  jsonb,
   pgTable,
   serial,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+import { MusicTrack } from "../types";
+import { Artists } from "./artists";
 import { animeFormatEnum, mangaFormatEnum, releaseTypeEnum, seasonEnum } from "./enums";
 import { Media } from "./media";
 
@@ -89,22 +93,32 @@ export const TvDetails = pgTable("TvDetails", {
   nextEpisodeAt: date("next_episode_at"),
 });
 
-export const MusicDetails = pgTable("MusicDetails", {
-  id: serial("id").primaryKey(),
-  mediaUuid: uuid("media_uuid")
-    .notNull()
-    .unique()
-    .references(() => Media.uuid, { onDelete: "cascade" }),
-  // The credit line as it reads: "Daft Punk", "Jay-Z & Kanye West".
-  artist: varchar("artist", { length: 200 }).notNull(),
-  // The catalog's id for the first credited artist, for an artist page later.
-  artistMbid: varchar("artist_mbid", { length: 40 }),
-  releaseType: releaseTypeEnum("release_type").default("album").notNull(),
-  trackCount: integer("track_count"),
-  // Minutes, the whole record.
-  durationMinutes: integer("duration_minutes"),
-  label: varchar("label", { length: 160 }),
-});
+export const MusicDetails = pgTable(
+  "MusicDetails",
+  {
+    id: serial("id").primaryKey(),
+    mediaUuid: uuid("media_uuid")
+      .notNull()
+      .unique()
+      .references(() => Media.uuid, { onDelete: "cascade" }),
+    // The credit line as it reads: "Daft Punk", "Jay-Z & Kanye West".
+    artist: varchar("artist", { length: 200 }).notNull(),
+    // The catalog's id for the first credited artist.
+    artistMbid: varchar("artist_mbid", { length: 40 }),
+    // The artist page the record is filed under: its first credited artist.
+    artistUuid: uuid("artist_uuid").references(() => Artists.uuid, { onDelete: "set null" }),
+    releaseType: releaseTypeEnum("release_type").default("album").notNull(),
+    trackCount: integer("track_count"),
+    // Minutes, the whole record.
+    durationMinutes: integer("duration_minutes"),
+    label: varchar("label", { length: 160 }),
+    // The songs, in order, from the record's first official release. Read
+    // whole with the record and never on their own, so a column, not a table.
+    tracks: jsonb("tracks").$type<MusicTrack[]>().default([]).notNull(),
+  },
+  // An artist's page lists their records.
+  (table) => [index("idx_music_details_artist").on(table.artistUuid)],
+);
 
 export const MangaDetails = pgTable("MangaDetails", {
   id: serial("id").primaryKey(),

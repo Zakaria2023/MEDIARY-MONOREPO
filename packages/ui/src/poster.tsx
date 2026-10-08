@@ -11,11 +11,13 @@ type PosterProps = {
   priority?: boolean;
   /** The corner: a card's on a grid or a hero, a control's on a small poster beside a line of text, where the card radius would round it into a blob. */
   radius?: "card" | "control";
+  /** A record's sleeve is square; everything else is a 2:3 poster. */
+  shape?: "poster" | "square";
   className?: string;
 };
 
 /**
- * A title's 2:3 poster. The artwork sits on the surface itself, with no
+ * A title's 2:3 poster, or a record's square sleeve. The artwork sits on the surface itself, with no
  * plate behind it; while it loads the box shows the title's dominant color
  * where the catalog has one, inside a hairline. A title with no poster keeps
  * its slot and shows the outlined placeholder, so a row never loses its
@@ -28,10 +30,11 @@ export const Poster = ({
   dominantColor,
   priority = false,
   radius = "card",
+  shape = "poster",
   className = "",
 }: PosterProps) => (
   <div
-    className={`relative aspect-poster w-full overflow-hidden ${radius === "card" ? "rounded-card" : "rounded-control"} ring-1 ring-hairline ${className}`}
+    className={`relative ${shape === "square" ? "aspect-square" : "aspect-poster"} w-full overflow-hidden ${radius === "card" ? "rounded-card" : "rounded-control"} ring-1 ring-hairline ${className}`}
     style={dominantColor ? { backgroundColor: dominantColor } : undefined}
   >
     {src ? (

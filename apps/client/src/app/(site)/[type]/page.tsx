@@ -3,6 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { AsyncSection } from "ui";
 import { filterHref } from "utils";
 import { parseLaunchMediaType } from "validators";
+import { HubArtists } from "@/components/hub/hub-artists";
+import { HubArtistsSkeleton } from "@/components/hub/hub-artists-skeleton";
 import { HubFilterBar } from "@/components/hub/hub-filter-bar";
 import { HubFilterBarSkeleton } from "@/components/hub/hub-filter-bar-skeleton";
 import { HubGrid } from "@/components/hub/hub-grid";
@@ -98,6 +100,14 @@ const HubPage = async ({ params, searchParams }: Props) => {
             reason={`Picked from the ${copy.noun} you loved.`}
           />
         </AsyncSection>
+      )}
+
+      {mediaType === "music" && (
+        <div className="mx-auto w-full max-w-7xl">
+          <AsyncSection reloadKey="hub-artists" skeleton={<HubArtistsSkeleton />}>
+            <HubArtists />
+          </AsyncSection>
+        </div>
       )}
 
       <AsyncSection reloadKey={`rails-${mediaType}`} skeleton={<TitleRailSkeleton />}>

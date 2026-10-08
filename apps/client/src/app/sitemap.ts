@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
-import { listSitemapLists, listSitemapProfiles } from "services";
+import { listSitemapArtists, listSitemapLists, listSitemapProfiles } from "services";
 import { launchMediaTypes } from "@/db/enum";
+import { artistPath } from "@/lib/artist-path";
 import { absoluteUrl } from "@/lib/seo";
 import { hubPath } from "@/lib/hub-path";
 import { profilePath } from "@/lib/profile-path";
@@ -11,14 +12,16 @@ export const dynamic = "force-dynamic";
 
 /**
  * Every public page: the home page, explore, the fixed pages and each
- * medium's hub, then public profiles and lists. The titles are too many for
+ * medium's hub, the artists and each artist's page, then public profiles
+ * and lists. The titles are too many for
  * one file and have their own, by medium and part (`app/titles/sitemap.ts`);
  * robots.txt names them all.
  */
 const sitemap = async (): Promise<MetadataRoute.Sitemap> => {
-  const [profiles, lists] = await Promise.all([
+  const [profiles, lists, artists] = await Promise.all([
     listSitemapProfiles(),
     listSitemapLists(),
+    listSitemapArtists(),
   ]);
 
   return [
@@ -34,6 +37,13 @@ const sitemap = async (): Promise<MetadataRoute.Sitemap> => {
       url: absoluteUrl(hubPath(type)),
       changeFrequency: "daily" as const,
       priority: 0.8,
+    })),
+    { url: absoluteUrl("/artists"), changeFrequency: "daily" as const, priority: 0.7 },
+    ...artists.map((artist) => ({
+      url: absoluteUrl(artistPath(artist.slug)),
+      lastModified: artist.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
     })),
     ...profiles.map((profile) => ({
       url: absoluteUrl(profilePath(profile.username)),

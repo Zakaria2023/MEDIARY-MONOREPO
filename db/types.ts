@@ -39,3 +39,14 @@ export type AuditDetails = Record<string, string | number | boolean | null>;
  * rank lives on `Media.popularity`; this is the evidence it was computed from.
  */
 export type PopularityRecord = Record<string, number>;
+
+/** One song on a record, as the record lists it. */
+export type MusicTrack = {
+  /** The disc, from 1; most records have one. */
+  disc: number;
+  /** The place on its disc, from 1. */
+  position: number;
+  title: string;
+  /** Seconds, when the catalog knows. */
+  lengthSeconds: number | null;
+};

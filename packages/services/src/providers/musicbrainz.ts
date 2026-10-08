@@ -60,16 +60,16 @@ const USER_AGENT = "Mediary/0.1 (https://mediary.com)";
  * catalog's own ids and with no key. Its all-time charts stop at a
  * thousand entries, so the walk is in two parts: first the thousand most
  * listened records, then the thousand most listened artists, each with
- * their most listened albums and EPs. A gentle second throttle keeps it
- * under that service's own limits.
+ * their whole discography of studio albums and EPs, browsed from the music
+ * catalog itself (an artist's page lists every record they made). A gentle
+ * second throttle keeps it under ListenBrainz's own limits.
  */
 const LISTENS_API = "https://api.listenbrainz.org/1";
 const LISTENS_PAGE_SIZE = 100;
 const CHART_DEPTH = 1000;
 const CHART_PAGES = CHART_DEPTH / LISTENS_PAGE_SIZE;
 const ARTISTS_PER_PAGE = 5;
-const RECORDS_PER_ARTIST = 10;
-const ARTIST_RECORD_TYPES = new Set(["album", "ep"]);
+const RECORDS_PER_ARTIST = 50;
 const listensThrottle = createThrottle({ minIntervalMs: 1000, maxConcurrent: 1 });
 
 const chartSchema = z.object({
@@ -89,12 +89,6 @@ const artistChartSchema = z.object({
   }),
 });
 
-const artistRecordsSchema = z.array(
-  z.object({
-    release_group_mbid: z.string().nullish(),
-    release_group: z.object({ name: z.string(), type: z.string().nullish() }).nullish(),
-  }),
-);
 
 const nullableString = z.string().nullish().transform((value) => value || null);
 
@@ -134,7 +128,17 @@ const releaseSchema = z.object({
   media: z
     .array(
       z.object({
-        tracks: z.array(z.object({ length: z.number().nullish() })).nullish(),
+        position: z.number().nullish(),
+        tracks: z
+          .array(
+            z.object({
+              position: z.number().nullish(),
+              title: z.string().nullish(),
+              length: z.number().nullish(),
+              recording: z.object({ title: z.string().nullish() }).nullish(),
+            }),
+          )
+          .nullish(),
       }),
     )
     .nullish(),
@@ -214,16 +218,22 @@ const artistChart = (): Promise<string[]> => {
   return topArtists;
 };
 
-/** An artist's most listened albums and EPs. */
+/**
+ * An artist's studio albums and EPs, from the music catalog's own list of
+ * what they made: live records, compilations, remixes and the like are left
+ * out, so the artist's page is their discography, not every reissue.
+ */
 const artistRecords = async (artistMbid: string): Promise<CatalogSeed[]> =>
-  artistRecordsSchema
-    .parse(await listensFetch(`/popularity/top-release-groups-for-artist/${artistMbid}`))
-    .flatMap((entry) =>
-      entry.release_group_mbid && entry.release_group && ARTIST_RECORD_TYPES.has((entry.release_group.type ?? "").toLowerCase())
-        ? [{ externalId: entry.release_group_mbid, title: entry.release_group.name }]
-        : [],
+  searchSchema
+    .parse(
+      await musicbrainzFetch("/release-group", {
+        artist: artistMbid,
+        type: "album|ep",
+        limit: String(RECORDS_PER_ARTIST),
+      }),
     )
-    .slice(0, RECORDS_PER_ARTIST);
+    ["release-groups"].filter((group) => (group["secondary-types"] ?? []).length === 0)
+    .map((group) => ({ externalId: group.id, title: group.title }));
 
 const musicbrainzFetch = async (path: string, params: Record<string, string> = {}) => {
   const query = new URLSearchParams({ fmt: "json", ...params });
@@ -290,6 +300,22 @@ export const normalizeMusicBrainzReleaseGroup = (
     group.releases?.[0]?.media?.reduce((sum, medium) => sum + (medium["track-count"] ?? 0), 0) ??
     null;
   const lengthMs = release?.media?.flatMap((medium) => medium.tracks ?? []).reduce((sum, track) => sum + (track.length ?? 0), 0) ?? 0;
+  const tracks = (release?.media ?? []).flatMap((medium, discIndex) =>
+    (medium.tracks ?? []).flatMap((track, trackIndex) => {
+      const trackTitle = track.title ?? track.recording?.title;
+      return trackTitle
+        ? [
+            {
+              disc: medium.position ?? discIndex + 1,
+              position: track.position ?? trackIndex + 1,
+              title: trackTitle.slice(0, 300),
+              lengthSeconds: track.length ? Math.round(track.length / 1000) : null,
+            },
+          ]
+        : [];
+    }),
+  );
+  const firstCredit = group["artist-credit"]?.[0]?.artist;
   const title = group.disambiguation ? `${group.title}` : group.title;
 
   return {
@@ -321,6 +347,8 @@ export const normalizeMusicBrainzReleaseGroup = (
       kind: "music",
       artist: artist.name.slice(0, 200),
       artistMbid: artist.mbid,
+      primaryArtist: firstCredit ? { mbid: firstCredit.id, name: firstCredit.name.slice(0, 200) } : null,
+      tracks,
       releaseType: releaseTypeOf(group),
       trackCount: trackCount && trackCount > 0 ? trackCount : null,
       durationMinutes: lengthMs > 0 ? Math.round(lengthMs / 60000) : null,

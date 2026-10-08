@@ -44,13 +44,14 @@ export const TitleHero = ({ title, viewer, tracking, listChoices }: TitleHeroPro
       )}
 
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 pb-8 pt-8 sm:flex-row sm:items-end sm:gap-8 sm:px-8 sm:pt-24">
-        <div className="w-36 shrink-0 sm:w-56">
+        <div className={`shrink-0 ${title.mediaType === "music" ? "w-48 sm:w-64" : "w-36 sm:w-56"}`}>
           <Poster
             src={title.coverUrl}
-            alt={`${title.canonicalTitle} poster`}
-            sizes="(min-width: 640px) 224px, 144px"
+            alt={`${title.canonicalTitle} ${title.mediaType === "music" ? "cover" : "poster"}`}
+            sizes={title.mediaType === "music" ? "(min-width: 640px) 256px, 192px" : "(min-width: 640px) 224px, 144px"}
             dominantColor={title.dominantColor}
             priority
+            shape={title.mediaType === "music" ? "square" : "poster"}
             className="ring-hairline-strong"
           />
         </div>

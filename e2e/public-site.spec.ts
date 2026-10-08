@@ -55,6 +55,25 @@ test("a title page renders its name, poster and structured data on the server", 
   await expect(page.getByRole("heading", { name: "On Mediary" })).toBeVisible();
 });
 
+test("music goes artist, then their records, then a record's songs", async ({ page, request }) => {
+  await page.goto("/music");
+  await expect(page.getByRole("heading", { name: "Artists" })).toBeVisible();
+
+  await page.goto("/artists");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Artists");
+  const artist = page.locator('main a[href^="/artists/"]').first();
+  const artistHref = await artist.getAttribute("href");
+  expect(artistHref).toBeTruthy();
+
+  await page.goto(artistHref ?? "/artists");
+  await expect(page.getByText("Artist", { exact: true }).first()).toBeVisible();
+  const html = await (await request.get(artistHref ?? "/artists")).text();
+  expect(html).toContain('"@type":"MusicGroup"');
+  const record = page.locator('main a[href^="/music/"]').first();
+  await page.goto((await record.getAttribute("href")) ?? "/music");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+});
+
 test("search answers from the catalog", async ({ page }) => {
   await page.goto("/search?q=the");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();

@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, lt, or } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, lt, notInArray, or } from "drizzle-orm";
 import { mapWithLimit } from "utils";
 import { db } from "../../../db";
 import { MediaType, Provider } from "../../../db/enum";
@@ -43,6 +43,14 @@ export type RefreshStaleOptions = {
   limit: number;
   /** No new title is started after this many milliseconds. */
   budgetMs?: number;
+};
+
+/** A whole medium brought up to date: which, and from when a title counts as fresh. */
+export type RefreshMediumOptions = {
+  mediaType: MediaType;
+  /** Titles synced at or after this are already done; a restarted run passes its first start. */
+  syncedBefore: Date;
+  onProgress?: (summary: ImportSummary) => void;
 };
 
 /** Where a full catalog load stands, reported after every page. */
@@ -395,6 +403,49 @@ export const refreshCatalogTitle = async (mediaUuid: string): Promise<IngestResu
     throw new NotFoundError("This title has no provider it can be refreshed from");
   }
   return importProviderTitle(source.provider, source.mediaType, source.externalId);
+};
+
+/** Titles a medium refresh takes on per round. */
+const REFRESH_ROUND = 30;
+
+/**
+ * EVERY TITLE OF A MEDIUM RE-FETCHED ONCE, the stalest first, for when the
+ * shape of what is stored has grown (a record's songs and artist were
+ * added on 2026-10-09). A title synced since `syncedBefore` is done, so a
+ * stopped run is started again with the same time and carries on. A title
+ * that fails is recorded and not tried again in this run. Run from a
+ * terminal (`pnpm catalog:refresh`), never from a request.
+ */
+export const refreshMedium = async ({ mediaType, syncedBefore, onProgress }: RefreshMediumOptions): Promise<ImportSummary> => {
+  const summary: ImportSummary = { created: 0, updated: 0, skipped: 0, failed: [] };
+  const failed: string[] = [];
+  for (;;) {
+    const round = await db
+      .select({ uuid: Media.uuid, title: Media.canonicalTitle })
+      .from(Media)
+      .where(
+        and(
+          eq(Media.mediaType, mediaType),
+          or(isNull(Media.lastSyncedAt), lt(Media.lastSyncedAt, syncedBefore)),
+          failed.length > 0 ? notInArray(Media.uuid, failed) : undefined,
+        ),
+      )
+      .orderBy(asc(Media.lastSyncedAt))
+      .limit(REFRESH_ROUND);
+    if (round.length === 0) {
+      return summary;
+    }
+    await mapWithLimit(round, INGEST_CONCURRENCY, async (title) => {
+      try {
+        await refreshCatalogTitle(title.uuid);
+        summary.updated += 1;
+      } catch (error) {
+        failed.push(title.uuid);
+        summary.failed.push({ title: title.title, error: errorMessage(error) });
+      }
+    });
+    onProgress?.({ ...summary, failed: [...summary.failed] });
+  }
 };
 
 /**
