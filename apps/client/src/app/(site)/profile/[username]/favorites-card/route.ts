@@ -18,7 +18,7 @@ export const GET = async (_request: Request, context: Context): Promise<Response
   if (!profile || !profile.access.profile || !profile.access.library) {
     return new Response("Not found", { status: 404 });
   }
-  const [favorites, counts] = await Promise.all([listProfileFavorites(profile.uuid), getProfileCounts(profile.uuid)]);
+  const [favorites, counts] = await Promise.all([listProfileFavorites({ ownerUuid: profile.uuid, relation: profile.relation }), getProfileCounts(profile.uuid)]);
   if (favorites.length === 0) {
     return new Response("Nothing hearted yet", { status: 404 });
   }

@@ -37,8 +37,7 @@ export const ProfileReviewCard = ({ review, canRespond }: ProfileReviewCardProps
         </span>
       )}
     </header>
-    {review.headline && <h3 className="font-display text-base text-ink">{review.headline}</h3>}
-    <ReviewBody body={review.body} containsSpoilers={review.containsSpoilers} />
+    <ReviewBody headline={review.headline} body={review.body} hidden={review.spoilerHidden} />
     <footer className="flex flex-col gap-3">
       <ResponseBar subject={{ reviewUuid: review.uuid }} reactions={review.reactions} commentCount={review.commentCount} canRespond={canRespond && isFeatureOn("social")} />
       <a

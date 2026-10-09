@@ -16,6 +16,7 @@ import { Users } from "../../../db/schema/users";
 import { CatalogCard } from "./catalog";
 import { activityCommentCounts } from "./comments";
 import { activityReactions, noReactions, ReactionSummary } from "./reactions";
+import { hidesSpoilers } from "./settings";
 import { SocialUser, socialUserColumns } from "./social-user";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -31,7 +32,8 @@ export type ActivityInput = Pick<
 export type FeedItem = Pick<SelectActivities, "uuid" | "kind" | "score" | "createdAt"> & {
   actor: SocialUser;
   title: CatalogCard | null;
-  review: Pick<SelectReviews, "uuid" | "headline"> | null;
+  /** The headline is null, and `spoilerHidden` true, when the review has spoilers and the viewer hides them. */
+  review: (Pick<SelectReviews, "uuid" | "headline"> & { spoilerHidden: boolean }) | null;
   list: Pick<SelectCustomLists, "slug" | "name"> | null;
   targetUser: SocialUser | null;
   reactions: ReactionSummary;
@@ -96,6 +98,15 @@ const blockedWith = (viewerUuid: string) =>
     .union(db.select({ uuid: Blocks.blockedUuid }).from(Blocks).where(eq(Blocks.blockerUuid, viewerUuid)))
     .union(db.select({ uuid: Mutes.mutedUuid }).from(Mutes).where(eq(Mutes.muterUuid, viewerUuid)));
 
+/** A feed line's review, its headline withheld when it carries spoilers this viewer hides. */
+const feedReview = (
+  review: Pick<SelectReviews, "uuid" | "headline" | "containsSpoilers">,
+  hide: boolean,
+): Pick<SelectReviews, "uuid" | "headline"> & { spoilerHidden: boolean } => {
+  const spoilerHidden = review.containsSpoilers && hide;
+  return { uuid: review.uuid, headline: spoilerHidden ? null : review.headline, spoilerHidden };
+};
+
 /**
  * THE FEED: what the people the viewer follows did, newest first, plus the
  * viewer's own lines. An actor's activity visibility is applied at read
@@ -130,7 +141,7 @@ export const listFeed = async (
           dominantColor: Media.dominantColor,
           providerScore: Media.providerScore,
         },
-        review: { uuid: Reviews.uuid, headline: Reviews.headline },
+        review: { uuid: Reviews.uuid, headline: Reviews.headline, containsSpoilers: Reviews.containsSpoilers },
         list: { slug: CustomLists.slug, name: CustomLists.name },
         targetUser: {
           uuid: TargetUsers.uuid,
@@ -160,12 +171,17 @@ export const listFeed = async (
         .limit(1),
     ]);
     const uuids = rows.map((row) => row.uuid);
-    const [reactions, comments] = await Promise.all([activityReactions(viewerUuid, uuids), activityCommentCounts(uuids)]);
+    const [reactions, comments, hides] = await Promise.all([
+      activityReactions(viewerUuid, uuids),
+      activityCommentCounts(uuids),
+      hidesSpoilers(viewerUuid),
+    ]);
     // A nested selection off a left join comes back null when the join
     // found nothing, which is exactly the shape a FeedItem wants.
     return {
       items: rows.map((row) => ({
         ...row,
+        review: row.review && feedReview(row.review, row.actor.uuid !== viewerUuid && hides),
         reactions: reactions.get(row.uuid) ?? noReactions(),
         commentCount: comments.get(row.uuid) ?? 0,
       })),

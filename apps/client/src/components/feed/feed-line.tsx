@@ -53,6 +53,7 @@ export const FeedLine = ({ item }: FeedLineProps) => {
             </Link>
           </>
         )}
+        {item.review?.spoilerHidden && <span className="block text-xs text-faint">Has spoilers, hidden</span>}
         {item.review?.headline && (
           <span className="block line-clamp-1 text-xs text-faint">{item.review.headline}</span>
         )}

@@ -15,7 +15,7 @@ const FAVORITE_SIZES = "(min-width: 640px) 200px, 33vw";
  * shown: an empty favorites strip would only say "not much here".
  */
 export const ProfileFavorites = async ({ profile }: ProfileFavoritesProps) => {
-  const favorites = await listProfileFavorites(profile.uuid);
+  const favorites = await listProfileFavorites({ ownerUuid: profile.uuid, relation: profile.relation });
   if (favorites.length === 0) {
     return null;
   }

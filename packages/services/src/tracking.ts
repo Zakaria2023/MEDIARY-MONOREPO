@@ -594,7 +594,7 @@ const tallyCounts = (
 };
 
 /** What a viewer may see of someone's library: everything as the owner, else by each entry's visibility or the library's default. */
-type ViewerParams = {
+export type ViewerParams = {
   ownerUuid: string;
   relation: ViewerRelation;
 };
@@ -605,7 +605,7 @@ type ViewerParams = {
  * entry's own visibility wins over the library's default. Decided here,
  * in the query, as every privacy rule is.
  */
-const visibleEntries = ({ ownerUuid, relation }: ViewerParams): SQL => {
+export const visibleEntries = ({ ownerUuid, relation }: ViewerParams): SQL => {
   const own = eq(UserMedia.userUuid, ownerUuid);
   if (relation === "owner") {
     return own;
@@ -642,7 +642,11 @@ export const listLibraryFor = async (
       db.select({ value: count() }).from(UserMedia).innerJoin(Media, eq(Media.uuid, UserMedia.mediaUuid)).where(where),
     ]);
     return {
-      items: rows.map((row) => ({ entry: row.entry, title: toTarget(row.title) })),
+      // Notes are private to the owner, whatever the entry's visibility.
+      items: rows.map((row) => ({
+        entry: viewer.relation === "owner" ? row.entry : { ...row.entry, notes: null },
+        title: toTarget(row.title),
+      })),
       total: totals[0]?.value ?? 0,
     };
   });

@@ -107,7 +107,7 @@ describe("stats, diary and profile counts", () => {
     const counts = await getProfileCounts(fixture.userUuid);
     expect(counts).toEqual({ titles: 2, completed: 1, hours: 5, followers: 0, following: 0 });
 
-    const favorites = await listProfileFavorites(fixture.userUuid);
+    const favorites = await listProfileFavorites({ ownerUuid: fixture.userUuid, relation: "owner" });
     expect(favorites.map((row) => [row.canonicalTitle, row.score])).toEqual([["Frieren", 8]]);
 
     const diary = await listDiary(fixture.userUuid);

@@ -14,6 +14,7 @@ import { reviewCommentCounts } from "./comments";
 import { CatalogCard } from "./catalog";
 import { NotFoundError } from "./errors";
 import { noReactions, ReactionSummary, reviewReactions } from "./reactions";
+import { hidesSpoilers } from "./settings";
 import { SocialUser, socialUserColumns } from "./social-user";
 
 /** A review as a title page shows it. */
@@ -23,6 +24,8 @@ export type TitleReview = Pick<
 > & {
   author: SocialUser;
   isOwn: boolean;
+  /** Its headline and text wait behind a click for this viewer: marked spoilers, not theirs, and they hide spoilers. */
+  spoilerHidden: boolean;
   reactions: ReactionSummary;
   commentCount: number;
 };
@@ -54,6 +57,13 @@ export type RatingSummary = {
   /** 0-10, one decimal; null until someone rates it. */
   average: number | null;
 };
+
+/** A spoiler waits behind a click unless it is the viewer's own or they asked to see spoilers. */
+const spoilerHiddenFor = (
+  row: Pick<SelectReviews, "containsSpoilers"> & { author: Pick<SocialUser, "uuid"> },
+  viewerUuid: string | null,
+  hides: boolean,
+): boolean => row.containsSpoilers && hides && row.author.uuid !== viewerUuid;
 
 /** How many reviews a title page shows before "See all". */
 export const TITLE_REVIEWS_LIMIT = 6;
@@ -119,10 +129,15 @@ export const listTitleReviews = async (
     )
     .limit(limit);
   const uuids = rows.map((row) => row.uuid);
-  const [reactions, comments] = await Promise.all([reviewReactions(viewerUuid, uuids), reviewCommentCounts(uuids)]);
+  const [reactions, comments, hides] = await Promise.all([
+    reviewReactions(viewerUuid, uuids),
+    reviewCommentCounts(uuids),
+    hidesSpoilers(viewerUuid),
+  ]);
   return rows.map((row) => ({
     ...row,
     isOwn: row.author.uuid === viewerUuid,
+    spoilerHidden: spoilerHiddenFor(row, viewerUuid, hides),
     reactions: reactions.get(row.uuid) ?? noReactions(),
     commentCount: comments.get(row.uuid) ?? 0,
   }));
@@ -203,10 +218,15 @@ export const getFeaturedReview = async (ownerUuid: string, viewerUuid: string | 
   if (!row) {
     return null;
   }
-  const [reactions, comments] = await Promise.all([reviewReactions(viewerUuid, [row.uuid]), reviewCommentCounts([row.uuid])]);
+  const [reactions, comments, hides] = await Promise.all([
+    reviewReactions(viewerUuid, [row.uuid]),
+    reviewCommentCounts([row.uuid]),
+    hidesSpoilers(viewerUuid),
+  ]);
   return {
     ...row,
     isOwn: row.author.uuid === viewerUuid,
+    spoilerHidden: spoilerHiddenFor(row, viewerUuid, hides),
     reactions: reactions.get(row.uuid) ?? noReactions(),
     commentCount: comments.get(row.uuid) ?? 0,
   };
@@ -239,11 +259,16 @@ export const listUserReviews = async (
         .where(where),
     ]);
     const uuids = rows.map((row) => row.uuid);
-    const [reactions, comments] = await Promise.all([reviewReactions(viewerUuid, uuids), reviewCommentCounts(uuids)]);
+    const [reactions, comments, hides] = await Promise.all([
+      reviewReactions(viewerUuid, uuids),
+      reviewCommentCounts(uuids),
+      hidesSpoilers(viewerUuid),
+    ]);
     return {
       items: rows.map((row) => ({
         ...row,
         isOwn: row.author.uuid === viewerUuid,
+        spoilerHidden: spoilerHiddenFor(row, viewerUuid, hides),
         reactions: reactions.get(row.uuid) ?? noReactions(),
         commentCount: comments.get(row.uuid) ?? 0,
       })),
@@ -333,10 +358,15 @@ export const getReviewByUuid = async (reviewUuid: string, viewerUuid: string | n
   if (!row) {
     return null;
   }
-  const [reactions, comments] = await Promise.all([reviewReactions(viewerUuid, [row.uuid]), reviewCommentCounts([row.uuid])]);
+  const [reactions, comments, hides] = await Promise.all([
+    reviewReactions(viewerUuid, [row.uuid]),
+    reviewCommentCounts([row.uuid]),
+    hidesSpoilers(viewerUuid),
+  ]);
   return {
     ...row,
     isOwn: row.author.uuid === viewerUuid,
+    spoilerHidden: spoilerHiddenFor(row, viewerUuid, hides),
     reactions: reactions.get(row.uuid) ?? noReactions(),
     commentCount: comments.get(row.uuid) ?? 0,
   };

@@ -170,4 +170,29 @@ describe("follows, reviews, lists and the feed", () => {
     await followUser(fixture.ahmad, fixture.sara);
     expect((await getListBySlug(list.slug, fixture.ahmad))?.relation).toBe("follower");
   });
+
+  it("hides a spoiler review behind a click for a visitor and for one who hides spoilers, never from its author", async () => {
+    await saveEntry(fixture.sara, entry(fixture.mediaUuid, 9));
+    await saveReview(fixture.sara, {
+      mediaUuid: fixture.mediaUuid,
+      headline: "The ending is a dream",
+      body: "It was all a dream.",
+      containsSpoilers: true,
+      visibility: null,
+    });
+    await followUser(fixture.ahmad, fixture.sara);
+
+    const hiddenFor = async (viewer: string | null) =>
+      (await listTitleReviews(fixture.mediaUuid, viewer)).map((review) => review.spoilerHidden);
+    expect(await hiddenFor(null)).toEqual([true]);
+    expect(await hiddenFor(fixture.ahmad)).toEqual([true]);
+    expect(await hiddenFor(fixture.sara)).toEqual([false]);
+
+    const feedHeadline = async () => (await listFeed(fixture.ahmad)).items.find((item) => item.review)?.review;
+    expect(await feedHeadline()).toEqual(expect.objectContaining({ headline: null, spoilerHidden: true }));
+
+    await db.update(UserSettings).set({ hideSpoilers: false }).where(eq(UserSettings.userUuid, fixture.ahmad));
+    expect(await hiddenFor(fixture.ahmad)).toEqual([false]);
+    expect(await feedHeadline()).toEqual(expect.objectContaining({ headline: "The ending is a dream", spoilerHidden: false }));
+  });
 });

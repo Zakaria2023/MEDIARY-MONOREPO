@@ -6,6 +6,7 @@ import { Profiles } from "../../../db/schema/profiles";
 import { UserSettings } from "../../../db/schema/user-settings";
 import { Users } from "../../../db/schema/users";
 import { followUser } from "./follows";
+import { listProfileFavorites } from "./public-profile";
 import { getLibraryCountsFor, listLibraryFor, saveEntry } from "./tracking";
 
 type Fixture = {
@@ -33,6 +34,12 @@ const entry = (mediaUuid: string, visibility: "public" | "followers" | "private"
   completedAt: null,
   notes: "",
   visibility,
+});
+
+const favorite = (mediaUuid: string, visibility: "public" | "followers" | "private" | null) => ({
+  ...entry(mediaUuid, visibility),
+  favorite: true,
+  notes: "Only mine to read",
 });
 
 const seed = async (): Promise<Fixture> => {
@@ -93,5 +100,24 @@ describe("someone's library as a viewer may see it", () => {
     await db.update(UserSettings).set({ libraryVisibility: "followers" }).where(eq(UserSettings.userUuid, fixture.owner));
     expect(await slugs("stranger")).toEqual([]);
     expect(await slugs("follower")).toEqual(["arrival", "heat"]);
+  });
+
+  it("keeps a hearted entry the owner made private off the favorites a visitor sees", async () => {
+    await saveEntry(fixture.owner, favorite(fixture.open, null));
+    await saveEntry(fixture.owner, favorite(fixture.secret, "private"));
+
+    const titlesFor = async (relation: "owner" | "stranger") =>
+      (await listProfileFavorites({ ownerUuid: fixture.owner, relation })).map((row) => row.canonicalTitle).sort();
+    expect(await titlesFor("owner")).toEqual(["Arrival", "Cars"]);
+    expect(await titlesFor("stranger")).toEqual(["Arrival"]);
+  });
+
+  it("hands an entry's private notes to its owner only", async () => {
+    await saveEntry(fixture.owner, favorite(fixture.open, null));
+
+    const notesFor = async (relation: "owner" | "stranger") =>
+      (await listLibraryFor({ ownerUuid: fixture.owner, relation }, {})).items.map((item) => item.entry.notes);
+    expect(await notesFor("owner")).toEqual(["Only mine to read"]);
+    expect(await notesFor("stranger")).toEqual([null]);
   });
 });

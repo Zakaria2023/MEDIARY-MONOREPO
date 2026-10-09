@@ -8,6 +8,7 @@ import { SelectUsers, Users } from "../../../db/schema/users";
 import { CatalogCard } from "./catalog";
 import { getFollowCounts, isBlockedEitherWay, isFollowing } from "./follows";
 import { trackedMinutes } from "./stats";
+import { ViewerParams, visibleEntries } from "./tracking";
 import { canView, ViewerRelation } from "./visibility";
 
 /** What a profile page shows about its owner. */
@@ -146,9 +147,12 @@ export const getProfileCounts = async (userUuid: string): Promise<ProfileCounts>
   };
 };
 
-/** The titles the owner marked as favorites, most recently touched first. */
+/**
+ * The titles the owner marked as favorites that this viewer may see, most
+ * recently touched first: a hearted entry the owner made private stays private.
+ */
 export const listProfileFavorites = async (
-  userUuid: string,
+  viewer: ViewerParams,
   limit = PROFILE_FAVORITES_LIMIT,
 ): Promise<ProfileFavorite[]> =>
   db
@@ -165,7 +169,7 @@ export const listProfileFavorites = async (
     })
     .from(UserMedia)
     .innerJoin(Media, eq(Media.uuid, UserMedia.mediaUuid))
-    .where(and(eq(UserMedia.userUuid, userUuid), eq(UserMedia.favorite, true)))
+    .where(and(visibleEntries(viewer), eq(UserMedia.favorite, true)))
     .orderBy(desc(UserMedia.updatedAt))
     .limit(limit);
 

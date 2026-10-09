@@ -4,18 +4,20 @@ import { Eye } from "lucide-react";
 import { useState } from "react";
 
 type ReviewBodyProps = {
+  headline?: string | null;
   body: string;
-  containsSpoilers: boolean;
+  /** Behind a click: the author marked spoilers and the viewer hides them. */
+  hidden: boolean;
 };
 
 /**
- * A review's text, hidden behind a click when its author marked spoilers.
- * The paragraphs are the author's line breaks.
+ * A review's headline and text, both behind a click when they would spoil
+ * something for this viewer. The paragraphs are the author's line breaks.
  */
-export const ReviewBody = ({ body, containsSpoilers }: ReviewBodyProps) => {
+export const ReviewBody = ({ headline = null, body, hidden }: ReviewBodyProps) => {
   const [revealed, setRevealed] = useState(false);
 
-  if (containsSpoilers && !revealed) {
+  if (hidden && !revealed) {
     return (
       <button
         type="button"
@@ -29,12 +31,15 @@ export const ReviewBody = ({ body, containsSpoilers }: ReviewBodyProps) => {
   }
 
   return (
-    <div className="flex flex-col gap-3 text-sm leading-relaxed text-secondary">
-      {body.split(/\n{2,}/).map((paragraph, index) => (
-        <p key={index} className="whitespace-pre-line">
-          {paragraph}
-        </p>
-      ))}
-    </div>
+    <>
+      {headline && <h3 className="font-display text-base text-ink">{headline}</h3>}
+      <div className="flex flex-col gap-3 text-sm leading-relaxed text-secondary">
+        {body.split(/\n{2,}/).map((paragraph, index) => (
+          <p key={index} className="whitespace-pre-line">
+            {paragraph}
+          </p>
+        ))}
+      </div>
+    </>
   );
 };

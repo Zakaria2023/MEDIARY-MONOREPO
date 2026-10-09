@@ -70,3 +70,18 @@ export const getUserTimezone = async (userUuid: string): Promise<string> => {
     .where(eq(UserSettings.userUuid, userUuid));
   return row?.timezone ?? "UTC";
 };
+
+/**
+ * Whether spoilers stay hidden until clicked for this viewer: their own
+ * setting, and hidden for a visitor, who has none.
+ */
+export const hidesSpoilers = async (viewerUuid: string | null): Promise<boolean> => {
+  if (!viewerUuid) {
+    return true;
+  }
+  const [row] = await db
+    .select({ hideSpoilers: UserSettings.hideSpoilers })
+    .from(UserSettings)
+    .where(eq(UserSettings.userUuid, viewerUuid));
+  return row?.hideSpoilers ?? true;
+};

@@ -62,7 +62,7 @@ export const ReviewComposer = ({ mediaUuid, initial }: ReviewComposerProps) => {
           </div>
         </header>
         {review.headline && <h3 className="font-display text-base text-ink">{review.headline}</h3>}
-        <ReviewBody body={review.body} containsSpoilers={false} />
+        <ReviewBody body={review.body} hidden={false} />
         <FormError message={error} />
       </article>
     );
