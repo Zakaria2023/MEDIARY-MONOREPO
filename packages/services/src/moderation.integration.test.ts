@@ -8,7 +8,7 @@ import { Reports } from "../../../db/schema/reports";
 import { Reviews } from "../../../db/schema/reviews";
 import { UserSettings } from "../../../db/schema/user-settings";
 import { Users } from "../../../db/schema/users";
-import { setMemberRole } from "./admin";
+import { listMembers, setMemberRole } from "./admin";
 import { addComment } from "./comments";
 import { createList } from "./lists";
 import { countOpenReports, listOpenReports, reportSubject, resolveReport } from "./reports";
@@ -111,5 +111,15 @@ describe("reports on anything, and the audit log", () => {
     const log = await db.select({ action: AuditLog.action, details: AuditLog.details }).from(AuditLog);
     expect(log.map((line) => line.action).sort()).toEqual(["member.role", "report.dismiss", "report.remove", "report.remove"]);
     expect(log.find((line) => line.action === "member.role")?.details).toEqual({ from: "user", to: "moderator" });
+  });
+
+  it("finds members by a name with a % or an _ in it, taken as text", async () => {
+    await db.insert(Users).values([
+      { clerkUserId: "user_mod_pct", displayName: "100% Anime", username: "full_anime" },
+      { clerkUserId: "user_mod_plain", displayName: "100 Anime", username: "fullanime" },
+    ]);
+    const names = async (query: string) => (await listMembers({ query })).items.map((row) => row.displayName).sort();
+    expect(await names("100%")).toEqual(["100% Anime"]);
+    expect(await names("full_")).toEqual(["100% Anime"]);
   });
 });

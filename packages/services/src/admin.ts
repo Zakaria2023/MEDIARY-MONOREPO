@@ -5,6 +5,7 @@ import { UserRole } from "../../../db/enum";
 import { Media } from "../../../db/schema/media";
 import { UserMedia } from "../../../db/schema/user-media";
 import { SelectUsers, Users } from "../../../db/schema/users";
+import { escapeLike } from "./catalog";
 import { recordAudit } from "./audit";
 import { NotFoundError, ValidationError } from "./errors";
 
@@ -46,9 +47,6 @@ export const getAdminOverview = async (): Promise<AdminOverview> => {
 
   return { members, staff: admins + moderators, titles };
 };
-
-/** `%` and `_` typed into a search box are text, not wildcards. */
-const escapeLike = (value: string): string => value.replace(/[\%_]/g, (char) => `\${char}`);
 
 /** Every member, newest first, searchable by handle, name or email. */
 export const listMembers = async ({ query = "", page }: ListMembersParams): Promise<PaginatedResult<MemberRow>> => {

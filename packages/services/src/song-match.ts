@@ -5,7 +5,7 @@ import { db } from "../../../db";
 import { MusicDetails } from "../../../db/schema/media-details";
 import { MediaExternalRefs } from "../../../db/schema/media-external-refs";
 import { Media } from "../../../db/schema/media";
-import { CatalogCard } from "./catalog";
+import { CatalogCard, escapeLike } from "./catalog";
 import { importProviderTitle } from "./catalog-import";
 import { ValidationError } from "./errors";
 import { assertFeature, isFeatureOn } from "./flags";
@@ -111,16 +111,13 @@ const heldAlbum = async (groupIds: string[]): Promise<CatalogCard | null> => {
   return groupIds.map((id) => byGroup.get(id)).find((card) => card !== undefined) ?? null;
 };
 
-/** Text matched literally by LIKE: its wildcards escaped. */
-const literal = (text: string): string => text.replace(/[\\%_]/g, (character) => `\\${character}`);
-
 /** A held record by its name and artist, for a match that came without catalog ids. */
 const albumByName = async (album: string, artist: string): Promise<CatalogCard | null> => {
   const [row] = await db
     .select(CARD_COLUMNS)
     .from(Media)
     .innerJoin(MusicDetails, eq(MusicDetails.mediaUuid, Media.uuid))
-    .where(and(eq(Media.mediaType, "music"), ilike(Media.canonicalTitle, literal(album)), ilike(MusicDetails.artist, `%${literal(artist)}%`)))
+    .where(and(eq(Media.mediaType, "music"), ilike(Media.canonicalTitle, escapeLike(album)), ilike(MusicDetails.artist, `%${escapeLike(artist)}%`)))
     .limit(1);
   return row ?? null;
 };

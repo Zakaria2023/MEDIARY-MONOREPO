@@ -5,7 +5,7 @@ import { Artists, SelectArtists } from "../../../db/schema/artists";
 import { Genres, MediaGenres } from "../../../db/schema/genres";
 import { MusicDetails, SelectMusicDetails } from "../../../db/schema/media-details";
 import { Media, SelectMedia } from "../../../db/schema/media";
-import { CatalogCard, CatalogGenre } from "./catalog";
+import { CatalogCard, CatalogGenre, escapeLike } from "./catalog";
 
 /** An artist as a card: their name, how many records Mediary holds, and their best known record's cover. */
 export type ArtistCard = Pick<SelectArtists, "uuid" | "slug" | "name"> & {
@@ -64,9 +64,6 @@ const CARD_COLUMNS = {
   dominantColor: leadCover("dominant_color"),
 };
 
-/** Text matched literally by LIKE: its wildcards escaped. */
-const literal = (text: string): string => text.replace(/[\\%_]/g, (character) => `\\${character}`);
-
 /**
  * EVERY ARTIST WITH A RECORD IN MEDIARY, the best known first: by the most
  * followed of their records, then by how many records Mediary holds. An
@@ -76,7 +73,7 @@ export const listArtists = async ({ query, page, pageSize = ARTISTS_PAGE_SIZE }:
   PaginatedResult<ArtistCard>
 > => {
   const bounds = resolvePagination(page, pageSize);
-  const named = query?.trim() ? ilike(Artists.name, `%${literal(query.trim())}%`) : undefined;
+  const named = query?.trim() ? ilike(Artists.name, `%${escapeLike(query.trim())}%`) : undefined;
   const [rows, [total]] = await Promise.all([
     db
       .select(CARD_COLUMNS)
