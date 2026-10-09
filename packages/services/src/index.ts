@@ -51,3 +51,4 @@ export * from "./guide";
 export * from "./song-match";
 export * from "./artists";
 export * from "./look-further";
+export * from "./title-community";

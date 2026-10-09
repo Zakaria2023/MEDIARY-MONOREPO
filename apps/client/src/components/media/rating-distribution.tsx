@@ -22,7 +22,7 @@ export const RatingDistribution = ({
         {counts.map((count, score) => (
           <div
             key={score}
-            className="flex flex-1 flex-col items-center justify-end gap-1"
+            className="flex h-full flex-1 flex-col items-center justify-end gap-1"
             title={`${score}: ${count}`}
           >
             <div

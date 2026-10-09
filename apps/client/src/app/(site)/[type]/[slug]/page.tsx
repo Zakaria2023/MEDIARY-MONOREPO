@@ -8,6 +8,8 @@ import { RelatedTitles } from "@/components/catalog/related-titles";
 import { AlbumArtist } from "@/components/music/album-artist";
 import { AlbumTracklist } from "@/components/music/album-tracklist";
 import { MoreFromArtist } from "@/components/music/more-from-artist";
+import { TitleCommunity } from "@/components/catalog/title-community";
+import { TitleCommunitySkeleton } from "@/components/catalog/title-community-skeleton";
 import { TitleHero } from "@/components/catalog/title-hero";
 import { TitleRailSkeleton } from "@/components/catalog/title-rail-skeleton";
 import { TitleReviews } from "@/components/reviews/title-reviews";
@@ -129,6 +131,14 @@ const TitlePage = async ({ params }: Props) => {
               <Playthroughs userUuid={viewer.uuid} mediaUuid={title.uuid} platforms={tracking.target.platforms} />
             </AsyncSection>
           )}
+
+          <AsyncSection reloadKey={`members-${title.uuid}`} skeleton={<TitleCommunitySkeleton />}>
+            <TitleCommunity
+              mediaUuid={title.uuid}
+              mediaType={title.mediaType}
+              viewerScore={tracking?.entry?.score ?? null}
+            />
+          </AsyncSection>
 
           <AsyncSection reloadKey={`reviews-${title.uuid}-${viewer?.uuid ?? "guest"}`} skeleton={<TitleReviewsSkeleton />}>
             <TitleReviews title={title} viewer={viewer} />
