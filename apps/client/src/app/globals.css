@@ -532,9 +532,13 @@ input[type="number"]::-webkit-outer-spin-button {
   display: none;
 }
 
-/* Focus is visible, in the accent, on anything a keyboard can reach. */
-:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-  border-radius: var(--radius-control);
+/* Focus is visible, in the accent, on anything a keyboard can reach. In the
+   base layer so a field that draws its own focus (an accent border, a framed
+   search) can turn it off with outline-none instead of wearing two rings. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-control);
+  }
 }
