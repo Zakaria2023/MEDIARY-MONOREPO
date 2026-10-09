@@ -36,6 +36,7 @@ Mediary; nothing here needs more than the repo and the environment file.
 - `pnpm test`: the fast unit suite, no credentials.
 - `pnpm test:integration`: against `${DB_NAME}_test` on the same Aiven service; run it alone, because it shares the connection ceiling with anything else talking to the service.
 - `pnpm test:e2e`: the public site in a real browser, against a running dev server on 3000 (started if none is running) or `E2E_BASE_URL`. First time: `npx playwright install chromium`.
+- `pnpm test:e2e:member`: the signed-in core loop in a real browser, as the test account in `E2E_MEMBER_EMAIL`. Create that account once on the identity service (development instance), finish the welcome screen with it, and put its email in `.env.local`; the suite needs no password and removes whatever it adds.
 - `pnpm test:visual`: screenshots of the fixed parts of the site, against a production build on port 3190. After a deliberate design change, `pnpm test:visual:update`, then look at every changed image in the diff before committing it.
 - Type-check and lint: `pnpm type-check`, `pnpm lint`.
 

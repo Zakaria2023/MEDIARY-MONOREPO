@@ -6,8 +6,9 @@ import { defineConfig, devices } from "@playwright/test";
  * server when none is running on port 3000 and reuses one that is. Set
  * E2E_BASE_URL to point it at a preview or staging deployment instead.
  *
- * Signed-in flows need an account on the identity service and are not
- * driven here; the database suite covers what they write.
+ * Signed-in flows run in their own project, `pnpm test:e2e:member`, as the
+ * test account named in E2E_MEMBER_EMAIL (e2e/member/), and skip when it
+ * is not set.
  */
 /**
  * The screenshot suite runs against a production server on its own port:
@@ -46,8 +47,15 @@ export default defineConfig({
   // `pnpm test:e2e` runs the first, `pnpm test:visual` the second, so a
   // design change in progress never blocks the checks that pages work.
   projects: [
-    { name: "desktop", testIgnore: /visual\.spec\.ts/, use: { ...devices["Desktop Chrome"] } },
-    { name: "phone", testIgnore: /visual\.spec\.ts/, use: { ...devices["Pixel 7"] } },
+    { name: "desktop", testIgnore: [/visual\.spec\.ts/, /member\//], use: { ...devices["Desktop Chrome"] } },
+    { name: "phone", testIgnore: [/visual\.spec\.ts/, /member\//], use: { ...devices["Pixel 7"] } },
+    { name: "member-setup", testMatch: /member\/clerk\.setup\.ts/ },
+    {
+      name: "member",
+      testMatch: /member\/.*\.spec\.ts/,
+      dependencies: ["member-setup"],
+      use: { ...devices["Desktop Chrome"] },
+    },
     { name: "visual-desktop", testMatch: /visual\.spec\.ts/, use: { ...devices["Desktop Chrome"], contextOptions: { reducedMotion: "reduce" } } },
     { name: "visual-phone", testMatch: /visual\.spec\.ts/, use: { ...devices["Pixel 7"], contextOptions: { reducedMotion: "reduce" } } },
   ],
