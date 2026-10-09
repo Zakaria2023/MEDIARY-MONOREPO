@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeTasteMatch, computeTasteTraits, TasteEntry } from "./taste-rules";
+import { computeTasteMatch, computeTasteTraits, MIN_SHARED_FOR_MATCH, TasteEntry } from "./taste-rules";
 
 const entry = (overrides: Partial<TasteEntry> & { mediaUuid: string }): TasteEntry => ({
   mediaType: "anime",
@@ -74,5 +74,29 @@ describe("computeTasteMatch", () => {
 
   it("is zero between a library and an empty one", () => {
     expect(computeTasteMatch(mine, []).overall).toBe(0);
+  });
+});
+
+describe("when a match is shown as a number", () => {
+  const library = (count: number, offset = 0): TasteEntry[] =>
+    Array.from({ length: count }, (_, index) => ({
+      mediaUuid: `title-${index + offset}`,
+      mediaType: "movie" as const,
+      status: "completed" as const,
+      score: 8,
+      genres: ["drama"],
+    }));
+
+  it("withholds it below the minimum in common, overall and per medium, and shows it from there", () => {
+    const thin = computeTasteMatch(library(MIN_SHARED_FOR_MATCH - 1), library(MIN_SHARED_FOR_MATCH - 1));
+    expect(thin.confident).toBe(false);
+    expect(thin.byType.every((item) => !item.confident)).toBe(true);
+
+    const enough = computeTasteMatch(library(MIN_SHARED_FOR_MATCH), library(MIN_SHARED_FOR_MATCH));
+    expect(enough.confident).toBe(true);
+    expect(enough.byType[0]?.confident).toBe(true);
+
+    const apart = computeTasteMatch(library(10), library(10, 100));
+    expect(apart.confident).toBe(false);
   });
 });

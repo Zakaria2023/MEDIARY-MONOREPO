@@ -23,14 +23,14 @@ export const CompareHero = ({ viewer, page }: CompareHeroProps) => (
           <UserAvatar name={viewer.displayName} imageUrl={viewer.imageUrl} size="xl" />
           <span className="text-sm font-medium text-ink">You</span>
         </div>
-        <MatchRing value={page.match.overall} />
+        <MatchRing value={page.match.confident ? page.match.overall : null} />
         <div className="flex flex-col items-center gap-2">
           <UserAvatar name={page.other.displayName} imageUrl={page.other.imageUrl} size="xl" />
           <span className="text-sm font-medium text-ink">{page.other.displayName}</span>
         </div>
       </div>
       <p className="max-w-md text-center text-sm text-muted">{matchSentence(page)}</p>
-      {page.other.username && (
+      {page.other.username && page.match.confident && (
         <a
           href={`/compare/${page.other.username}/card`}
           download={`mediary-taste-match-${page.other.username}.png`}

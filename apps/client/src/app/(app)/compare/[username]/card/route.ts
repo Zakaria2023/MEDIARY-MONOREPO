@@ -23,6 +23,9 @@ export const GET = async (_request: Request, context: Context): Promise<Response
     return new Response("Not found", { status: 404 });
   }
   const { page } = result;
+  if (!page.match.confident) {
+    return new Response("Too early for a match card", { status: 404 });
+  }
 
   return matchCard({
     viewerName: viewer.displayName,

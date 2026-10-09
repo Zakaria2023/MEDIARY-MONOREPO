@@ -5,7 +5,7 @@ type MediumMatchesProps = {
   byType: MediumMatch[];
 };
 
-/** The match per medium, one tile each, with how many titles that number rests on. */
+/** The match per medium, one tile each, with how many titles that number rests on; too few, and no number. */
 export const MediumMatches = ({ byType }: MediumMatchesProps) =>
   byType.length === 0 ? null : (
     <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -14,9 +14,11 @@ export const MediumMatches = ({ byType }: MediumMatchesProps) =>
           <span className="text-xs font-medium uppercase tracking-wide text-faint">
             {MEDIA_TYPE_PLURAL_LABELS[item.mediaType]}
           </span>
-          <span className="tabular font-display text-2xl font-semibold text-ink">{item.value}%</span>
+          <span className={`tabular font-display text-2xl font-semibold ${item.confident ? "text-ink" : "text-faint"}`}>
+            {item.confident ? `${item.value}%` : "Too early"}
+          </span>
           <div className="h-1.5 w-full overflow-hidden rounded-chip bg-hairline">
-            <div className="h-full rounded-chip bg-accent" style={{ width: `${item.value}%` }} />
+            {item.confident && <div className="h-full rounded-chip bg-accent" style={{ width: `${item.value}%` }} />}
           </div>
           <span className="text-xs text-muted">
             {item.shared === 0 ? "No titles in common" : `${item.shared} in common`}

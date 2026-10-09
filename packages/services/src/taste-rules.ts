@@ -24,14 +24,18 @@ export type MediumMatch = {
   value: number;
   /** Titles both have, in this medium. */
   shared: number;
+  /** Enough in common for the number to be shown. */
+  confident: boolean;
 };
 
 /** Everything a Taste Match page shows, by title uuid. */
 export type TasteMatch = {
   /** 0-100. */
   overall: number;
-  /** Titles both have scored; the more, the more the number means. */
+  /** Titles both have tracked; the more, the more the number means. */
   confidence: number;
+  /** At least MIN_SHARED_FOR_MATCH titles in common: below that the number is withheld. */
+  confident: boolean;
   byType: MediumMatch[];
   /** Both scored 8 or more, best first. */
   sharedFavorites: string[];
@@ -68,6 +72,13 @@ export const TASTE_TRAIT_LIMIT = 7;
 
 /** How many picks one loved title may explain, so a rail is not one title's echo. */
 const PICKS_PER_REASON = 3;
+
+/**
+ * Titles two people must both track before a match is shown as a number.
+ * Below it the number would come from genres alone or a couple of scores,
+ * and a confident-looking 87% from three titles is worse than none.
+ */
+export const MIN_SHARED_FOR_MATCH = 5;
 
 /** A score at or above this is "loved", for shared favorites and recommendations. */
 export const LOVED_SCORE = 8;
@@ -193,7 +204,7 @@ export const computeTasteMatch = (mine: TasteEntry[], theirs: TasteEntry[]): Tas
         mine.filter((entry) => entry.mediaType === mediaType),
         theirs.filter((entry) => entry.mediaType === mediaType),
       );
-      return { mediaType, value: result.value, shared: result.shared };
+      return { mediaType, value: result.value, shared: result.shared, confident: result.shared >= MIN_SHARED_FOR_MATCH };
     })
     .sort((a, b) => b.shared - a.shared || b.value - a.value);
 
@@ -221,6 +232,7 @@ export const computeTasteMatch = (mine: TasteEntry[], theirs: TasteEntry[]): Tas
   return {
     overall: overall.value,
     confidence: overall.shared,
+    confident: overall.shared >= MIN_SHARED_FOR_MATCH,
     byType,
     sharedFavorites,
     theyLove,

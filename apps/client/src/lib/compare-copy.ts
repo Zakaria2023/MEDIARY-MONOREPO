@@ -1,4 +1,4 @@
-import { TasteMatchPage } from "services";
+import { MIN_SHARED_FOR_MATCH, TasteMatchPage } from "services";
 import { MEDIA_TYPE_PLURAL_LABELS } from "@/db/label";
 
 /**
@@ -14,9 +14,15 @@ export const matchSentence = (page: TasteMatchPage): string => {
   const confidence =
     match.confidence >= 20
       ? `High confidence: ${match.confidence} titles in common.`
-      : match.confidence > 0
-        ? `${match.confidence} ${match.confidence === 1 ? "title" : "titles"} in common so far; the number firms up as you both track more.`
-        : "Nothing in common yet, so this is taste alone.";
+      : match.confident
+        ? `${match.confidence} titles in common so far; the number firms up as you both track more.`
+        : `A match needs ${MIN_SHARED_FOR_MATCH} titles you both track; ${
+            match.confidence === 0 ? "you have none in common yet" : `${match.confidence} so far`
+          }.`;
+
+  if (!match.confident) {
+    return `Too early to put a number on you and ${other.displayName}. ${confidence}`;
+  }
 
   if (!best) {
     return `You and ${other.displayName} have no medium in common yet. ${confidence}`;

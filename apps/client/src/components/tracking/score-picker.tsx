@@ -9,13 +9,25 @@ type ScorePickerProps = {
 
 const SCORES = Array.from({ length: 10 }, (_, index) => index + 1);
 
-/** Ten stars on the one scale every medium shares. Tapping the chosen one clears it. */
+/**
+ * Ten stars on the one scale every medium shares. A score is taken back with
+ * the Clear beside it, or by tapping the chosen star again.
+ */
 export const ScorePicker = ({ value, onChange }: ScorePickerProps) => (
   <fieldset className="flex flex-col gap-2">
     <legend className="mb-2 flex w-full items-center justify-between text-xs font-medium uppercase tracking-wide text-faint">
       Score
-      <span className="tabular text-sm normal-case tracking-normal text-ink">
-        {value === null ? "Not rated" : `${value} / 10`}
+      <span className="flex items-center gap-3 normal-case tracking-normal">
+        {value !== null && (
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            className="cursor-pointer text-xs text-muted underline-offset-2 transition-colors hover:text-ink hover:underline"
+          >
+            Clear
+          </button>
+        )}
+        <span className="tabular text-sm text-ink">{value === null ? "Not rated" : `${value} / 10`}</span>
       </span>
     </legend>
     <div className="flex gap-1">
