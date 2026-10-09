@@ -51,4 +51,6 @@ export * from "./guide";
 export * from "./song-match";
 export * from "./artists";
 export * from "./look-further";
+export { PRODUCT_EVENTS, track } from "./analytics";
+export type { EventProperties, ProductEvent } from "./analytics";
 export * from "./title-community";

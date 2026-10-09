@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { catalogFacts, getTitleTracking, listChoicesForTitle } from "services";
+import { catalogFacts, getTitleTracking, listChoicesForTitle, PRODUCT_EVENTS, track } from "services";
 import { AsyncSection, Badge } from "ui";
 import { parseLaunchMediaType } from "validators";
 import { MEDIA_TYPE_LABELS } from "@/db/label";
@@ -68,6 +68,7 @@ const TitlePage = async ({ params }: Props) => {
   const [tracking, listChoices] = viewer
     ? await Promise.all([getTitleTracking(viewer.uuid, title.uuid), listChoicesForTitle(viewer.uuid, title.uuid)])
     : [null, []];
+  track(PRODUCT_EVENTS.mediaOpened, { mediaType: title.mediaType, member: viewer !== null, tracked: Boolean(tracking?.entry) });
   const facts = catalogFacts(title);
   const music = title.details?.kind === "music" ? title.details : null;
   const launchType = parseLaunchMediaType(title.mediaType);

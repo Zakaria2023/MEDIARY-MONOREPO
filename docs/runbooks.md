@@ -81,7 +81,7 @@ The deployed site runs on the identity service's development keys (`pk_test_`, `
 
 ## Monitoring
 
-- `apps/client/src/instrumentation.ts` and `src/lib/analytics.ts` are the seams for an error monitor and a product-analytics client; both are empty until a provider is chosen. Nothing on screen may name the provider.
+- `apps/client/src/instrumentation.ts` is the seam for an error monitor, empty until one is chosen. Product events are `track` in `packages/services/src/analytics.ts`: one JSON line per event (`"kind":"product_event"`) in the function logs, by the roadmap's names (media_added, status_changed, progress_updated, rating_submitted, review_created, search_performed, media_opened, profile_viewed, taste_match_viewed, share_card_generated, import_started, import_completed, followed_user), carrying what happened and never who. Send them anywhere with a Vercel log drain, or replace the body of `track`. Activation and retention are not counted from events: the admin's Metrics screen computes them from the tables. Nothing on screen may name a provider.
 - The cron routes log one JSON line per run (`catalog_sync`) to the function logs; a failed source is in `failed` with its reason.
 - Core Web Vitals: Vercel's Speed Insights on the client project, or any RUM tool wired through the analytics seam.
 

@@ -1,6 +1,6 @@
 import { SearchX } from "lucide-react";
 import Link from "next/link";
-import { listArtists, searchCatalog } from "services";
+import { listArtists, PRODUCT_EVENTS, searchCatalog, track } from "services";
 import { Pagination } from "ui";
 import { filterHref } from "utils";
 import { LaunchMediaType, launchMediaTypes } from "@/db/enum";
@@ -42,6 +42,8 @@ export const SearchResults = async ({ query, mediaType, page }: SearchResultsPro
     withArtists ? listArtists({ query, pageSize: SEARCH_ARTISTS }) : null,
   ]);
   const artistCards = artists?.items ?? [];
+  // How searches go, never what was searched for.
+  track(PRODUCT_EVENTS.searchPerformed, { medium: mediaType ?? "all", results: result.total, artists: artistCards.length, page });
   const allCount = Object.values(result.countsByType).reduce((sum, value) => sum + (value ?? 0), 0);
 
   return (

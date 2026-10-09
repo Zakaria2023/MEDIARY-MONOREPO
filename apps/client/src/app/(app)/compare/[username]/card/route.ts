@@ -1,4 +1,4 @@
-import { getTasteMatch } from "services";
+import { getTasteMatch, PRODUCT_EVENTS, track } from "services";
 import { MEDIA_TYPE_PLURAL_LABELS } from "@/db/label";
 import { getCurrentUser } from "@/lib/auth";
 import { matchCard } from "@/lib/server/share-card";
@@ -27,6 +27,7 @@ export const GET = async (_request: Request, context: Context): Promise<Response
     return new Response("Too early for a match card", { status: 404 });
   }
 
+  track(PRODUCT_EVENTS.shareCardGenerated, { card: "match" });
   return matchCard({
     viewerName: viewer.displayName,
     otherName: page.other.displayName,

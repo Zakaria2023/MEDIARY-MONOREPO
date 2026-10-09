@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTasteMatch } from "services";
+import { getTasteMatch, PRODUCT_EVENTS, track } from "services";
 import { CompareHero } from "@/components/compare/compare-hero";
 import { CompareRefused } from "@/components/compare/compare-refused";
 import { MediumMatches } from "@/components/compare/medium-matches";
@@ -43,6 +43,7 @@ const ComparePage = async ({ params }: Props) => {
     return <CompareRefused other={result.other} reason={result.reason} />;
   }
   const { page } = result;
+  track(PRODUCT_EVENTS.tasteMatchViewed, { confident: page.match.confident });
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-5 py-8 sm:px-8 sm:py-10">

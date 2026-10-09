@@ -10,6 +10,7 @@ import { UserMedia } from "../../../db/schema/user-media";
 import { UserSettings } from "../../../db/schema/user-settings";
 import { Users } from "../../../db/schema/users";
 import { recordActivity } from "./activities";
+import { PRODUCT_EVENTS, track } from "./analytics";
 import { reviewCommentCounts } from "./comments";
 import { CatalogCard } from "./catalog";
 import { NotFoundError } from "./errors";
@@ -282,8 +283,8 @@ export const listUserReviews = async (
  * their library score at the time of writing. A first review is announced
  * to their followers; a rewrite is not.
  */
-export const saveReview = async (userUuid: string, input: ReviewInput): Promise<OwnReview> =>
-  db.transaction(async (tx) => {
+export const saveReview = async (userUuid: string, input: ReviewInput): Promise<OwnReview> => {
+  const { review, created } = await db.transaction(async (tx) => {
     const [[entry], [settings], [existing]] = await Promise.all([
       tx
         .select({ score: UserMedia.score })
@@ -332,8 +333,13 @@ export const saveReview = async (userUuid: string, input: ReviewInput): Promise<
         settings?.activityPrefs ?? null,
       );
     }
-    return { ...saved, featured: profile?.featured === saved.uuid };
+    return { review: { ...saved, featured: profile?.featured === saved.uuid }, created: !existing };
   });
+  if (created) {
+    track(PRODUCT_EVENTS.reviewCreated, { containsSpoilers: review.containsSpoilers, scored: review.score !== null });
+  }
+  return review;
+};
 
 /** Removes the person's review. The feed line about it goes with it. */
 export const deleteReview = async (userUuid: string, reviewUuid: string): Promise<void> => {

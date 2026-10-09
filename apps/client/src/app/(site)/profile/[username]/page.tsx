@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getSocialStanding } from "services";
+import { getSocialStanding, PRODUCT_EVENTS, track } from "services";
 import { AsyncSection } from "ui";
 import { PrivateProfile } from "@/components/profile/private-profile";
 import { ProfileActivity } from "@/components/profile/profile-activity";
@@ -57,6 +57,7 @@ const ProfilePage = async ({ params }: Props) => {
   }
   const viewer = await getCurrentUser();
   const standing = viewer && viewer.uuid !== profile.uuid ? await getSocialStanding(viewer.uuid, profile.uuid) : null;
+  track(PRODUCT_EVENTS.profileViewed, { own: profile.relation === "owner", member: viewer !== null, open: profile.access.profile });
 
   if (!profile.access.profile) {
     return <PrivateProfile profile={profile} />;

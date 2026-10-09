@@ -1,4 +1,4 @@
-import { getReviewByUuid } from "services";
+import { getReviewByUuid, PRODUCT_EVENTS, track } from "services";
 import { catalogImageUrl } from "utils";
 import { getCurrentUser } from "@/lib/auth";
 import { reviewCard } from "@/lib/server/share-card";
@@ -36,6 +36,7 @@ export const GET = async (request: Request, context: Context): Promise<Response>
     return new Response("Not found", { status: 404 });
   }
 
+  track(PRODUCT_EVENTS.shareCardGenerated, { card: "review" });
   return reviewCard({
     name: review.author.displayName,
     title: review.title.canonicalTitle,

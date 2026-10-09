@@ -1,4 +1,4 @@
-import { getMilestones, getProfileCounts } from "services";
+import { getMilestones, getProfileCounts, PRODUCT_EVENTS, track } from "services";
 import { formatCount } from "utils";
 import { getCurrentUser } from "@/lib/auth";
 import { milestoneLabel } from "@/lib/milestone-copy";
@@ -24,6 +24,7 @@ export const GET = async (request: Request): Promise<Response> => {
   }
   const counts = await getProfileCounts(viewer.uuid);
 
+  track(PRODUCT_EVENTS.shareCardGenerated, { card: "milestone" });
   return milestoneCard({
     name: viewer.displayName,
     label: milestoneLabel(reached),

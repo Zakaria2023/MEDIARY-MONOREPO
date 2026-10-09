@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { blockUser, followUser, muteUser, unfollowUser, unmuteUser } from "services";
+import { blockUser, followUser, muteUser, PRODUCT_EVENTS, track, unfollowUser, unmuteUser } from "services";
 import { ActionResult, fail } from "utils";
 import { followSchema, FollowInput, userTargetSchema, UserTargetInput } from "validators";
 import { requireOnboardedUser } from "@/lib/auth";
@@ -27,6 +27,7 @@ export const followAction = async (input: FollowInput): Promise<ActionResult> =>
 
   try {
     await followUser(user.uuid, parsed.data.userUuid);
+    track(PRODUCT_EVENTS.followedUser);
     revalidateFollows();
     return { success: true };
   } catch (error) {

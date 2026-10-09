@@ -1,4 +1,4 @@
-import { getProfileCounts, listProfileFavorites } from "services";
+import { getProfileCounts, listProfileFavorites, PRODUCT_EVENTS, track } from "services";
 import { catalogImageUrl, formatCount } from "utils";
 import { loadProfile } from "@/lib/load-profile";
 import { favoritesCard } from "@/lib/server/share-card";
@@ -23,6 +23,7 @@ export const GET = async (_request: Request, context: Context): Promise<Response
     return new Response("Nothing hearted yet", { status: 404 });
   }
 
+  track(PRODUCT_EVENTS.shareCardGenerated, { card: "favorites" });
   return favoritesCard({
     name: profile.displayName,
     username: profile.username,

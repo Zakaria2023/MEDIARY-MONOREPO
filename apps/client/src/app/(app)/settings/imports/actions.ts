@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { applyImport, LibraryImport, previewImport } from "services";
+import { applyImport, LibraryImport, previewImport, PRODUCT_EVENTS, track } from "services";
 import { ActionResult, fail } from "utils";
 import {
   applyImportSchema,
@@ -47,7 +47,9 @@ export const previewImportAction = async (
   let importUuid: string;
   try {
     const text = await file.text();
-    importUuid = (await previewImport(user.uuid, parsed.data.source, parsed.data.fileName, text)).uuid;
+    const preview = await previewImport(user.uuid, parsed.data.source, parsed.data.fileName, text);
+    track(PRODUCT_EVENTS.importStarted, { source: preview.source, lines: preview.itemCount, matched: preview.matchedCount });
+    importUuid = preview.uuid;
   } catch (error) {
     return fail(error, "Could not read that file");
   }
@@ -69,6 +71,7 @@ export const applyImportAction = async (
 
   try {
     const summary = await applyImport(user.uuid, parsed.data.importUuid);
+    track(PRODUCT_EVENTS.importCompleted, { source: summary.source, created: summary.createdCount, skipped: summary.skippedCount });
     revalidatePath("/library", "layout");
     revalidatePath("/settings/imports", "layout");
     revalidatePath("/");

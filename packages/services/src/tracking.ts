@@ -13,6 +13,7 @@ import { SelectUserMedia, UserMedia } from "../../../db/schema/user-media";
 import { UserSettings } from "../../../db/schema/user-settings";
 import { ActivityPrefs } from "../../../db/types";
 import { recordActivity } from "./activities";
+import { entryEvents, TrackedEvent, trackAll } from "./analytics";
 import { escapeLike } from "./catalog";
 import { isUniqueViolation } from "./db-result";
 import { NotFoundError, ValidationError } from "./errors";
@@ -28,6 +29,12 @@ import {
 } from "./tracking-rules";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/** What one write did: the entry as stored, and the product events it stands for, logged after commit. */
+type EntryWrite = {
+  entry: TrackedEntry;
+  events: TrackedEvent[];
+};
 
 /** An entry as the sheet, a library row and a rail card read it. */
 export type TrackedEntry = Pick<
@@ -322,7 +329,7 @@ const writeEntry = async (
   tx: Tx,
   userUuid: string,
   input: UpsertEntryInput,
-): Promise<TrackedEntry> => {
+): Promise<EntryWrite> => {
   const [row] = await tx
     .select(TARGET_COLUMNS)
     .from(Media)
@@ -388,7 +395,7 @@ const writeEntry = async (
   if (input.favorite && !existing?.favorite) {
     await recordActivity(tx, { userUuid, kind: "favorited", mediaUuid: target.uuid }, activityPrefs);
   }
-  return saved;
+  return { entry: saved, events: entryEvents(previous, next, target.mediaType) };
 };
 
 /**
@@ -403,14 +410,18 @@ export const saveEntry = async (
   userUuid: string,
   input: UpsertEntryInput,
 ): Promise<TrackedEntry> => {
+  const write = () => db.transaction((tx) => writeEntry(tx, userUuid, input));
+  let result: EntryWrite;
   try {
-    return await db.transaction((tx) => writeEntry(tx, userUuid, input));
+    result = await write();
   } catch (error) {
     if (!isUniqueViolation(error)) {
       throw error;
     }
-    return db.transaction((tx) => writeEntry(tx, userUuid, input));
+    result = await write();
   }
+  trackAll(result.events);
+  return result.entry;
 };
 
 /**
@@ -419,11 +430,8 @@ export const saveEntry = async (
  * quick succession are two steps, never one: the second waits for the first
  * and adds to what it wrote.
  */
-export const tickEntryProgress = async (
-  userUuid: string,
-  input: ProgressTickInput,
-): Promise<TrackedEntry> =>
-  db.transaction(async (tx) => {
+export const tickEntryProgress = async (userUuid: string, input: ProgressTickInput): Promise<TrackedEntry> => {
+  const result = await db.transaction(async (tx): Promise<EntryWrite> => {
     const [row] = await tx
       .select({
         ...ENTRY_COLUMNS,
@@ -450,7 +458,7 @@ export const tickEntryProgress = async (
     const previous = stateOf(entry);
     const next = applyTick(previous, input.delta, limitsFor(target, entry.progressUnit), today);
     if (next.progressValue === previous.progressValue && next.status === previous.status) {
-      return entry;
+      return { entry, events: [] };
     }
 
     const [saved] = await tx
@@ -471,10 +479,12 @@ export const tickEntryProgress = async (
       eventAt: input.eventAt ? new Date(input.eventAt) : undefined,
     });
     await announceChange(tx, userUuid, mediaUuid, previous, next, activityPrefs);
-    return saved;
+    return { entry: saved, events: entryEvents(previous, next, mediaType) };
   });
+  trackAll(result.events);
+  return result.entry;
+};
 
-/** Takes a title out of the library. Its history goes with it. */
 /**
  * MANY ENTRIES TO ONE STATUS, from the library's select mode. Each goes
  * through the one writer as if its sheet had been saved with the new
@@ -525,6 +535,7 @@ export const removeEntries = async (userUuid: string, entryUuids: string[]): Pro
   return removed.length;
 };
 
+/** Takes a title out of the library. Its history goes with it. */
 export const removeEntry = async (userUuid: string, entryUuid: string): Promise<void> => {
   const removed = await db
     .delete(UserMedia)

@@ -105,7 +105,9 @@ const PrivacyPage = () => (
       <p>
         Mediary runs on a hosting provider, a database provider and the identity service above, with the AI service and the song
         recognition service for the guide and Name that song. Each handles your data only to run Mediary. Your address and the time of each request reach the hosting provider&apos;s logs, as
-        on any website. Mediary uses your address for about a minute to stop runaway requests, and does not keep it. The catalog&apos;s
+        on any website. Mediary uses your address for about a minute to stop runaway requests, and does not keep it. Mediary also writes a line to
+        those logs when something happens, such as a title added, a review written or a search made, to see how the product is used: the line
+        says what happened, never who did it or what was searched for. The catalog&apos;s
         titles and artwork come from the sources on the <Link href="/credits">credits page</Link>. That information is not about you, and those
         sources are not sent anything about you, with one exception: when you press &ldquo;Look further&rdquo; on the search page, the
         words you searched for are sent to them from Mediary&apos;s server, without your name or account. A title you bring in joins the

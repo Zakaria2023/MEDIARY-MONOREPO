@@ -1,4 +1,4 @@
-import { getUserStats } from "services";
+import { getUserStats, PRODUCT_EVENTS, track } from "services";
 import { formatCount, formatTrackedTime } from "utils";
 import { getCurrentUser } from "@/lib/auth";
 import { recapCard } from "@/lib/server/share-card";
@@ -19,6 +19,7 @@ export const GET = async (): Promise<Response> => {
     .reduce((sum, month) => sum + Object.values(month.byType).reduce((a, b) => a + b, 0), 0);
   const topGenre = stats.topGenres[0]?.name;
 
+  track(PRODUCT_EVENTS.shareCardGenerated, { card: "recap" });
   return recapCard({
     name: viewer.displayName,
     year,
