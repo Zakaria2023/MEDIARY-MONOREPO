@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { removeEntry, saveEntry, tickEntryProgress, TrackedEntry } from "services";
+import { getTitleTracking, removeEntry, saveEntry, tickEntryProgress, TitleTracking, TrackedEntry } from "services";
 import { ActionResult, fail } from "utils";
 import {
   progressTickSchema,
@@ -10,6 +10,7 @@ import {
   RemoveEntryInput,
   upsertEntrySchema,
   UpsertEntryInput,
+  isUuid,
 } from "validators";
 import { requireOnboardedUser } from "@/lib/auth";
 
@@ -18,10 +19,33 @@ export type EntryActionResult = ActionResult & {
   entry?: TrackedEntry;
 };
 
+/** A title's tracking as the sheet needs it, for a card's quick add. */
+export type TrackingActionResult = ActionResult & {
+  tracking?: TitleTracking;
+};
+
 /** The screens that list entries, refreshed after any change to one. */
 const revalidateLibrary = () => {
   revalidatePath("/library", "layout");
   revalidatePath("/");
+};
+
+/**
+ * A card's quick add: the title as the sheet needs it and the member's
+ * entry, fresh each time, so a sheet opened from a grid shows what the
+ * title page would.
+ */
+export const loadTrackingAction = async (mediaUuid: string): Promise<TrackingActionResult> => {
+  const user = await requireOnboardedUser();
+  if (typeof mediaUuid !== "string" || !isUuid(mediaUuid)) {
+    return { error: "That title could not be found" };
+  }
+  try {
+    const tracking = await getTitleTracking(user.uuid, mediaUuid);
+    return tracking ? { success: true, tracking } : { error: "That title could not be found" };
+  } catch (error) {
+    return fail(error, "Could not open this title");
+  }
 };
 
 /** The Add / Update sheet's Save. */
