@@ -563,6 +563,7 @@ The table above is `apps/client`. `apps/admin` has its own routes, added with th
 | Route         | Purpose                                                    |
 | ------------- | ---------------------------------------------------------- |
 | `/`           | Overview: members, staff, catalog size                     |
+| `/metrics`    | Activation, D1/D7/D30 retention, activity per member, import completion: `getProductMetrics` (`services/metrics.ts`), one query over the tables |
 | `/catalog`    | Every title, searchable by any name, filterable by medium |
 | `/catalog/[uuid]` | One title: facts, names, sources, locks, refresh       |
 | `/imports`    | Provider status, search and import, bulk list imports      |
