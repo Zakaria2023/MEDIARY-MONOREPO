@@ -32,6 +32,7 @@ import {
   PlaythroughTargetInput,
 } from "validators";
 import { requireOnboardedUser } from "@/lib/auth";
+import { overActionLimit } from "@/lib/server/action-limit";
 
 export type ReviewActionResult = ActionResult & {
   review?: OwnReview;
@@ -61,6 +62,10 @@ export const saveReviewAction = async (
   input: ReviewInput,
 ): Promise<ReviewActionResult> => {
   const user = await requireOnboardedUser();
+  const limited = await overActionLimit(user.uuid, "review");
+  if (limited) {
+    return { error: limited };
+  }
   const parsed = reviewSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Check the review" };
@@ -94,6 +99,10 @@ export const deleteReviewAction = async (input: DeleteReviewInput): Promise<Acti
 /** A tick in the add-to-list dialog. */
 export const addToListAction = async (input: ListItemInput): Promise<ActionResult> => {
   const user = await requireOnboardedUser();
+  const limited = await overActionLimit(user.uuid, "listItem");
+  if (limited) {
+    return { error: limited };
+  }
   const parsed = listItemSchema.safeParse(input);
   if (!parsed.success) {
     return { error: "That list could not be found" };
@@ -131,6 +140,10 @@ export const createListForTitleAction = async (
   input: NewListForTitleInput,
 ): Promise<ListChoiceActionResult> => {
   const user = await requireOnboardedUser();
+  const limited = await overActionLimit(user.uuid, "list");
+  if (limited) {
+    return { error: limited };
+  }
   const parsed = listSchema.safeParse(input);
   const mediaUuid = listItemSchema.shape.mediaUuid.safeParse(input.mediaUuid);
   if (!parsed.success || !mediaUuid.success) {

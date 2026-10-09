@@ -11,6 +11,7 @@ import {
   MAX_IMPORT_FILE_BYTES,
 } from "validators";
 import { requireOnboardedUser } from "@/lib/auth";
+import { overActionLimit } from "@/lib/server/action-limit";
 
 export type ApplyImportResult = ActionResult & {
   summary?: LibraryImport;
@@ -27,6 +28,10 @@ export const previewImportAction = async (
   formData: FormData,
 ): Promise<ActionResult> => {
   const user = await requireOnboardedUser();
+  const limited = await overActionLimit(user.uuid, "import");
+  if (limited) {
+    return { error: limited };
+  }
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     return { error: "Choose a file to import" };

@@ -275,6 +275,7 @@ SEO is a core of the product, with the design. Every public route pays for its p
 - Server Actions are defined in `actions.ts` files within the route's own folder, with `"use server"` at the top of the file.
 - Always perform redirects on the server, inside the Server Action, using `redirect` from `next/navigation`. Never redirect on the client after checking `state.success`.
 - Every action ends in the same catch: `return fail(error, "Could not save this entry");` so a `ValidationError` naming the exact problem reaches the user instead of a generic message.
+- A write that reaches other members or the catalog (a review, reply, like, follow, report, list, list item, import) is capped per account by `overActionLimit` (`src/lib/server/action-limit.ts`, one table of limits), checked right after the identity check; the paid and source-bound actions keep their own daily buckets.
 
 ## Auth Checks
 

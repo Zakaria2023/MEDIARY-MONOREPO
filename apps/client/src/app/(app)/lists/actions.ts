@@ -6,6 +6,7 @@ import { createList, pinList } from "services";
 import { ActionResult, fail } from "utils";
 import { listSchema, ListInput, pinListSchema, PinListInput } from "validators";
 import { requireOnboardedUser } from "@/lib/auth";
+import { overActionLimit } from "@/lib/server/action-limit";
 
 /** Makes a list and opens it. */
 export const createListAction = async (
@@ -13,6 +14,10 @@ export const createListAction = async (
   input: ListInput,
 ): Promise<ActionResult> => {
   const user = await requireOnboardedUser();
+  const limited = await overActionLimit(user.uuid, "list");
+  if (limited) {
+    return { error: limited };
+  }
   const parsed = listSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Check the form" };

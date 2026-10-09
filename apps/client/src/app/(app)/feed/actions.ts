@@ -23,6 +23,7 @@ import {
   socialSubjectSchema,
 } from "validators";
 import { requireOnboardedUser } from "@/lib/auth";
+import { overActionLimit } from "@/lib/server/action-limit";
 
 export type ReactionActionResult = ActionResult & {
   reactions?: ReactionSummary;
@@ -50,6 +51,10 @@ const revalidateResponses = () => {
 /** A press on the heart. */
 export const toggleReactionAction = async (input: SocialSubjectInput): Promise<ReactionActionResult> => {
   const user = await requireOnboardedUser();
+  const limited = await overActionLimit(user.uuid, "reaction");
+  if (limited) {
+    return { error: limited };
+  }
   const parsed = socialSubjectSchema.safeParse(input);
   if (!parsed.success) {
     return { error: "That could not be found" };
@@ -85,6 +90,10 @@ export const addCommentAction = async (
   input: CommentInput,
 ): Promise<CommentActionResult> => {
   const user = await requireOnboardedUser();
+  const limited = await overActionLimit(user.uuid, "comment");
+  if (limited) {
+    return { error: limited };
+  }
   const parsed = commentSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Check the reply" };
@@ -119,6 +128,10 @@ export const deleteCommentAction = async (input: DeleteCommentInput): Promise<Ac
 /** A member flagging a review, a reply, a list or a profile for staff. */
 export const reportAction = async (_prevState: ActionResult, input: ReportInput): Promise<ActionResult> => {
   const user = await requireOnboardedUser();
+  const limited = await overActionLimit(user.uuid, "report");
+  if (limited) {
+    return { error: limited };
+  }
   const parsed = reportSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Check the form" };
