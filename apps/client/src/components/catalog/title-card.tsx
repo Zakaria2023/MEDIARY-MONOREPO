@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CatalogCard } from "services";
 import { Poster } from "ui";
 import { MEDIA_TYPE_LABELS } from "@/db/label";
+import { QuickTrack } from "@/components/tracking/quick-track";
 import { titlePath } from "@/lib/title-path";
 
 type TitleCardProps = {
@@ -18,7 +19,7 @@ type TitleCardProps = {
 /**
  * THE UNIT OF EVERY GRID AND RAIL. A 2:3 poster, the name, one line of
  * metadata and the community score where there is one. The whole card is a
- * link. The hover lift is a transform, not a shadow; touch gets none of it
+ * link, with the quick add on the poster above it. The hover lift is a transform, not a shadow; touch gets none of it
  * and loses nothing.
  */
 export const TitleCard = ({ title, showType = false, sizes, priority = false }: TitleCardProps) => (
@@ -28,7 +29,10 @@ export const TitleCard = ({ title, showType = false, sizes, priority = false }: 
       aria-label={title.canonicalTitle}
       className="absolute inset-0 z-10 rounded-card focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
     />
-    <div className="transition-transform duration-200 ease-out group-hover:-translate-y-0.5">
+    <div className="relative transition-transform duration-200 ease-out group-hover:-translate-y-0.5">
+      <div className="absolute end-2 top-2 z-20">
+        <QuickTrack mediaUuid={title.uuid} titleName={title.canonicalTitle} />
+      </div>
       <Poster
         src={title.coverUrl}
         alt={title.canonicalTitle}

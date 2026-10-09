@@ -15,11 +15,11 @@ import { tickProgressAction } from "@/app/(app)/library/actions";
  * sheet with the new status already on the page. On a refusal the previous
  * entry comes back and the sheet reopens carrying the server's words.
  */
-export const useTrackedEntry = (target: TrackingTarget, initial: TrackedEntry | null) => {
+export const useTrackedEntry = (target: TrackingTarget, initial: TrackedEntry | null, startOpen = false) => {
   const [entry, setEntry] = useState(initial);
   const [previous, setPrevious] = useState<TrackedEntry | null>(null);
   const [removed, setRemoved] = useState(false);
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(startOpen);
   const [tickError, setTickError] = useState<string | null>(null);
   const [isTicking, startTick] = useTransition();
 
