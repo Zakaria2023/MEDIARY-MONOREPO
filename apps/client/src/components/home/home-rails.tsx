@@ -33,7 +33,7 @@ export const HomeRails = async () => {
       <div className="px-5 sm:px-8">
         <CatalogEmptyState
           heading="The catalog is being filled"
-          body="Movies, shows, games, anime, music, manga and books arrive here as they are imported. Check back soon."
+          body="Movies, shows, games, anime, music, manga, comics and books arrive here as they are imported. Check back soon."
         />
       </div>
     );
@@ -43,7 +43,7 @@ export const HomeRails = async () => {
     <div className="flex flex-col gap-12">
       <TitleRail
         heading="Trending this week"
-        reason="Across movies, shows, games, anime, music, manga and books."
+        reason="Across movies, shows, games, anime, music, manga, comics and books."
         href="/explore"
         titles={trending.items}
         showType

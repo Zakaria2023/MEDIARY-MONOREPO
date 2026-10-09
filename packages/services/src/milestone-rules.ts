@@ -38,7 +38,7 @@ const THRESHOLDS: Record<"completed" | "hours" | "reviews" | "lists" | "medium",
 };
 
 /** The media a per-medium milestone exists for. */
-const MEDIA: MediaType[] = ["anime", "game", "movie", "tv", "manga", "book", "music"];
+const MEDIA: MediaType[] = ["anime", "game", "movie", "tv", "manga", "comic", "book", "music"];
 
 const ladder = (measure: MilestoneMeasure, thresholds: number[], value: number): { reached: Milestone[]; next: Milestone | null } => {
   const reached = thresholds.filter((threshold) => value >= threshold).map((threshold) => ({ measure, threshold, value, reached: true }));

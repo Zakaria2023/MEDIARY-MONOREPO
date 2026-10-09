@@ -57,3 +57,18 @@ describe("Open Library normalization", () => {
     expect(normalizeOpenLibraryWork({ ...DOC, first_publish_year: 0 }).releaseDate).toBeNull();
   });
 });
+
+describe("Open Library comics", () => {
+  it("files a work under comics as its own medium, with the kind folded into its id", () => {
+    const comic = normalizeOpenLibraryWork(
+      { ...DOC, key: "/works/OL15331214W", title: "Watchmen", subject: ["Comic books, strips, etc.", "Superheroes", "Graphic novels"] },
+      WORK,
+      "comic",
+    );
+    expect(comic.mediaType).toBe("comic");
+    expect(comic.primaryRef.externalId).toBe("comic:OL15331214W");
+    expect(comic.primaryRef.externalUrl).toBe("https://openlibrary.org/works/OL15331214W");
+    expect(comic.details).toMatchObject({ kind: "book", pageCount: 608 });
+    expect(comic.genres.map((genre) => genre.slug)).toEqual(["graphic-novel", "action"]);
+  });
+});

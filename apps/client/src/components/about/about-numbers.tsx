@@ -25,14 +25,14 @@ export const AboutNumbers = async () => {
           </h2>
         </div>
         <p className="max-w-md text-base leading-relaxed text-muted">
-          Drawn from public catalogs of film, television, games, anime, manga, music and books, credited on the{" "}
+          Drawn from public catalogs of film, television, games, anime, manga, comics, music and books, credited on the{" "}
           <Link href="/credits" className="text-accent transition-colors hover:text-accent-hover">
             credits page
           </Link>
           . Kept fresh from each source.
         </p>
       </div>
-      <ul className="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-hairline bg-hairline sm:grid-cols-4 lg:grid-cols-7">
+      <ul className="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-hairline bg-hairline sm:grid-cols-4 lg:grid-cols-8">
         {launchMediaTypes.map((mediaType) => {
           const count = counts[mediaType] ?? 0;
           return (

@@ -87,7 +87,7 @@ export const SiteFooter = ({ user }: SiteFooterProps) => {
               Everything you watch, play and finish, in one place.
             </p>
             <p className="text-sm leading-relaxed text-muted">
-              Track anime, games, movies, TV, music, manga and books with the same
+              Track anime, games, movies, TV, music, manga, comics and books with the same
               gestures, and keep the whole story of what you have seen.
             </p>
             {!user && (

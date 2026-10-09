@@ -590,7 +590,8 @@ const detailsFor = async (
     const { id: _id, mediaUuid: _mediaUuid, ...values } = row;
     return { kind: "manga", ...values };
   }
-  if (mediaType === "book") {
+  // A comic is a book in shape: writer, pages, publisher, ISBN.
+  if (mediaType === "book" || mediaType === "comic") {
     const [row] = await db.select().from(BookDetails).where(eq(BookDetails.mediaUuid, mediaUuid));
     if (!row) {
       return null;

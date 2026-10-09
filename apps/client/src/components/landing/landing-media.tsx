@@ -11,8 +11,8 @@ const MOST_COVERS = 5;
  * shown, not told. Every medium has a card of the same design: the five
  * states as that medium says them, read from the same label map the app
  * uses, its unit and how much the catalog holds, and its most followed
- * covers fanned beside them. Two cards to a row; the seventh spans the row and
- * fans five. Every cover comes from one query.
+ * covers fanned beside them. Two cards to a row; an odd last one spans the
+ * row and fans five. Every cover comes from one query.
  */
 export const LandingMedia = async () => {
   const [counts, showcase] = await Promise.all([
@@ -27,7 +27,7 @@ export const LandingMedia = async () => {
   return (
     <section className="mx-auto flex w-full max-w-7xl flex-col gap-14 px-5 py-24 sm:px-8 sm:py-32">
       <LandingSectionHeading
-        eyebrow="Seven media"
+        eyebrow="Eight media"
         title="Every medium, in its own words."
         body="A game is played, an album is listened, a book can be a DNF. Mediary speaks each one's language and keeps them all in one history."
       />

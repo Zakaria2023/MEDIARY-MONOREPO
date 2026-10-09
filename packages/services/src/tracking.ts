@@ -124,6 +124,7 @@ const PROGRESS_TOTAL = sql<number | null>`case ${Media.mediaType}
   when 'movie' then 100
   when 'manga' then (select ${MangaDetails.chapterCount} from ${MangaDetails} where ${MangaDetails.mediaUuid} = ${Media.uuid})
   when 'book' then (select ${BookDetails.pageCount} from ${BookDetails} where ${BookDetails.mediaUuid} = ${Media.uuid})
+  when 'comic' then (select ${BookDetails.pageCount} from ${BookDetails} where ${BookDetails.mediaUuid} = ${Media.uuid})
   else null end`;
 
 /**
@@ -137,6 +138,7 @@ const PROGRESS_RELEASED = sql<number | null>`case ${Media.mediaType}
   when 'movie' then 100
   when 'manga' then (select case when ${Media.status} = 'finished' then ${MangaDetails.chapterCount} else null end from ${MangaDetails} where ${MangaDetails.mediaUuid} = ${Media.uuid})
   when 'book' then (select ${BookDetails.pageCount} from ${BookDetails} where ${BookDetails.mediaUuid} = ${Media.uuid})
+  when 'comic' then (select ${BookDetails.pageCount} from ${BookDetails} where ${BookDetails.mediaUuid} = ${Media.uuid})
   else null end`;
 
 /** When the next episode is due, for a series whose source knows. */

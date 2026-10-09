@@ -10,6 +10,7 @@ export const MEDIA_COLOR_CLASSES: Record<MediaType, string> = {
   manga: "bg-success",
   book: "bg-warning",
   podcast: "bg-status-planned",
+  comic: "bg-danger",
 };
 
 /** The same accent as text, for a number or a label in the medium's color. */
@@ -22,4 +23,5 @@ export const MEDIA_TEXT_CLASSES: Record<MediaType, string> = {
   manga: "text-success",
   book: "text-warning",
   podcast: "text-status-planned",
+  comic: "text-danger",
 };

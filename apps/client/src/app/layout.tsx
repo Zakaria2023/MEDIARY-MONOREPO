@@ -74,6 +74,7 @@ export const metadata: Metadata = {
     "tv tracker",
     "manga tracker",
     "book tracker",
+    "comic tracker",
     "reading log",
     "music diary",
     "watchlist",

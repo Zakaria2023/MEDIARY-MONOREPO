@@ -1,4 +1,4 @@
-type MonthKey = "anime" | "game" | "movie" | "tv" | "music" | "manga" | "book";
+type MonthKey = "anime" | "game" | "movie" | "tv" | "music" | "manga" | "comic" | "book";
 
 type MonthlyChartProps = {
   months: ({ month: string } & Record<MonthKey, number>)[];
@@ -11,6 +11,7 @@ const SERIES: { key: MonthKey; label: string; color: string }[] = [
   { key: "tv", label: "TV", color: "bg-pink" },
   { key: "music", label: "Music", color: "bg-primary" },
   { key: "manga", label: "Manga", color: "bg-success" },
+  { key: "comic", label: "Comics", color: "bg-danger" },
   { key: "book", label: "Books", color: "bg-warning" },
 ];
 

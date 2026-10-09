@@ -60,6 +60,13 @@ export const EXPLORE_COPY: Record<LaunchMediaType, ExploreCopy> = {
       "Discover trending and top rated manga, manhwa and light novels. Track every chapter you read on Mediary.",
     noun: "manga",
   },
+  comic: {
+    heading: "Comics",
+    intro: "Graphic novels and collected editions, the most shelved and the best loved.",
+    description:
+      "Discover the most read and highest rated comics and graphic novels. Keep a reading log and rate what you finish on Mediary.",
+    noun: "comics",
+  },
   book: {
     heading: "Books",
     intro: "The most shelved, the best loved, and this year's new titles.",

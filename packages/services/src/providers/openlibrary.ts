@@ -2,6 +2,7 @@ import { z } from "zod";
 import { MediaStatus, MediaType } from "../../../../db/enum";
 import { createThrottle, providerFetch } from "./http";
 import {
+  CatalogSeed,
   MediaProvider,
   NormalizedImage,
   NormalizedMedia,
@@ -11,6 +12,9 @@ import {
 import { OPENLIBRARY_SUBJECTS, popularityScore, toGenres } from "./vocabulary";
 
 type SearchDoc = z.infer<typeof searchDocSchema>;
+
+/** The two media this catalog supplies: a comic is a book whose subjects say so. */
+type ShelfKind = "book" | "comic";
 
 const API = "https://openlibrary.org";
 
@@ -34,6 +38,28 @@ const POPULARITY_CEILING = 20_000;
 const MIN_RATINGS = 10;
 
 const PAGE_SIZE = 20;
+
+/**
+ * A full load's page: a hundred works, most shelved first. The walk stops
+ * at 200 pages, twenty thousand works, far past where the shelves thin out.
+ */
+const CATALOG_PAGE_SIZE = 100;
+const CATALOG_PAGES = 200;
+
+/** A comic's id: the work's, with the kind folded in, so one work is never both. */
+const COMIC_PREFIX = "comic:";
+
+/**
+ * What makes a work a comic: the library headings for comics and graphic
+ * novels. Manga is its own medium from its own catalog, so it is left out.
+ */
+const COMIC_SUBJECTS =
+  '(subject:"graphic novels" OR subject:"comic books, strips, etc." OR subject:"comics & graphic novels")';
+const COMIC_QUERY = `${COMIC_SUBJECTS} -subject:manga`;
+
+/** A book search leaves comics to their own medium. */
+const NOT_COMICS =
+  '-subject:"graphic novels" -subject:"comic books, strips, etc." -subject:"comics & graphic novels"';
 
 /** The fields a search answers with; nothing else is fetched per title. */
 const FIELDS = [
@@ -84,11 +110,16 @@ const workSchema = z.object({
   description: z.union([z.string(), z.object({ value: z.string() })]).nullish(),
 });
 
-const kindOf = (mediaType: MediaType): void => {
-  if (mediaType !== "book") {
+const kindOf = (mediaType: MediaType): ShelfKind => {
+  if (mediaType !== "book" && mediaType !== "comic") {
     throw new Error(`${SOURCE_LABEL} does not supply ${mediaType} titles`);
   }
+  return mediaType;
 };
+
+/** A person's words narrowed to the medium: comics only, or books without them. */
+const shelfQuery = (shelf: ShelfKind, query: string): string =>
+  shelf === "comic" ? `${query} ${COMIC_QUERY}` : `${query} ${NOT_COMICS}`;
 
 const openLibraryFetch = async (path: string, params: Record<string, string> = {}) => {
   const query = new URLSearchParams(params);
@@ -103,14 +134,18 @@ const openLibraryFetch = async (path: string, params: Record<string, string> = {
 /** A work's id as the catalog keys it: "OL893414W", from "/works/OL893414W". */
 const workId = (key: string): string => key.replace(/^\/works\//, "");
 
+/** Mediary's external id for a work: the work's own, or "comic:" and it for a comic. */
+const externalIdOf = (shelf: ShelfKind, key: string): string =>
+  shelf === "comic" ? `${COMIC_PREFIX}${workId(key)}` : workId(key);
+
 /** A cover at the stored size, or none. */
 export const bookCoverUrl = (coverId: number | null | undefined): string | null =>
   coverId ? `${BOOK_COVER_BASE}/${coverId}-${COVER_SIZE}.jpg` : null;
 
-const toCandidate = (doc: SearchDoc): ProviderCandidate => ({
+const toCandidate = (shelf: ShelfKind, doc: SearchDoc): ProviderCandidate => ({
   provider: "openlibrary",
-  mediaType: "book",
-  externalId: workId(doc.key),
+  mediaType: shelf,
+  externalId: externalIdOf(shelf, doc.key),
   title: doc.title,
   year: doc.first_publish_year ?? null,
   overview: doc.author_name?.[0] ?? null,
@@ -124,9 +159,14 @@ const isbn13 = (doc: SearchDoc): string | null =>
 /**
  * A work in Mediary's shape, from its search record (which carries the
  * author, the counts and the subjects) and its own page (which carries
- * the description). Exported for the unit tests.
+ * the description), as a book or, for a work filed under comics, a comic.
+ * Exported for the unit tests.
  */
-export const normalizeOpenLibraryWork = (rawDoc: unknown, rawWork: unknown = null): NormalizedMedia => {
+export const normalizeOpenLibraryWork = (
+  rawDoc: unknown,
+  rawWork: unknown = null,
+  shelf: ShelfKind = "book",
+): NormalizedMedia => {
   const doc = searchDocSchema.parse(rawDoc);
   const work = rawWork === null ? null : workSchema.parse(rawWork);
   const readers = doc.readinglog_count ?? 0;
@@ -144,10 +184,10 @@ export const normalizeOpenLibraryWork = (rawDoc: unknown, rawWork: unknown = nul
   const author = doc.author_name?.slice(0, 3).join(", ") ?? null;
 
   return {
-    mediaType: "book",
+    mediaType: shelf,
     primaryRef: {
       provider: "openlibrary",
-      externalId: workId(doc.key),
+      externalId: externalIdOf(shelf, doc.key),
       externalUrl: `${API}/works/${workId(doc.key)}`,
     },
     otherRefs: [],
@@ -169,6 +209,7 @@ export const normalizeOpenLibraryWork = (rawDoc: unknown, rawWork: unknown = nul
     images,
     genres: toGenres((doc.subject ?? []).flatMap((subject) => OPENLIBRARY_SUBJECTS[subject.toLowerCase()] ?? [])),
     platforms: [],
+    // A comic is a book in shape: its writer, pages, publisher and ISBN.
     details: {
       kind: "book",
       author: author?.slice(0, 200) ?? null,
@@ -197,54 +238,97 @@ const findDoc = async (id: string): Promise<SearchDoc> => {
  * among them; "coming soon" the most shelved among this year's and next
  * year's publications.
  */
-const listRequest = (kind: ProviderListKind, page: number): { path: string; params: Record<string, string> } => {
+const listRequest = (
+  shelf: ShelfKind,
+  kind: ProviderListKind,
+  page: number,
+): { path: string; params: Record<string, string> } => {
   const year = new Date().getFullYear();
   const paged = { fields: FIELDS, limit: String(PAGE_SIZE), page: String(page) };
+  const scope = shelf === "comic" ? COMIC_QUERY : "language:eng";
+  const soon = `first_publish_year:[${year} TO ${year + 1}]`;
   switch (kind) {
     case "trending":
-      return { path: "/trending/weekly.json", params: { limit: String(PAGE_SIZE), page: String(page) } };
+      // The weekly chart cannot be narrowed to comics; theirs is the most shelved.
+      return shelf === "comic"
+        ? { path: "/search.json", params: { q: scope, sort: "readinglog", ...paged } }
+        : { path: "/trending/weekly.json", params: { limit: String(PAGE_SIZE), page: String(page) } };
     case "popular":
-      return { path: "/search.json", params: { q: "language:eng", sort: "readinglog", ...paged } };
+      return { path: "/search.json", params: { q: scope, sort: "readinglog", ...paged } };
     case "top":
-      return { path: "/search.json", params: { q: "language:eng", sort: "rating", ...paged } };
+      return { path: "/search.json", params: { q: scope, sort: "rating", ...paged } };
     case "upcoming":
-      return { path: "/search.json", params: { q: `first_publish_year:[${year} TO ${year + 1}]`, sort: "readinglog", ...paged } };
+      return {
+        path: "/search.json",
+        params: { q: shelf === "comic" ? `${COMIC_QUERY} ${soon}` : soon, sort: "readinglog", ...paged },
+      };
   }
 };
 
 /**
- * Open Library: books as works, with covers from its cover service. Open
- * data, no key; a named User-Agent and one request a second are its
+ * One page of a full load: the most shelved works, a hundred at a time,
+ * English books or comics. Null past the last page or when the shelves
+ * run out.
+ */
+const catalogShelf = async (shelf: ShelfKind, page: number): Promise<CatalogSeed[] | null> => {
+  if (page > CATALOG_PAGES) {
+    return null;
+  }
+  const data = searchSchema.parse(
+    await openLibraryFetch("/search.json", {
+      q: shelf === "comic" ? COMIC_QUERY : `language:eng ${NOT_COMICS}`,
+      sort: "readinglog",
+      fields: "key,title",
+      limit: String(CATALOG_PAGE_SIZE),
+      page: String(page),
+    }),
+  );
+  return data.docs.length === 0
+    ? null
+    : data.docs.map((doc) => ({ externalId: externalIdOf(shelf, doc.key), title: doc.title }));
+};
+
+/**
+ * Open Library: books and comics as works, with covers from its cover
+ * service. A comic is a work under the comics and graphic novel headings,
+ * its own medium with "comic:" in its id. Open data, no key; a named User-Agent and one request a second are its
  * conditions (docs/catalog-providers.md).
  */
 export const openLibraryProvider: MediaProvider = {
   provider: "openlibrary",
-  mediaTypes: ["book"],
+  mediaTypes: ["book", "comic"],
   attribution: {
     provider: "openlibrary",
     name: "Open Library",
-    text: "Book data and covers from Open Library.",
+    text: "Book and comic data and covers from Open Library.",
     url: "https://openlibrary.org/",
     logoPath: null,
   },
   isConfigured: () => true,
   search: async (mediaType, query, page = 1) => {
-    kindOf(mediaType);
+    const shelf = kindOf(mediaType);
     const data = searchSchema.parse(
-      await openLibraryFetch("/search.json", { q: query, fields: FIELDS, limit: String(PAGE_SIZE), page: String(page) }),
+      await openLibraryFetch("/search.json", {
+        q: shelfQuery(shelf, query),
+        fields: FIELDS,
+        limit: String(PAGE_SIZE),
+        page: String(page),
+      }),
     );
-    return data.docs.map(toCandidate);
+    return data.docs.map((doc) => toCandidate(shelf, doc));
   },
   getById: async (mediaType, externalId) => {
-    kindOf(mediaType);
-    const [doc, work] = await Promise.all([findDoc(externalId), openLibraryFetch(`/works/${externalId}.json`)]);
-    return normalizeOpenLibraryWork(doc, work);
+    const shelf = kindOf(mediaType);
+    const id = externalId.replace(COMIC_PREFIX, "");
+    const [doc, work] = await Promise.all([findDoc(id), openLibraryFetch(`/works/${id}.json`)]);
+    return normalizeOpenLibraryWork(doc, work, shelf);
   },
   getList: async (mediaType, kind, page = 1) => {
-    kindOf(mediaType);
-    const request = listRequest(kind, page);
+    const shelf = kindOf(mediaType);
+    const request = listRequest(shelf, kind, page);
     const raw = await openLibraryFetch(request.path, request.params);
-    const docs = kind === "trending" ? trendingSchema.parse(raw).works : searchSchema.parse(raw).docs;
-    return docs.map(toCandidate);
+    const docs = request.path.startsWith("/trending") ? trendingSchema.parse(raw).works : searchSchema.parse(raw).docs;
+    return docs.map((doc) => toCandidate(shelf, doc));
   },
+  catalogPage: async (mediaType, page) => catalogShelf(kindOf(mediaType), page),
 };

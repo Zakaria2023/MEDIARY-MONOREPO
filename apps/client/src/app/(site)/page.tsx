@@ -9,7 +9,7 @@ import { pageMetadata } from "@/lib/seo";
 import { faqNode, graph } from "@/lib/structured-data";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Track anime, games, movies, TV, music, manga and books",
+  title: "Track anime, games, movies, TV, music, manga, comics and books",
   description:
     "One free profile for everything you watch, play, read and hear: track progress, keep a diary, see your stats, import your lists and compare tastes with friends.",
   path: "/",

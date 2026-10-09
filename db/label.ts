@@ -54,6 +54,7 @@ export const MEDIA_TYPE_LABELS: Record<MediaType, string> = {
   book: "Book",
   music: "Music",
   podcast: "Podcast",
+  comic: "Comic",
 };
 
 /** The plural, for a tab or a section heading. */
@@ -66,6 +67,7 @@ export const MEDIA_TYPE_PLURAL_LABELS: Record<MediaType, string> = {
   book: "Books",
   music: "Music",
   podcast: "Podcasts",
+  comic: "Comics",
 };
 
 export const MEDIA_STATUS_LABELS: Record<MediaStatus, string> = {
@@ -196,6 +198,13 @@ export const TRACKING_STATUS_LABELS: Record<
     dropped: "Dropped",
     planned: "Want to Hear",
   },
+  comic: {
+    in_progress: "Reading",
+    completed: "Read",
+    paused: "On Hold",
+    dropped: "Dropped",
+    planned: "Want to Read",
+  },
 };
 
 /** The status label a medium-agnostic screen (the admin, a stats total) uses. */
@@ -232,6 +241,7 @@ export const DEFAULT_PROGRESS_UNIT: Record<MediaType, ProgressUnit> = {
   book: "pages",
   music: "plays",
   podcast: "episodes",
+  comic: "pages",
 };
 
 /**

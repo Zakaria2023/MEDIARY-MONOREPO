@@ -18,7 +18,7 @@ import { PosterWall } from "@/components/landing/poster-wall";
 
 /**
  * THE LANDING PAGE, what a visitor sees at the root. In reading order: the
- * promise over a wall of real posters, the seven media in their own words,
+ * promise over a wall of real posters, the eight media in their own words,
  * the product shown with real titles, moving in, the privacy promises, what
  * is trending now (the catalog a crawler follows), the questions, and the
  * invitation. The words of every section are in the first bytes; the parts

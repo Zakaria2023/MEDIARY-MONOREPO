@@ -82,6 +82,7 @@ const DEFAULT_UNIT: Record<MediaType, ProgressUnit> = {
   book: "pages",
   music: "plays",
   podcast: "episodes",
+  comic: "pages",
 };
 
 const normalizeWord = (value: string): string => value.toLowerCase().replace(/[^a-z]/g, "");

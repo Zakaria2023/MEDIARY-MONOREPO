@@ -34,7 +34,7 @@ export const LandingDiscover = async () => {
           body="Say what you're in the mood for, in your own words. The guide searches every medium in Mediary, leaves out what you've already seen, and tells you why each pick fits."
           points={[
             "Knows what you loved from your library",
-            "Anime, movies, shows, games, music, manga and books",
+            "Anime, movies, shows, games, music, manga, comics and books",
             "Every pick opens in Mediary, ready to add",
           ]}
           href="/ask"

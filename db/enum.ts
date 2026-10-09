@@ -62,6 +62,7 @@ export const mediaTypes = [
   "book",
   "music",
   "podcast",
+  "comic",
 ] as const satisfies readonly string[];
 
 export type MediaType = (typeof mediaTypes)[number];
@@ -74,6 +75,7 @@ export const launchMediaTypes = [
   "tv",
   "music",
   "manga",
+  "comic",
   "book",
 ] as const satisfies readonly MediaType[];
 

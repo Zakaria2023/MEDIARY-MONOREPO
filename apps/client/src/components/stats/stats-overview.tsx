@@ -78,6 +78,7 @@ export const StatsOverview = async ({ userUuid }: StatsOverviewProps) => {
             tv: entry.byType.tv ?? 0,
             music: entry.byType.music ?? 0,
             manga: entry.byType.manga ?? 0,
+            comic: entry.byType.comic ?? 0,
             book: entry.byType.book ?? 0,
           }))}
         />

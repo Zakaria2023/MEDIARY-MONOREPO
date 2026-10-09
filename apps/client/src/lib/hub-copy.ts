@@ -28,7 +28,7 @@ export type HubCopy = {
  * EACH MEDIUM'S HUB, in its own words. The rails and the facet are what make
  * one hub different from the next: anime is lived by season, games by
  * platform, movies by decade, TV by whether it is still airing, music by
- * the kind of record, manga by format, books by decade. The design around
+ * the kind of record, manga by format, comics and books by decade. The design around
  * them is shared.
  */
 export const HUB_COPY: Record<LaunchMediaType, HubCopy> = {
@@ -109,6 +109,19 @@ export const HUB_COPY: Record<LaunchMediaType, HubCopy> = {
       { heading: "Highest rated", reason: "The best, by community score.", sort: "top" },
     ],
     mine: "Your manga",
+  },
+  comic: {
+    heading: "Comics",
+    intro: "Graphic novels and collected editions, the most shelved and the best loved.",
+    description:
+      "Discover comics and graphic novels by decade and genre: the most read, the highest rated, and new collections. Keep a reading log and rate what you finish on Mediary.",
+    noun: "comics",
+    facet: { kind: "decade", label: "Decade" },
+    rails: [
+      { heading: "Most shelved", reason: "What readers are picking up.", sort: "trending" },
+      { heading: "Highest rated", reason: "The best loved, by community score.", sort: "top" },
+    ],
+    mine: "Your comics",
   },
   book: {
     heading: "Books",

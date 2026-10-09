@@ -13,7 +13,7 @@ export const LANDING_FAQ: LandingQuestion[] = [
   {
     question: "What can I track on Mediary?",
     answer:
-      "Anime, games, movies, TV shows, music, manga and books, all in one library. Each medium keeps its own words and its own progress: episodes, hours, chapters, pages or plays.",
+      "Anime, games, movies, TV shows, music, manga, comics and books, all in one library. Each medium keeps its own words and its own progress: episodes, hours, chapters, pages or plays.",
   },
   {
     question: "Is Mediary free?",
@@ -47,6 +47,6 @@ export const LANDING_FAQ: LandingQuestion[] = [
   {
     question: "Where does the catalog come from?",
     answer:
-      "From public catalogs of film, television, games, anime, manga, music and books, credited on the credits page. Mediary does not host or stream any of the works it lists.",
+      "From public catalogs of film, television, games, anime, manga, comics, music and books, credited on the credits page. Mediary does not host or stream any of the works it lists.",
   },
 ];

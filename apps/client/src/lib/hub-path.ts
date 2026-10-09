@@ -12,6 +12,7 @@ export const HUB_SLUGS: Record<LaunchMediaType, string> = {
   tv: "tv",
   music: "music",
   manga: "manga",
+  comic: "comics",
   book: "books",
 };
 
