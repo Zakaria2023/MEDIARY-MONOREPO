@@ -1,10 +1,10 @@
-import { listCatalog, listCatalogShowcase } from "services";
 import { LaunchMediaType, launchMediaTypes } from "@/db/enum";
 import { CatalogEmptyState } from "@/components/catalog/catalog-empty-state";
 import { TitleGrid } from "@/components/catalog/title-grid";
 import { TitleRail } from "@/components/catalog/title-rail";
 import { HUB_COPY } from "@/lib/hub-copy";
 import { hubPath } from "@/lib/hub-path";
+import { listCatalog, listCatalogShowcase } from "@/lib/server/catalog-cache";
 
 const RAIL_SIZE = 16;
 

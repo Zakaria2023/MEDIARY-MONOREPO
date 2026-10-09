@@ -1,7 +1,7 @@
-import { listCatalogShowcase } from "services";
 import { Poster } from "ui";
 import { launchMediaTypes } from "@/db/enum";
 import { dealRows } from "@/lib/deal-rows";
+import { listCatalogShowcase } from "@/lib/server/catalog-cache";
 
 const PER_MEDIUM = 9;
 const ROWS = 3;

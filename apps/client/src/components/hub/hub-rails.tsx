@@ -1,7 +1,7 @@
-import { listCatalog } from "services";
 import { LaunchMediaType } from "@/db/enum";
 import { TitleRail } from "@/components/catalog/title-rail";
 import { HUB_COPY } from "@/lib/hub-copy";
+import { listCatalog } from "@/lib/server/catalog-cache";
 
 type HubRailsProps = {
   mediaType: LaunchMediaType;

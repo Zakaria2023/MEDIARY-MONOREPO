@@ -1,11 +1,11 @@
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { countCatalogByType } from "services";
 import { formatCount } from "utils";
 import { launchMediaTypes } from "@/db/enum";
 import { HUB_COPY } from "@/lib/hub-copy";
 import { hubPath } from "@/lib/hub-path";
 import { MEDIA_COLOR_CLASSES } from "@/lib/media-colors";
+import { countCatalogByType } from "@/lib/server/catalog-cache";
 
 /**
  * THE WAY INTO EVERY MEDIUM from the home: one tile per hub with its

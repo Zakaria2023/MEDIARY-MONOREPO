@@ -1,9 +1,9 @@
 import { Mic } from "lucide-react";
 import Link from "next/link";
-import { listArtists } from "services";
 import { Pagination } from "ui";
 import { ArtistCard } from "@/components/artists/artist-card";
 import { artistsPath } from "@/lib/artist-path";
+import { listArtists } from "@/lib/server/catalog-cache";
 
 type ArtistsGridProps = {
   query: string;

@@ -1,5 +1,5 @@
-import { countCatalogByType } from "services";
 import { formatCount } from "utils";
+import { countCatalogByType } from "@/lib/server/catalog-cache";
 
 /**
  * The line under the hero's actions: how big the catalog really is, read

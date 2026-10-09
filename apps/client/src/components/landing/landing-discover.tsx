@@ -1,9 +1,9 @@
 import { AudioLines, Sparkles } from "lucide-react";
-import { listCatalogShowcase } from "services";
 import { AskDemo } from "@/components/landing/ask-demo";
 import { LandingDiscoverCard } from "@/components/landing/landing-discover-card";
 import { LandingSectionHeading } from "@/components/landing/landing-section-heading";
 import { ListenDemo } from "@/components/landing/listen-demo";
+import { listCatalogShowcase } from "@/lib/server/catalog-cache";
 
 const PICKS = 3;
 

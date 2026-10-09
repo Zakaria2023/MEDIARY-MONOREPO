@@ -1,4 +1,3 @@
-import { listCatalog } from "services";
 import { launchMediaTypes } from "@/db/enum";
 import { CatalogEmptyState } from "@/components/catalog/catalog-empty-state";
 import { TitleGrid } from "@/components/catalog/title-grid";
@@ -7,6 +6,7 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { EXPLORE_COPY } from "@/lib/explore-copy";
 import { hubPath } from "@/lib/hub-path";
 import { graph, itemListNode } from "@/lib/structured-data";
+import { listCatalog } from "@/lib/server/catalog-cache";
 
 const RAIL_SIZE = 16;
 

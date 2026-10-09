@@ -1,4 +1,4 @@
-import { CatalogSort, listCatalog } from "services";
+import { CatalogSort } from "services";
 import { Pagination } from "ui";
 import { filterHref } from "utils";
 import { LaunchMediaType } from "@/db/enum";
@@ -7,6 +7,7 @@ import { TitleGrid } from "@/components/catalog/title-grid";
 import { JsonLd } from "@/components/seo/json-ld";
 import { EXPLORE_COPY, SORT_LABELS } from "@/lib/explore-copy";
 import { graph, itemListNode } from "@/lib/structured-data";
+import { listCatalog } from "@/lib/server/catalog-cache";
 
 type ExploreGridProps = {
   mediaType: LaunchMediaType;

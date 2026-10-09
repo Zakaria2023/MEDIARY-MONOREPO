@@ -1,7 +1,7 @@
-import { countCatalogByType, listCatalogShowcase } from "services";
 import { launchMediaTypes } from "@/db/enum";
 import { LandingMediaCard } from "@/components/landing/landing-media-card";
 import { LandingSectionHeading } from "@/components/landing/landing-section-heading";
+import { countCatalogByType, listCatalogShowcase } from "@/lib/server/catalog-cache";
 
 /** The most covers any card fans: the full-width last one. */
 const MOST_COVERS = 5;

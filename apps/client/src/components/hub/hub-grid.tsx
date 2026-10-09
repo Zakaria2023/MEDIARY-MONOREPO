@@ -1,4 +1,3 @@
-import { listCatalog } from "services";
 import { Pagination } from "ui";
 import { CatalogEmptyState } from "@/components/catalog/catalog-empty-state";
 import { TitleGrid } from "@/components/catalog/title-grid";
@@ -8,6 +7,7 @@ import { HUB_COPY } from "@/lib/hub-copy";
 import { hubPath } from "@/lib/hub-path";
 import { hubFacet, hubHref, HubQuery, hubYears } from "@/lib/hub-query";
 import { graph, itemListNode } from "@/lib/structured-data";
+import { listCatalog } from "@/lib/server/catalog-cache";
 
 type HubGridProps = {
   query: HubQuery;

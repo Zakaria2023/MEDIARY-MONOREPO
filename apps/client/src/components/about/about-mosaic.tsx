@@ -1,6 +1,6 @@
-import { listCatalogShowcase } from "services";
 import { Poster } from "ui";
 import { launchMediaTypes } from "@/db/enum";
+import { listCatalogShowcase } from "@/lib/server/catalog-cache";
 
 /** Each column's vertical offset, so the mosaic staggers like a shelf. */
 const COLUMN_OFFSETS = ["", "translate-y-10", "-translate-y-6"];

@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { findArtistBySlug, listArtists, listCatalogGenres, listHubFacetOptions } from "services";
+import { findArtistBySlug, listCatalogGenres } from "services";
 import { catalogSorts } from "validators";
 import { artistsPath } from "@/lib/artist-path";
 import { SORT_LABELS } from "@/lib/explore-copy";
 import { HUB_COPY } from "@/lib/hub-copy";
 import { hubHref, HubQuery, recentYears, SCORE_STEPS } from "@/lib/hub-query";
+import { listArtists, listHubFacetOptions } from "@/lib/server/catalog-cache";
 
 type HubFilterBarProps = {
   query: HubQuery;

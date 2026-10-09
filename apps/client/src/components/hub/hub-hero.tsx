@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { countCatalogByType } from "services";
 import { formatCount } from "utils";
 import { LaunchMediaType, launchMediaTypes } from "@/db/enum";
 import { MEDIA_TYPE_PLURAL_LABELS } from "@/db/label";
 import { HUB_COPY } from "@/lib/hub-copy";
 import { hubPath } from "@/lib/hub-path";
 import { MEDIA_COLOR_CLASSES, MEDIA_TEXT_CLASSES } from "@/lib/media-colors";
+import { countCatalogByType } from "@/lib/server/catalog-cache";
 
 type HubHeroProps = {
   mediaType: LaunchMediaType;

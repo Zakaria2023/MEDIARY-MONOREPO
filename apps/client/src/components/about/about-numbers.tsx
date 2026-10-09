@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { countCatalogByType } from "services";
 import { formatCount } from "utils";
 import { launchMediaTypes } from "@/db/enum";
 import { HUB_COPY } from "@/lib/hub-copy";
 import { hubPath } from "@/lib/hub-path";
 import { MEDIA_TEXT_CLASSES } from "@/lib/media-colors";
+import { countCatalogByType } from "@/lib/server/catalog-cache";
 
 /**
  * THE CATALOG IN NUMBERS, read live: the whole, then each medium in its own

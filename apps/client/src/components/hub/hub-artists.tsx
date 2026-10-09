@@ -1,8 +1,8 @@
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { listArtists } from "services";
 import { ArtistCard } from "@/components/artists/artist-card";
 import { artistsPath } from "@/lib/artist-path";
+import { listArtists } from "@/lib/server/catalog-cache";
 
 const SHOWN = 12;
 const SIZES = "(min-width: 640px) 152px, 120px";

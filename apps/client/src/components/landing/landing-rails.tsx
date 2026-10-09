@@ -1,7 +1,7 @@
-import { listCatalogShowcase } from "services";
 import { TitleRail } from "@/components/catalog/title-rail";
 import { launchMediaTypes } from "@/db/enum";
 import { dealRows } from "@/lib/deal-rows";
+import { listCatalogShowcase } from "@/lib/server/catalog-cache";
 
 const PER_MEDIUM = 4;
 

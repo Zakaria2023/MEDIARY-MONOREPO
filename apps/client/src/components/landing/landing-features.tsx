@@ -1,4 +1,3 @@
-import { listCatalogShowcase } from "services";
 import { launchMediaTypes } from "@/db/enum";
 import { DiaryDemo } from "@/components/landing/diary-demo";
 import { LandingFeatureRow } from "@/components/landing/landing-feature-row";
@@ -7,6 +6,7 @@ import { MatchDemo } from "@/components/landing/match-demo";
 import { StatsDemo } from "@/components/landing/stats-demo";
 import { TrackDemo } from "@/components/landing/track-demo";
 import { firstWithCover } from "@/lib/first-with-cover";
+import { listCatalogShowcase } from "@/lib/server/catalog-cache";
 
 /**
  * WHAT IT IS LIKE TO USE: four features, each beside a still of the

@@ -1,6 +1,6 @@
-import { listRelatedTitles } from "services";
 import { MediaType } from "@/db/enum";
 import { TitleRail } from "@/components/catalog/title-rail";
+import { listRelatedTitles } from "@/lib/server/catalog-cache";
 
 type RelatedTitlesProps = {
   mediaUuid: string;
