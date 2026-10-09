@@ -29,10 +29,11 @@ export const TitleCard = ({ title, showType = false, sizes, priority = false }: 
       aria-label={title.canonicalTitle}
       className="absolute inset-0 z-10 rounded-card focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
     />
-    <div className="relative transition-transform duration-200 ease-out group-hover:-translate-y-0.5">
-      <div className="absolute end-2 top-2 z-20">
-        <QuickTrack mediaUuid={title.uuid} titleName={title.canonicalTitle} />
-      </div>
+    {/* On the card, not inside the poster: the poster's hover lift is a transform, which would trap this under the link. */}
+    <div className="absolute end-2 top-2 z-20">
+      <QuickTrack mediaUuid={title.uuid} titleName={title.canonicalTitle} />
+    </div>
+    <div className="transition-transform duration-200 ease-out group-hover:-translate-y-0.5">
       <Poster
         src={title.coverUrl}
         alt={title.canonicalTitle}
