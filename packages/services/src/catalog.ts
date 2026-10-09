@@ -213,7 +213,7 @@ export const SITEMAP_PART_SIZE = 45000;
 const today = (): string => new Date().toISOString().slice(0, 10);
 
 /** `%` and `_` typed into a search box are text, not wildcards. */
-const escapeLike = (value: string): string => value.replace(/[\\%_]/g, (char) => `\\${char}`);
+export const escapeLike = (value: string): string => value.replace(/[\\%_]/g, (char) => `\\${char}`);
 
 /** Adult titles never appear on the public site. */
 const isPublic = eq(Media.adult, false);

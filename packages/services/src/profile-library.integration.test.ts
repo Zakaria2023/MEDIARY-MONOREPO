@@ -7,7 +7,7 @@ import { UserSettings } from "../../../db/schema/user-settings";
 import { Users } from "../../../db/schema/users";
 import { followUser } from "./follows";
 import { listProfileFavorites } from "./public-profile";
-import { getLibraryCountsFor, listLibraryFor, saveEntry } from "./tracking";
+import { getLibraryCountsFor, listLibrary, listLibraryFor, saveEntry } from "./tracking";
 
 type Fixture = {
   owner: string;
@@ -119,5 +119,19 @@ describe("someone's library as a viewer may see it", () => {
       (await listLibraryFor({ ownerUuid: fixture.owner, relation }, {})).items.map((item) => item.entry.notes);
     expect(await notesFor("owner")).toEqual(["Only mine to read"]);
     expect(await notesFor("stranger")).toEqual([null]);
+  });
+
+  it("narrows the owner's library by a name in part, by hearts and by a score floor", async () => {
+    await saveEntry(fixture.owner, { ...favorite(fixture.open, null), score: 9 });
+    await saveEntry(fixture.owner, { ...entry(fixture.ours, null), score: 6 });
+    await saveEntry(fixture.owner, { ...entry(fixture.secret, null), score: 8 });
+
+    const titles = async (filters: { search?: string; favoritesOnly?: boolean; minScore?: number }) =>
+      (await listLibrary(fixture.owner, { sort: "title", ...filters })).items.map((item) => item.title.canonicalTitle);
+    expect(await titles({ search: "ARR" })).toEqual(["Arrival"]);
+    expect(await titles({ search: "100%" })).toEqual([]);
+    expect(await titles({ favoritesOnly: true })).toEqual(["Arrival"]);
+    expect(await titles({ minScore: 8 })).toEqual(["Arrival", "Cars"]);
+    expect(await titles({ search: "a", minScore: 8 })).toEqual(["Arrival", "Cars"]);
   });
 });

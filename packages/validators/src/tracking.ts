@@ -85,6 +85,19 @@ export const parseLibrarySort = (value: unknown): LibrarySortParam => {
   return parsed.success ? parsed.data : "updated";
 };
 
+/** The lowest score the library filter offers and the highest. */
+export const LIBRARY_MIN_SCORES = [6, 7, 8, 9] as const;
+
+/** A library score floor from the URL: one of the offered ones, or none. */
+export const parseLibraryMinScore = (value: unknown): number | undefined => {
+  const score = Number(value);
+  return (LIBRARY_MIN_SCORES as readonly number[]).includes(score) ? score : undefined;
+};
+
+/** The library's own search from the URL: trimmed, capped, or none. */
+export const parseLibrarySearch = (value: unknown): string =>
+  typeof value === "string" ? value.trim().slice(0, 100) : "";
+
 /** A library layout from the URL, falling back to rows. */
 export const parseLibraryView = (value: unknown): LibraryViewParam => {
   const parsed = z.enum(libraryViews).safeParse(value);

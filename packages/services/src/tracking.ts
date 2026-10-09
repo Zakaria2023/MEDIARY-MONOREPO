@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, SQL, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, SQL, sql } from "drizzle-orm";
 import { paginate, PaginatedResult } from "utils";
 import { ProgressTickInput, UpsertEntryInput } from "validators";
 import { db } from "../../../db";
@@ -6,12 +6,14 @@ import { MediaType, ProgressUnit, TrackingStatus } from "../../../db/enum";
 import { DEFAULT_PROGRESS_UNIT } from "../../../db/label";
 import { AnimeDetails, BookDetails, MangaDetails, TvDetails } from "../../../db/schema/media-details";
 import { Media, SelectMedia } from "../../../db/schema/media";
+import { MediaTitles } from "../../../db/schema/media-titles";
 import { GamePlatforms, Platforms, SelectPlatforms } from "../../../db/schema/platforms";
 import { ProgressEvents } from "../../../db/schema/progress-events";
 import { SelectUserMedia, UserMedia } from "../../../db/schema/user-media";
 import { UserSettings } from "../../../db/schema/user-settings";
 import { ActivityPrefs } from "../../../db/types";
 import { recordActivity } from "./activities";
+import { escapeLike } from "./catalog";
 import { isUniqueViolation } from "./db-result";
 import { NotFoundError, ValidationError } from "./errors";
 import { ViewerRelation } from "./visibility";
@@ -91,6 +93,11 @@ export type LibrarySort = "updated" | "added" | "title" | "score";
 export type ListLibraryParams = {
   mediaType?: MediaType;
   status?: TrackingStatus;
+  /** Any name the title goes by, in part. */
+  search?: string;
+  favoritesOnly?: boolean;
+  /** The member's own score, this or higher. */
+  minScore?: number;
   sort: LibrarySort;
   page?: number | string;
   pageSize?: number;
@@ -503,12 +510,18 @@ export const getTitleTracking = async (
 /** One page of a user's library, filtered by medium and status. */
 export const listLibrary = async (
   userUuid: string,
-  { mediaType, status, sort, page, pageSize = LIBRARY_PAGE_SIZE }: ListLibraryParams,
+  { mediaType, status, search, favoritesOnly, minScore, sort, page, pageSize = LIBRARY_PAGE_SIZE }: ListLibraryParams,
 ): Promise<PaginatedResult<LibraryItem>> => {
+  const words = search?.trim();
   const where = and(
     eq(UserMedia.userUuid, userUuid),
     mediaType ? eq(Media.mediaType, mediaType) : undefined,
     status ? eq(UserMedia.status, status) : undefined,
+    words
+      ? sql`(${Media.canonicalTitle} ilike ${`%${escapeLike(words)}%`} or exists (select 1 from ${MediaTitles} where ${MediaTitles.mediaUuid} = ${Media.uuid} and ${MediaTitles.title} ilike ${`%${escapeLike(words)}%`}))`
+      : undefined,
+    favoritesOnly ? eq(UserMedia.favorite, true) : undefined,
+    minScore !== undefined ? gte(UserMedia.score, minScore) : undefined,
   );
 
   return paginate({ page, pageSize }, async ({ limit, offset }) => {

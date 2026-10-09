@@ -4,6 +4,8 @@ import {
   LibrarySortParam,
   LibraryViewParam,
   parseLaunchMediaType,
+  parseLibraryMinScore,
+  parseLibrarySearch,
   parseLibrarySort,
   parseLibraryView,
   parseTrackingStatus,
@@ -14,6 +16,9 @@ import { LaunchMediaType, TrackingStatus } from "@/db/enum";
 export type LibraryQuery = {
   mediaType: LaunchMediaType | undefined;
   status: TrackingStatus | undefined;
+  search: string;
+  favorites: boolean;
+  minScore: number | undefined;
   sort: LibrarySortParam;
   view: LibraryViewParam;
   page: number;
@@ -32,6 +37,9 @@ export const libraryPath = (mediaType: LaunchMediaType | undefined): string =>
 export const libraryHref = (query: LibraryQuery): string =>
   filterHref(libraryPath(query.mediaType), {
     status: query.status,
+    q: query.search || undefined,
+    fav: query.favorites ? "1" : undefined,
+    min: query.minScore,
     sort: query.sort === "updated" ? undefined : query.sort,
     view: query.view === "rows" ? undefined : query.view,
     page: query.page,
@@ -41,6 +49,9 @@ export const libraryHref = (query: LibraryQuery): string =>
 export const parseLibraryQuery = (type: string | undefined, params: SearchParams): LibraryQuery => ({
   mediaType: parseLaunchMediaType(type),
   status: parseTrackingStatus(firstParam(params.status)),
+  search: parseLibrarySearch(firstParam(params.q)),
+  favorites: firstParam(params.fav) === "1",
+  minScore: parseLibraryMinScore(firstParam(params.min)),
   sort: parseLibrarySort(firstParam(params.sort)),
   view: parseLibraryView(firstParam(params.view)),
   page: Number(firstParam(params.page)) || 1,

@@ -21,12 +21,28 @@ export const LibraryList = async ({ userUuid, query }: LibraryListProps) => {
   const result = await listLibrary(userUuid, {
     mediaType: query.mediaType,
     status: query.status,
+    search: query.search,
+    favoritesOnly: query.favorites,
+    minScore: query.minScore,
     sort: query.sort,
     page: query.page,
   });
 
   if (result.total === 0) {
     const noun = query.mediaType ? MEDIA_TYPE_PLURAL_LABELS[query.mediaType].toLowerCase() : "titles";
+    if (query.search || query.favorites || query.minScore !== undefined) {
+      return (
+        <CatalogEmptyState
+          heading="Nothing matches"
+          body={
+            query.search
+              ? `None of your ${noun} is called “${query.search}”${query.favorites || query.minScore ? " with these filters" : ""}.`
+              : `None of your ${noun} fit these filters.`
+          }
+          action={{ label: "Clear the filters", href: libraryHref({ ...query, search: "", favorites: false, minScore: undefined, page: 1 }) }}
+        />
+      );
+    }
     return query.status ? (
       <CatalogEmptyState
         heading="Nothing with this status"

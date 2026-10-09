@@ -1,5 +1,6 @@
 import { AsyncSection } from "ui";
 import { LibraryControls } from "@/components/library/library-controls";
+import { LibraryFilters } from "@/components/library/library-filters";
 import { LibraryList } from "@/components/library/library-list";
 import { LibraryListSkeleton } from "@/components/library/library-list-skeleton";
 import { LibraryTabs } from "@/components/library/library-tabs";
@@ -24,7 +25,16 @@ export const LibraryView = async ({ query }: LibraryViewProps) => {
   if (!user) {
     return null;
   }
-  const listKey = [query.mediaType, query.status, query.sort, query.view, query.page].join("|");
+  const listKey = [
+    query.mediaType,
+    query.status,
+    query.search,
+    query.favorites,
+    query.minScore,
+    query.sort,
+    query.view,
+    query.page,
+  ].join("|");
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-8 sm:px-8 sm:py-10">
@@ -36,6 +46,7 @@ export const LibraryView = async ({ query }: LibraryViewProps) => {
       <AsyncSection reloadKey={`tabs-${query.mediaType ?? "all"}`} skeleton={<LibraryTabsSkeleton />}>
         <LibraryTabs userUuid={user.uuid} query={query} />
       </AsyncSection>
+      <LibraryFilters query={query} />
       <LibraryControls query={query} />
       <AsyncSection reloadKey={listKey} skeleton={<LibraryListSkeleton view={query.view} />}>
         <LibraryList userUuid={user.uuid} query={query} />
