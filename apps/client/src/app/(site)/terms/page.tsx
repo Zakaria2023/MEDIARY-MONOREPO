@@ -4,7 +4,7 @@ import { LegalPage } from "@/components/shared/legal-page";
 import { pageMetadata } from "@/lib/seo";
 import { SUPPORT_EMAIL } from "@/lib/support-email";
 
-const UPDATED = "7 October 2026";
+const UPDATED = "9 October 2026";
 
 export const metadata: Metadata = pageMetadata({
   title: "Terms of use",
@@ -51,7 +51,7 @@ const TermsPage = () => (
         <li>spoilers in a review without marking it as containing spoilers.</li>
       </ul>
       <p>
-        Anyone can report what breaks these rules. Staff may remove it, and may suspend an account that keeps breaking them. If you think a
+        The <Link href="/guidelines">community guidelines</Link> say the same in more detail. Anyone can report what breaks these rules. Staff may remove it, and may suspend an account that keeps breaking them. If you think a
         decision was wrong, write to <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
       </p>
     </section>

@@ -534,7 +534,7 @@ One or two accents per screen. The spectrum belongs to the logo and the five gra
 | `/`                     | The landing page when signed out (`components/landing/`, its questions also sent as `FAQPage`), the home when signed in (`MemberHome`) |
 | `/explore`              | Cross-media discovery hub                   |
 | `/about`                | What Mediary is, why, its rules, the catalog in live numbers (`AboutPage` structured data) |
-| `/terms`, `/privacy`, `/support`, `/credits` | The plain-words legal pages and the one page that names the catalog sources; the address people write to is `SUPPORT_EMAIL`, falling back to `support@` the site's domain |
+| `/terms`, `/guidelines`, `/privacy`, `/support`, `/credits` | The plain-words legal pages and the one page that names the catalog sources; the address people write to is `SUPPORT_EMAIL`, falling back to `support@` the site's domain |
 | `/anime`, `/games`, `/movies`, `/tv`, `/music`, `/manga`, `/comics`, `/books` | One medium's hub: its own design, rails, facet filter and the member's own titles with statuses as filters (`app/(site)/[type]/page.tsx`, slugs in `src/lib/hub-path.ts`) |
 | `/explore/[type]`       | Permanent redirect to the medium's hub      |
 | `/artists`, `/artists/[slug]` | Every music artist, then one artist's records by kind; each record's page lists its songs |

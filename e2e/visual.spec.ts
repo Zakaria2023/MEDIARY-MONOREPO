@@ -81,7 +81,7 @@ const sectionWith = (page: Page, heading: string) =>
 const fileFor = (prefix: string, heading: string) => `${prefix}-${heading.split(" ")[0]?.toLowerCase() ?? "section"}.png`;
 
 test.describe("pages", () => {
-  for (const path of ["/terms", "/privacy", "/support"]) {
+  for (const path of ["/terms", "/guidelines", "/privacy", "/support"]) {
     test(`${path} looks as designed`, async ({ page }) => {
       await open(page, path);
       await shoot(page, page.locator("main"), `${path.slice(1)}.png`);

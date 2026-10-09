@@ -95,7 +95,7 @@ test("the about page says what Mediary is, with the catalog in numbers", async (
 });
 
 test("the pages every site must have exist and name the product, not a vendor", async ({ request }) => {
-  for (const path of ["/about", "/terms", "/privacy", "/support", "/credits"]) {
+  for (const path of ["/about", "/terms", "/guidelines", "/privacy", "/support", "/credits"]) {
     const response = await request.get(path);
     expect(response.status(), path).toBe(200);
     const html = await response.text();

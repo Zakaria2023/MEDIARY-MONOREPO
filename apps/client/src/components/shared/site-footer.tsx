@@ -58,6 +58,7 @@ const ABOUT_COLUMN: FooterColumn = {
     { label: "About Mediary", href: "/about" },
     { label: "Credits", href: "/credits" },
     { label: "Terms", href: "/terms" },
+    { label: "Guidelines", href: "/guidelines" },
     { label: "Privacy", href: "/privacy" },
     { label: "Support", href: "/support" },
   ],
