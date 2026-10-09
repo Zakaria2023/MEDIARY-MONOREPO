@@ -2,9 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { KeyboardEvent, startTransition, useActionState, useEffect, useState } from "react";
-import { CatalogCard } from "services";
+import { ArtistCard, CatalogCard } from "services";
 import { useDebouncedCallback, useFocusTrap } from "ui";
 import { quickSearchAction } from "@/app/(site)/search/actions";
+import { artistPath } from "@/lib/artist-path";
 import { titlePath } from "@/lib/title-path";
 
 const RECENT_KEY = "mediary:recent-searches";
@@ -42,8 +43,8 @@ const isTyping = (target: EventTarget | null): boolean =>
 /**
  * THE HEADER SEARCH. Opens on a click, on "/" or on Cmd/Ctrl+K; answers as
  * the visitor types, debounced, from the local catalog; arrows move through
- * the results, Enter opens the highlighted title or, with none highlighted,
- * the full results page. Recent queries are kept in this browser only.
+ * the artists, then the titles, Enter opens the highlighted one or, with
+ * none highlighted, the full results page. Recent queries are kept in this browser only.
  */
 export const useSearchPalette = () => {
   const router = useRouter();
@@ -54,6 +55,7 @@ export const useSearchPalette = () => {
   const [state, dispatch, isPending] = useActionState(quickSearchAction, {
     query: "",
     results: [],
+    artists: [],
   });
   const panelRef = useFocusTrap<HTMLDivElement>(open);
 
@@ -66,6 +68,8 @@ export const useSearchPalette = () => {
   const trimmed = query.trim();
   const showResults = trimmed.length >= MIN_QUERY_LENGTH;
   const results = showResults ? state.results : [];
+  const artists = showResults ? state.artists : [];
+  const itemCount = results.length + artists.length;
 
   const openPalette = () => {
     setQuery("");
@@ -134,20 +138,31 @@ export const useSearchPalette = () => {
     router.push(titlePath(title));
   };
 
+  const goToArtist = (artist: ArtistCard) => {
+    if (trimmed.length >= MIN_QUERY_LENGTH) {
+      remember(trimmed);
+    }
+    setOpen(false);
+    router.push(artistPath(artist.slug));
+  };
+
   const onInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Escape") {
       setOpen(false);
     } else if (event.key === "ArrowDown") {
       event.preventDefault();
-      setActiveIndex((index) => Math.min(results.length - 1, index + 1));
+      setActiveIndex((index) => Math.min(itemCount - 1, index + 1));
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
       setActiveIndex((index) => Math.max(-1, index - 1));
     } else if (event.key === "Enter") {
       event.preventDefault();
-      const highlighted = results[activeIndex];
-      if (highlighted) {
-        goToTitle(highlighted);
+      const artist = artists[activeIndex];
+      const title = results[activeIndex - artists.length];
+      if (artist) {
+        goToArtist(artist);
+      } else if (title) {
+        goToTitle(title);
       } else {
         goToResults(query);
       }
@@ -164,6 +179,7 @@ export const useSearchPalette = () => {
     onInputKeyDown,
     activeIndex,
     results,
+    artists,
     recent,
     showResults,
     isSearching: isPending || (showResults && state.query !== trimmed),

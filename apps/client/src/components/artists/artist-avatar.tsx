@@ -25,7 +25,7 @@ export const ArtistAvatar = ({ name, coverUrl, dominantColor, sizes, priority = 
       <CatalogImage src={coverUrl} alt={name} sizes={sizes} priority={priority} />
     ) : (
       <span className="absolute inset-0 flex items-center justify-center border border-dashed border-hairline-strong text-faint">
-        <Mic size={28} />
+        <Mic className="size-2/5" />
       </span>
     )}
   </div>

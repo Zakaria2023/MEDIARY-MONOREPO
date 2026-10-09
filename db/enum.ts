@@ -351,6 +351,8 @@ export const featureFlags = [
   // The recommendation chat at /ask, and naming a song by ear at /listen.
   "ask",
   "listen",
+  // Searching the catalog's sources live for what Mediary does not hold yet.
+  "look_further",
 ] as const satisfies readonly string[];
 
 export type FeatureFlag = (typeof featureFlags)[number];

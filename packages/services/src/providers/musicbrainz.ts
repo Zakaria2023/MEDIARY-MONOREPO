@@ -4,6 +4,7 @@ import { MediaStatus, MediaType, ReleaseType } from "../../../../db/enum";
 import { ValidationError } from "../errors";
 import { createThrottle, providerFetch } from "./http";
 import {
+  ArtistCandidate,
   CatalogSeed,
   MediaProvider,
   NormalizedMedia,
@@ -124,6 +125,17 @@ const releaseGroupSchema = z.object({
 
 const searchSchema = z.object({ "release-groups": z.array(releaseGroupSchema) });
 
+const artistSearchSchema = z.object({
+  artists: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      disambiguation: nullableString,
+      area: z.object({ name: z.string() }).nullish(),
+    }),
+  ),
+});
+
 const releaseSchema = z.object({
   media: z
     .array(
@@ -223,7 +235,7 @@ const artistChart = (): Promise<string[]> => {
  * what they made: live records, compilations, remixes and the like are left
  * out, so the artist's page is their discography, not every reissue.
  */
-const artistRecords = async (artistMbid: string): Promise<CatalogSeed[]> =>
+export const listArtistRecords = async (artistMbid: string): Promise<CatalogSeed[]> =>
   searchSchema
     .parse(
       await musicbrainzFetch("/release-group", {
@@ -234,6 +246,20 @@ const artistRecords = async (artistMbid: string): Promise<CatalogSeed[]> =>
     )
     ["release-groups"].filter((group) => (group["secondary-types"] ?? []).length === 0)
     .map((group) => ({ externalId: group.id, title: group.title }));
+
+/**
+ * Artists whose name matches a person's words, the closest first: what a
+ * search for a band needs, since records named like the band outrank the
+ * band's own records in a record search.
+ */
+export const searchMusicArtists = async (query: string, limit = 5): Promise<ArtistCandidate[]> =>
+  artistSearchSchema
+    .parse(await musicbrainzFetch("/artist", { query: `artist:(${luceneWords(query)})`, limit: String(limit) }))
+    .artists.map((artist) => ({
+      mbid: artist.id,
+      name: artist.name,
+      note: artist.disambiguation ?? artist.area?.name ?? null,
+    }));
 
 const musicbrainzFetch = async (path: string, params: Record<string, string> = {}) => {
   const query = new URLSearchParams({ fmt: "json", ...params });
@@ -453,7 +479,7 @@ export const musicbrainzProvider: MediaProvider = {
     }
     const seeds: CatalogSeed[] = [];
     for (const artist of artists.slice(first, first + ARTISTS_PER_PAGE)) {
-      seeds.push(...(await artistRecords(artist)));
+      seeds.push(...(await listArtistRecords(artist)));
     }
     return seeds;
   },

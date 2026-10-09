@@ -5,6 +5,8 @@ import Link from "next/link";
 import { createPortal } from "react-dom";
 import { Poster } from "ui";
 import { MEDIA_TYPE_LABELS } from "@/db/label";
+import { ArtistAvatar } from "@/components/artists/artist-avatar";
+import { artistPath } from "@/lib/artist-path";
 import { titlePath } from "@/lib/title-path";
 import { useSearchPalette } from "@/lib/use-search-palette";
 
@@ -24,6 +26,7 @@ export const SearchPalette = () => {
     onInputKeyDown,
     activeIndex,
     results,
+    artists,
     recent,
     showResults,
     isSearching,
@@ -83,7 +86,7 @@ export const SearchPalette = () => {
                   placeholder="Movies, shows, games, anime"
                   aria-label="Search"
                   role="combobox"
-                  aria-expanded={results.length > 0}
+                  aria-expanded={results.length + artists.length > 0}
                   aria-controls="search-palette-results"
                   aria-activedescendant={activeIndex >= 0 ? `search-result-${activeIndex}` : undefined}
                   className="h-14 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-placeholder"
@@ -123,36 +126,64 @@ export const SearchPalette = () => {
                   <p className="px-2 py-6 text-center text-sm text-danger">{error}</p>
                 )}
 
-                {showResults && !error && !isSearching && results.length === 0 && (
+                {showResults && !error && !isSearching && results.length === 0 && artists.length === 0 && (
                   <p className="px-2 py-6 text-center text-sm text-muted">
-                    Nothing in the catalog is called &ldquo;{query.trim()}&rdquo; yet.
+                    Nothing in the catalog is called &ldquo;{query.trim()}&rdquo; yet. Open every result to look further.
                   </p>
                 )}
 
-                {results.length > 0 && (
+                {results.length + artists.length > 0 && (
                   <ul id="search-palette-results" role="listbox" className="flex flex-col gap-0.5">
-                    {results.map((title, index) => (
-                      <li key={title.uuid} id={`search-result-${index}`} role="option" aria-selected={index === activeIndex}>
+                    {artists.map((artist, index) => (
+                      <li key={artist.uuid} id={`search-result-${index}`} role="option" aria-selected={index === activeIndex}>
                         <Link
-                          href={titlePath(title)}
+                          href={artistPath(artist.slug)}
                           onClick={closePalette}
                           className={`flex items-center gap-3 rounded-control px-2 py-1.5 transition-colors ${
                             index === activeIndex ? "bg-pressed" : "hover:bg-hover"
                           }`}
                         >
-                          <div className="w-8 shrink-0">
-                            <Poster src={title.coverUrl} alt={title.canonicalTitle} sizes="32px" radius="control" dominantColor={title.dominantColor} />
-                          </div>
+                          <ArtistAvatar
+                            name={artist.name}
+                            coverUrl={artist.coverUrl}
+                            dominantColor={artist.dominantColor}
+                            sizes="32px"
+                            className="w-8 shrink-0"
+                          />
                           <div className="flex min-w-0 flex-col">
-                            <span className="line-clamp-1 text-sm font-medium text-ink">{title.canonicalTitle}</span>
+                            <span className="line-clamp-1 text-sm font-medium text-ink">{artist.name}</span>
                             <span className="text-xs text-muted">
-                              {MEDIA_TYPE_LABELS[title.mediaType]}
-                              {title.releaseYear ? ` · ${title.releaseYear}` : ""}
+                              Artist · {artist.recordCount} {artist.recordCount === 1 ? "record" : "records"}
                             </span>
                           </div>
                         </Link>
                       </li>
                     ))}
+                    {results.map((title, titleIndex) => {
+                      const index = artists.length + titleIndex;
+                      return (
+                        <li key={title.uuid} id={`search-result-${index}`} role="option" aria-selected={index === activeIndex}>
+                          <Link
+                            href={titlePath(title)}
+                            onClick={closePalette}
+                            className={`flex items-center gap-3 rounded-control px-2 py-1.5 transition-colors ${
+                              index === activeIndex ? "bg-pressed" : "hover:bg-hover"
+                            }`}
+                          >
+                            <div className="w-8 shrink-0">
+                              <Poster src={title.coverUrl} alt={title.canonicalTitle} sizes="32px" radius="control" shape={title.mediaType === "music" ? "square" : "poster"} dominantColor={title.dominantColor} />
+                            </div>
+                            <div className="flex min-w-0 flex-col">
+                              <span className="line-clamp-1 text-sm font-medium text-ink">{title.canonicalTitle}</span>
+                              <span className="text-xs text-muted">
+                                {MEDIA_TYPE_LABELS[title.mediaType]}
+                                {title.releaseYear ? ` · ${title.releaseYear}` : ""}
+                              </span>
+                            </div>
+                          </Link>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>

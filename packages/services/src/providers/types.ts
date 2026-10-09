@@ -103,6 +103,11 @@ export type NormalizedArtist = {
   name: string;
 };
 
+/** An artist a music search found, with what tells two of one name apart ("South Korean girl group"). */
+export type ArtistCandidate = NormalizedArtist & {
+  note: string | null;
+};
+
 export type NormalizedMusicDetails = {
   kind: "music";
   artist: string;

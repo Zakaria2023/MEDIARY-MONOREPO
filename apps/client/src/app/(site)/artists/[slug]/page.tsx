@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { catalogImageUrl } from "utils";
 import { ArtistHero } from "@/components/artists/artist-hero";
 import { ArtistRecords } from "@/components/artists/artist-records";
+import { MoreRecordsSection } from "@/components/artists/more-records-section";
 import { JsonLd } from "@/components/seo/json-ld";
 import { artistPath } from "@/lib/artist-path";
 import { loadArtist } from "@/lib/load-artist";
@@ -35,7 +36,8 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
 
 /**
  * AN ARTIST: their picture, name and span, then every record Mediary holds
- * of theirs by kind. Each record opens its own page with its songs. A
+ * of theirs by kind, and for a member the press that brings in more. Each
+ * record opens its own page with its songs. A
  * MusicGroup in the structured data, with every album on it.
  */
 const ArtistDetailPage = async ({ params }: Props) => {
@@ -59,8 +61,9 @@ const ArtistDetailPage = async ({ params }: Props) => {
         ])}
       />
       <ArtistHero artist={artist} />
-      <div className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-5 py-10 sm:px-8 sm:py-14">
         <ArtistRecords name={artist.name} records={artist.records} />
+        <MoreRecordsSection artistUuid={artist.uuid} name={artist.name} />
       </div>
     </main>
   );

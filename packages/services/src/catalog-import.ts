@@ -125,7 +125,7 @@ const usableProvider = (provider: Provider, mediaType: MediaType): MediaProvider
 };
 
 /** Which of these provider ids are already titles, by id. */
-const catalogMatches = async (
+export const catalogMatches = async (
   provider: Provider,
   externalIds: string[],
 ): Promise<Map<string, Pick<SelectMedia, "uuid" | "slug" | "lastSyncedAt">>> => {

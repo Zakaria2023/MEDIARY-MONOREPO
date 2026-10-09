@@ -1,12 +1,14 @@
 import { SearchX } from "lucide-react";
 import Link from "next/link";
-import { searchCatalog } from "services";
+import { listArtists, searchCatalog } from "services";
 import { Pagination } from "ui";
 import { filterHref } from "utils";
 import { LaunchMediaType, launchMediaTypes } from "@/db/enum";
 import { MEDIA_TYPE_PLURAL_LABELS } from "@/db/label";
 import { CatalogEmptyState } from "@/components/catalog/catalog-empty-state";
 import { TitleGrid } from "@/components/catalog/title-grid";
+import { LookFurtherSection } from "@/components/search/look-further-section";
+import { SearchArtists } from "@/components/search/search-artists";
 
 type SearchResultsProps = {
   query: string;
@@ -14,10 +16,14 @@ type SearchResultsProps = {
   page: number;
 };
 
+/** Artists shown above the titles, on the first page. */
+const SEARCH_ARTISTS = 6;
+
 /**
- * The async half of search: a tab per medium with how many it found, then
- * the grid. A medium with no hits keeps its tab, dimmed, so the row does not
- * jump as the query changes.
+ * The async half of search: a tab per medium with how many it found, the
+ * artists the words name, then the grid, and the way to look further below
+ * it. A medium with no hits keeps its tab, dimmed, so the row does not jump
+ * as the query changes.
  */
 export const SearchResults = async ({ query, mediaType, page }: SearchResultsProps) => {
   if (query.length < 2) {
@@ -30,7 +36,12 @@ export const SearchResults = async ({ query, mediaType, page }: SearchResultsPro
     );
   }
 
-  const result = await searchCatalog({ query, mediaType, page });
+  const withArtists = (!mediaType || mediaType === "music") && page === 1;
+  const [result, artists] = await Promise.all([
+    searchCatalog({ query, mediaType, page }),
+    withArtists ? listArtists({ query, pageSize: SEARCH_ARTISTS }) : null,
+  ]);
+  const artistCards = artists?.items ?? [];
   const allCount = Object.values(result.countsByType).reduce((sum, value) => sum + (value ?? 0), 0);
 
   return (
@@ -59,7 +70,9 @@ export const SearchResults = async ({ query, mediaType, page }: SearchResultsPro
         })}
       </nav>
 
-      {result.total === 0 ? (
+      {artistCards.length > 0 && <SearchArtists artists={artistCards} />}
+
+      {result.total === 0 && artistCards.length === 0 && (
         <div className="flex flex-col items-center gap-3 rounded-card border border-dashed border-hairline-strong px-6 py-16 text-center">
           <SearchX size={22} className="text-faint" />
           <p className="font-display text-lg text-ink">No match for &ldquo;{query}&rdquo;</p>
@@ -69,7 +82,8 @@ export const SearchResults = async ({ query, mediaType, page }: SearchResultsPro
               : "Check the spelling, or try the original or English title. The catalog grows every day."}
           </p>
         </div>
-      ) : (
+      )}
+      {result.total > 0 && (
         <>
           <TitleGrid titles={result.items} showType={!mediaType} />
           <Pagination
@@ -79,6 +93,8 @@ export const SearchResults = async ({ query, mediaType, page }: SearchResultsPro
           />
         </>
       )}
+
+      <LookFurtherSection query={query} mediaType={mediaType} />
     </div>
   );
 };
