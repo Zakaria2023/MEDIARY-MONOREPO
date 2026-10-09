@@ -1,7 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse, type NextRequest } from "next/server";
 import { checkRateLimit, rateLimitIdentity, rateLimitResponse } from "rate-limit";
-import { buildCsp, createNonce, NOINDEX_HEADER } from "security-headers";
+import { buildCsp, clerkFrontendApiHost, createNonce, NOINDEX_HEADER } from "security-headers";
 
 // The admin is private end to end. Every route but sign-in and no-access
 // needs a session, and the role gate in the dashboard layout then decides
@@ -51,7 +51,11 @@ const withCsp = (request: NextRequest): Headers => {
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set(
     "content-security-policy",
-    buildCsp(nonce, process.env.NODE_ENV !== "production"),
+    buildCsp(
+      nonce,
+      process.env.NODE_ENV !== "production",
+      clerkFrontendApiHost(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY),
+    ),
   );
   return requestHeaders;
 };

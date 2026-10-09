@@ -10,8 +10,31 @@
  * The allowed origins come from watching a real page load rather than from a
  * template. The fonts are self-hosted, so no Google Fonts origin appears.
  */
-export const buildCsp = (nonce: string, isDev: boolean): string => {
-  const clerk = "https://*.clerk.accounts.dev https://*.clerk.com";
+/**
+ * The host Clerk's browser code talks to, read from the publishable key: the
+ * part after `pk_test_` or `pk_live_` is that host in base64, ending in `$`.
+ * A development instance answers on `*.clerk.accounts.dev`, which the policy
+ * names anyway; a production one answers on the site's own subdomain
+ * (`clerk.mediary.com`), which no wildcard can know in advance. Null when the
+ * key is missing or does not decode to a host.
+ */
+export const clerkFrontendApiHost = (publishableKey: string | undefined): string | null => {
+  const encoded = publishableKey?.match(/^pk_(?:test|live)_([A-Za-z0-9+/=]+)$/)?.[1];
+  if (!encoded) {
+    return null;
+  }
+  try {
+    const host = atob(encoded).replace(/\$$/, "");
+    return /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(host) ? host : null;
+  } catch {
+    return null;
+  }
+};
+
+export const buildCsp = (nonce: string, isDev: boolean, clerkHost: string | null = null): string => {
+  const clerk = ["https://*.clerk.accounts.dev https://*.clerk.com", clerkHost ? `https://${clerkHost}` : ""]
+    .filter(Boolean)
+    .join(" ");
   // Clerk fronts its bot check with Cloudflare Turnstile, which loads a script
   // and an iframe from Cloudflare.
   const turnstile = "https://challenges.cloudflare.com";

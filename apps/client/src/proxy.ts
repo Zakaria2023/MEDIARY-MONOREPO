@@ -8,6 +8,7 @@ import {
 } from "rate-limit";
 import {
   buildCsp,
+  clerkFrontendApiHost,
   createNonce,
   isIndexableHost,
   NOINDEX_HEADER,
@@ -77,7 +78,11 @@ const withCsp = (request: NextRequest): Headers => {
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set(
     "content-security-policy",
-    buildCsp(nonce, process.env.NODE_ENV !== "production"),
+    buildCsp(
+      nonce,
+      process.env.NODE_ENV !== "production",
+      clerkFrontendApiHost(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY),
+    ),
   );
   return requestHeaders;
 };
