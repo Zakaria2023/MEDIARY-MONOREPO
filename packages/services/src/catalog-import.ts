@@ -7,7 +7,7 @@ import { MediaExternalRefs } from "../../../db/schema/media-external-refs";
 import { Media, SelectMedia } from "../../../db/schema/media";
 import { IngestResult, ingestNormalizedBatch, ingestNormalizedMedia } from "./catalog-ingest";
 import { NotFoundError, ValidationError } from "./errors";
-import { getProvider, listProviderStatuses, providerForType } from "./providers/registry";
+import { getProvider, listProviderStatuses, providerForType, providersForType } from "./providers/registry";
 import { lookupSeriesAiring, tmdbProvider } from "./providers/tmdb";
 import { CatalogSeed, MediaProvider, NormalizedMedia, ProviderCandidate, ProviderListKind } from "./providers/types";
 
@@ -376,22 +376,29 @@ const sourceRef = async (mediaUuid: string): Promise<SourceRef | null> => {
   if (!media) {
     return null;
   }
-  const adapter = providerForType(media.mediaType);
-  if (!adapter) {
+  // A medium may have more than one source (games: the game database and
+  // the game store); a title is refreshed from a configured one it holds a
+  // ref for, in the order the registry lists them.
+  const adapters = providersForType(media.mediaType).filter((adapter) => adapter.isConfigured());
+  if (adapters.length === 0) {
     return null;
   }
-  const [ref] = await db
-    .select({ externalId: MediaExternalRefs.externalId })
+  const refs = await db
+    .select({ provider: MediaExternalRefs.provider, externalId: MediaExternalRefs.externalId })
     .from(MediaExternalRefs)
     .where(
       and(
         eq(MediaExternalRefs.mediaUuid, mediaUuid),
-        eq(MediaExternalRefs.provider, adapter.provider),
+        inArray(
+          MediaExternalRefs.provider,
+          adapters.map((adapter) => adapter.provider),
+        ),
       ),
     )
-    .orderBy(asc(MediaExternalRefs.firstSeenAt))
-    .limit(1);
-  return ref
+    .orderBy(asc(MediaExternalRefs.firstSeenAt));
+  const adapter = adapters.find((candidate) => refs.some((ref) => ref.provider === candidate.provider));
+  const ref = adapter ? refs.find((entry) => entry.provider === adapter.provider) : undefined;
+  return adapter && ref
     ? { provider: adapter.provider, externalId: ref.externalId, mediaType: media.mediaType }
     : null;
 };

@@ -406,6 +406,23 @@ export const IGDB_GENRES: Record<string, string[]> = {
 };
 
 /**
+ * Steam's store genres, by their English name lowercased. Steam files a
+ * game under a dozen broad genres; "Casual", "Free to Play", "Early Access"
+ * and "Massively Multiplayer" describe a business model or a stage rather
+ * than a kind of game, and are dropped like any other unmapped genre.
+ */
+export const STEAM_GENRES: Record<string, string[]> = {
+  action: ["action"],
+  adventure: ["adventure"],
+  rpg: ["rpg"],
+  strategy: ["strategy"],
+  simulation: ["simulation"],
+  sports: ["sports"],
+  racing: ["racing"],
+  indie: ["indie"],
+};
+
+/**
  * Platforms whose variants collapse into one entry on the Add sheet's picker:
  * "PC (Microsoft Windows)" is just PC. Anything not listed keeps IGDB's own
  * slug, name and abbreviation.

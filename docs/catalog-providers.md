@@ -187,3 +187,30 @@ beyond the keys `getById` already uses.
   come from MusicBrainz at its one request a second, so a full walk takes
   hours. Each record now stores its songs (titles, positions, lengths) and
   its first credited artist.
+
+## Steam, for games without a key (2026-10-09)
+
+IGDB needs a Twitch developer key that was not set, and the owner asked for
+games loaded without one. `providers/steam.ts` reads PC games from:
+
+- **The Steam store's own JSON** (`store.steampowered.com/api/appdetails`,
+  `/api/storesearch`, `/api/featuredcategories`): name, short description,
+  genres, developer, publisher, platforms, release date, categories
+  (multiplayer) and content descriptors (adult). No key. These are the
+  endpoints the store's pages use, not a documented API for catalogs, so
+  they may slow or change; the store limits one address to about 200
+  requests in five minutes, and the adapter keeps to one every 1.6 seconds.
+- **SteamSpy** (`steamspy.com/api.php`): the full list of games by owners,
+  1,000 a page (one request a minute), and each game's positive and
+  negative review counts. The share of positive reviews is the community
+  score (from 50 reviews up), their number the popularity.
+- **Covers**: the store's tall 600x900 library image, hotlinked from
+  `shared.akamai.steamstatic.com`, checked to exist before it is stored
+  (older games have none and show the placeholder).
+
+PC only: a console game is not on the store. Before launch, re-read Valve's
+terms for the store and its images, and SteamSpy's, as for every source.
+When IGDB's keys are set it becomes the game source (`providerForType`
+takes the first configured adapter); Steam games stay, and a later IGDB
+import of the same game is a separate title unless it is matched by its
+Steam id, which IGDB's external games carry.
