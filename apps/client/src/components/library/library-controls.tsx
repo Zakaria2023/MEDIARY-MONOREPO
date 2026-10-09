@@ -1,6 +1,7 @@
 import { LayoutGrid, List } from "lucide-react";
 import Link from "next/link";
 import { librarySorts, LibrarySortParam, LibraryViewParam } from "validators";
+import { LibrarySelectToggle } from "@/components/library/library-select-toggle";
 import { libraryHref, LibraryQuery } from "@/lib/library-query";
 
 type LibraryControlsProps = {
@@ -42,23 +43,26 @@ export const LibraryControls = ({ query }: LibraryControlsProps) => (
         );
       })}
     </nav>
-    <div className="flex items-center rounded-control border border-hairline p-0.5">
-      {VIEWS.map(({ value, label, icon: Icon }) => {
-        const active = value === query.view;
-        return (
-          <Link
-            key={value}
-            href={libraryHref({ ...query, view: value })}
-            aria-label={label}
-            aria-current={active ? "page" : undefined}
-            className={`flex h-7 w-8 items-center justify-center rounded-sm transition-colors ${
-              active ? "bg-surface-2 text-ink" : "text-faint hover:text-ink"
-            }`}
-          >
-            <Icon size={15} />
-          </Link>
-        );
-      })}
+    <div className="flex items-center gap-2">
+      <LibrarySelectToggle />
+      <div className="flex items-center rounded-control border border-hairline p-0.5">
+        {VIEWS.map(({ value, label, icon: Icon }) => {
+          const active = value === query.view;
+          return (
+            <Link
+              key={value}
+              href={libraryHref({ ...query, view: value })}
+              aria-label={label}
+              aria-current={active ? "page" : undefined}
+              className={`flex h-7 w-8 items-center justify-center rounded-sm transition-colors ${
+                active ? "bg-surface-2 text-ink" : "text-faint hover:text-ink"
+              }`}
+            >
+              <Icon size={15} />
+            </Link>
+          );
+        })}
+      </div>
     </div>
   </div>
 );

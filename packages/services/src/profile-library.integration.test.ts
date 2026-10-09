@@ -3,11 +3,13 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { db } from "../../../db";
 import { Media } from "../../../db/schema/media";
 import { Profiles } from "../../../db/schema/profiles";
+import { ProgressEvents } from "../../../db/schema/progress-events";
+import { UserMedia } from "../../../db/schema/user-media";
 import { UserSettings } from "../../../db/schema/user-settings";
 import { Users } from "../../../db/schema/users";
 import { followUser } from "./follows";
 import { listProfileFavorites } from "./public-profile";
-import { getLibraryCountsFor, listLibrary, listLibraryFor, saveEntry } from "./tracking";
+import { getLibraryCountsFor, listLibrary, listLibraryFor, removeEntries, saveEntry, setEntriesStatus } from "./tracking";
 
 type Fixture = {
   owner: string;
@@ -133,5 +135,24 @@ describe("someone's library as a viewer may see it", () => {
     expect(await titles({ favoritesOnly: true })).toEqual(["Arrival"]);
     expect(await titles({ minScore: 8 })).toEqual(["Arrival", "Cars"]);
     expect(await titles({ search: "a", minScore: 8 })).toEqual(["Arrival", "Cars"]);
+  });
+
+  it("moves many of the owner's entries at once through the one writer, and leaves anyone else's alone", async () => {
+    const planned = { ...entry(fixture.open, null), status: "planned" as const, progressValue: 0 };
+    const mine = await saveEntry(fixture.owner, planned);
+    const second = await saveEntry(fixture.owner, { ...planned, mediaUuid: fixture.ours });
+    const theirs = await saveEntry(fixture.friend, planned);
+    const eventsBefore = (await db.select().from(ProgressEvents)).length;
+
+    expect(await setEntriesStatus(fixture.owner, [mine.uuid, second.uuid, theirs.uuid], "completed")).toBe(2);
+    const statuses = await db.select({ uuid: UserMedia.uuid, status: UserMedia.status, completedAt: UserMedia.completedAt }).from(UserMedia);
+    expect(statuses.find((row) => row.uuid === mine.uuid)).toEqual(expect.objectContaining({ status: "completed" }));
+    expect(statuses.find((row) => row.uuid === mine.uuid)?.completedAt).not.toBeNull();
+    expect(statuses.find((row) => row.uuid === theirs.uuid)?.status).toBe("planned");
+    expect((await db.select().from(ProgressEvents)).length).toBe(eventsBefore + 2);
+
+    expect(await setEntriesStatus(fixture.owner, [mine.uuid], "completed")).toBe(0);
+    expect(await removeEntries(fixture.owner, [mine.uuid, theirs.uuid])).toBe(1);
+    expect((await db.select().from(UserMedia).where(eq(UserMedia.uuid, theirs.uuid))).length).toBe(1);
   });
 });

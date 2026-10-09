@@ -6,6 +6,7 @@ import { LibraryItem } from "services";
 import { Poster } from "ui";
 import { MEDIA_TYPE_LABELS } from "@/db/label";
 import { EntrySheet } from "@/components/tracking/entry-sheet";
+import { LibrarySelectOverlay } from "@/components/library/library-select-overlay";
 import { EntryStatusChip } from "@/components/tracking/entry-status-chip";
 import { ProgressTickButton } from "@/components/tracking/progress-tick-button";
 import { ProgressBar } from "@/components/shared/progress-bar";
@@ -46,6 +47,7 @@ export const LibraryRow = ({ item, showType }: LibraryRowProps) => {
         aria-label={`Open ${title.canonicalTitle}`}
         className="absolute inset-0 z-10"
       />
+      <LibrarySelectOverlay entryUuid={entry.uuid} titleName={title.canonicalTitle} variant="row" />
       <div className="w-10">
         <Poster src={title.coverUrl} alt="" sizes="40px" radius="control" dominantColor={title.dominantColor} />
       </div>

@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, SQL, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, SQL, sql } from "drizzle-orm";
 import { paginate, PaginatedResult } from "utils";
 import { ProgressTickInput, UpsertEntryInput } from "validators";
 import { db } from "../../../db";
@@ -475,6 +475,56 @@ export const tickEntryProgress = async (
   });
 
 /** Takes a title out of the library. Its history goes with it. */
+/**
+ * MANY ENTRIES TO ONE STATUS, from the library's select mode. Each goes
+ * through the one writer as if its sheet had been saved with the new
+ * status, so the dates, the progress at completion, the history line and
+ * the feed line are exactly what one save would write. Entries already in
+ * that status, or not the member's, are left alone. Returns how many moved.
+ */
+export const setEntriesStatus = async (
+  userUuid: string,
+  entryUuids: string[],
+  status: TrackingStatus,
+): Promise<number> => {
+  const rows = await db
+    .select({ entry: ENTRY_COLUMNS, mediaUuid: UserMedia.mediaUuid })
+    .from(UserMedia)
+    .where(and(eq(UserMedia.userUuid, userUuid), inArray(UserMedia.uuid, entryUuids)));
+  let moved = 0;
+  for (const { entry, mediaUuid } of rows) {
+    if (entry.status === status) {
+      continue;
+    }
+    await saveEntry(userUuid, {
+      mediaUuid,
+      status,
+      score: entry.score,
+      progressValue: entry.progressValue,
+      progressUnit: entry.progressUnit,
+      currentSeason: entry.currentSeason,
+      repeatCount: entry.repeatCount,
+      favorite: entry.favorite,
+      platformId: entry.platformId,
+      startedAt: entry.startedAt,
+      completedAt: entry.completedAt,
+      notes: entry.notes ?? "",
+      visibility: entry.visibility,
+    });
+    moved += 1;
+  }
+  return moved;
+};
+
+/** MANY ENTRIES OUT OF THE LIBRARY, history and all, the member's own only. Returns how many went. */
+export const removeEntries = async (userUuid: string, entryUuids: string[]): Promise<number> => {
+  const removed = await db
+    .delete(UserMedia)
+    .where(and(eq(UserMedia.userUuid, userUuid), inArray(UserMedia.uuid, entryUuids)))
+    .returning({ uuid: UserMedia.uuid });
+  return removed.length;
+};
+
 export const removeEntry = async (userUuid: string, entryUuid: string): Promise<void> => {
   const removed = await db
     .delete(UserMedia)

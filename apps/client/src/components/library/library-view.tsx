@@ -1,7 +1,9 @@
 import { AsyncSection } from "ui";
+import { LibraryBulkBar } from "@/components/library/library-bulk-bar";
 import { LibraryControls } from "@/components/library/library-controls";
 import { LibraryFilters } from "@/components/library/library-filters";
 import { LibraryList } from "@/components/library/library-list";
+import { LibrarySelectionProvider } from "@/components/library/library-selection-provider";
 import { LibraryListSkeleton } from "@/components/library/library-list-skeleton";
 import { LibraryTabs } from "@/components/library/library-tabs";
 import { LibraryTabsSkeleton } from "@/components/library/library-tabs-skeleton";
@@ -47,10 +49,13 @@ export const LibraryView = async ({ query }: LibraryViewProps) => {
         <LibraryTabs userUuid={user.uuid} query={query} />
       </AsyncSection>
       <LibraryFilters query={query} />
-      <LibraryControls query={query} />
-      <AsyncSection reloadKey={listKey} skeleton={<LibraryListSkeleton view={query.view} />}>
-        <LibraryList userUuid={user.uuid} query={query} />
-      </AsyncSection>
+      <LibrarySelectionProvider>
+        <LibraryControls query={query} />
+        <AsyncSection reloadKey={listKey} skeleton={<LibraryListSkeleton view={query.view} />}>
+          <LibraryList userUuid={user.uuid} query={query} />
+        </AsyncSection>
+        <LibraryBulkBar mediaType={query.mediaType} />
+      </LibrarySelectionProvider>
     </main>
   );
 };

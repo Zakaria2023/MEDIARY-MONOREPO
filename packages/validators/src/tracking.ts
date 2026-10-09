@@ -10,6 +10,9 @@ export type PlaythroughInput = z.infer<typeof playthroughSchema>;
 export type PlaythroughTargetInput = z.infer<typeof playthroughTargetSchema>;
 
 /** How the library is ordered; the same names the tracking service takes. */
+export type BulkStatusInput = z.infer<typeof bulkStatusSchema>;
+export type BulkRemoveInput = z.infer<typeof bulkRemoveSchema>;
+
 export type LibrarySortParam = (typeof librarySorts)[number];
 
 /** How the library is laid out. */
@@ -65,6 +68,20 @@ export const progressTickSchema = z.object({
 /** Taking a title out of the library, history and all. */
 export const removeEntrySchema = z.object({
   entryUuid: z.uuid(),
+});
+
+/** Most entries one bulk change may touch: a page of the library and then some. */
+export const BULK_ENTRY_LIMIT = 100;
+
+/** Many entries moved to one status at once, from the library's select mode. */
+export const bulkStatusSchema = z.object({
+  entryUuids: z.array(z.uuid()).min(1, "Select at least one title").max(BULK_ENTRY_LIMIT, `At most ${BULK_ENTRY_LIMIT} at a time`),
+  status: z.enum(trackingStatuses),
+});
+
+/** Many entries taken out of the library at once. */
+export const bulkRemoveSchema = z.object({
+  entryUuids: z.array(z.uuid()).min(1, "Select at least one title").max(BULK_ENTRY_LIMIT, `At most ${BULK_ENTRY_LIMIT} at a time`),
 });
 
 /** The library's orders, first one the default. */

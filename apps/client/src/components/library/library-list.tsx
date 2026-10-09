@@ -66,7 +66,7 @@ export const LibraryList = async ({ userUuid, query }: LibraryListProps) => {
       {query.view === "grid" ? (
         <div className={GRID_CLASSES}>
           {result.items.map((item) => (
-            <LibraryCard key={item.entry.uuid} item={item} />
+            <LibraryCard key={`${item.entry.uuid}-${item.entry.updatedAt.toISOString()}`} item={item} />
           ))}
         </div>
       ) : (
@@ -80,7 +80,11 @@ export const LibraryList = async ({ userUuid, query }: LibraryListProps) => {
             <span className="w-9" />
           </div>
           {result.items.map((item) => (
-            <LibraryRow key={item.entry.uuid} item={item} showType={!query.mediaType} />
+            <LibraryRow
+              key={`${item.entry.uuid}-${item.entry.updatedAt.toISOString()}`}
+              item={item}
+              showType={!query.mediaType}
+            />
           ))}
         </div>
       )}

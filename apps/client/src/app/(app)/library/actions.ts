@@ -1,9 +1,22 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getTitleTracking, removeEntry, saveEntry, tickEntryProgress, TitleTracking, TrackedEntry } from "services";
+import {
+  getTitleTracking,
+  removeEntries,
+  removeEntry,
+  saveEntry,
+  setEntriesStatus,
+  tickEntryProgress,
+  TitleTracking,
+  TrackedEntry,
+} from "services";
 import { ActionResult, fail } from "utils";
 import {
+  BulkRemoveInput,
+  bulkRemoveSchema,
+  BulkStatusInput,
+  bulkStatusSchema,
   progressTickSchema,
   ProgressTickInput,
   removeEntrySchema,
@@ -22,6 +35,11 @@ export type EntryActionResult = ActionResult & {
 /** A title's tracking as the sheet needs it, for a card's quick add. */
 export type TrackingActionResult = ActionResult & {
   tracking?: TitleTracking;
+};
+
+/** What a bulk change did: how many titles it moved or removed. */
+export type BulkActionResult = ActionResult & {
+  count?: number;
 };
 
 /** The screens that list entries, refreshed after any change to one. */
@@ -45,6 +63,38 @@ export const loadTrackingAction = async (mediaUuid: string): Promise<TrackingAct
     return tracking ? { success: true, tracking } : { error: "That title could not be found" };
   } catch (error) {
     return fail(error, "Could not open this title");
+  }
+};
+
+/** The library's select mode: the chosen titles to one status. */
+export const bulkStatusAction = async (input: BulkStatusInput): Promise<BulkActionResult> => {
+  const user = await requireOnboardedUser();
+  const parsed = bulkStatusSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Check the selection" };
+  }
+  try {
+    const count = await setEntriesStatus(user.uuid, parsed.data.entryUuids, parsed.data.status);
+    revalidateLibrary();
+    return { success: true, count };
+  } catch (error) {
+    return fail(error, "Could not change these titles");
+  }
+};
+
+/** The library's select mode: the chosen titles out of the library. */
+export const bulkRemoveAction = async (input: BulkRemoveInput): Promise<BulkActionResult> => {
+  const user = await requireOnboardedUser();
+  const parsed = bulkRemoveSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Check the selection" };
+  }
+  try {
+    const count = await removeEntries(user.uuid, parsed.data.entryUuids);
+    revalidateLibrary();
+    return { success: true, count };
+  } catch (error) {
+    return fail(error, "Could not remove these titles");
   }
 };
 
