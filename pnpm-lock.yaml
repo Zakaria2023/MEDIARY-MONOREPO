@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  drizzle-kit@0.31.11: 493e2b74e3b38cf878a1f265b9fb9f175ddf3f5e155f2080d7b4efaa7079fe1a
+
 importers:
 
   .:
@@ -29,7 +32,7 @@ importers:
         version: 11.0.0
       drizzle-kit:
         specifier: ^0.31.10
-        version: 0.31.11
+        version: 0.31.11(patch_hash=493e2b74e3b38cf878a1f265b9fb9f175ddf3f5e155f2080d7b4efaa7079fe1a)
       tsx:
         specifier: ^4.23.1
         version: 4.23.15
@@ -47,7 +50,7 @@ importers:
     dependencies:
       '@clerk/nextjs':
         specifier: ^7.5.10
-        version: 7.9.10(next@16.2.11(@babel/core@7.29.7)(@playwright/test@1.63.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 7.9.10(next@16.2.11(@playwright/test@1.63.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@hookform/resolvers':
         specifier: ^5.4.0
         version: 5.9.1(@standard-schema/spec@1.1.0)(react-hook-form@7.89.0(@types/react@19.3.0)(react@19.2.4))(zod@4.6.5)
@@ -126,7 +129,7 @@ importers:
     dependencies:
       '@clerk/nextjs':
         specifier: ^7.5.10
-        version: 7.9.10(next@16.2.11(@babel/core@7.29.7)(@playwright/test@1.63.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 7.9.10(next@16.2.11(@playwright/test@1.63.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@hookform/resolvers':
         specifier: ^5.4.0
         version: 5.9.1(@standard-schema/spec@1.1.0)(react-hook-form@7.89.0(@types/react@19.3.0)(react@19.2.4))(zod@4.6.5)
@@ -221,7 +224,7 @@ importers:
     devDependencies:
       '@clerk/nextjs':
         specifier: ^7.5.10
-        version: 7.9.10(next@16.2.11(@babel/core@7.29.7)(@playwright/test@1.63.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 7.9.10(next@16.2.11(@playwright/test@1.63.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@types/node':
         specifier: ^20
         version: 20.19.43
@@ -4211,7 +4214,7 @@ snapshots:
       - react
       - react-dom
 
-  '@clerk/nextjs@7.9.10(next@16.2.11(@babel/core@7.29.7)(@playwright/test@1.63.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+  '@clerk/nextjs@7.9.10(next@16.2.11(@playwright/test@1.63.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
       '@clerk/backend': 3.22.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@clerk/react': 6.17.5(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -5526,7 +5529,7 @@ snapshots:
 
   dotenv@17.4.2: {}
 
-  drizzle-kit@0.31.11:
+  drizzle-kit@0.31.11(patch_hash=493e2b74e3b38cf878a1f265b9fb9f175ddf3f5e155f2080d7b4efaa7079fe1a):
     dependencies:
       '@drizzle-team/brocli': 0.10.2
       '@esbuild-kit/esm-loader': 2.6.5

@@ -1,0 +1,43 @@
+diff --git a/bin.cjs b/bin.cjs
+index c28f3e4732f0d911237dc1eb1bc466cefaa1b976..14c128744c02118f652bc10172dae03cd303cab4 100644
+--- a/bin.cjs
++++ b/bin.cjs
+@@ -17731,13 +17731,23 @@ WHERE
+             const uniqueConstrains = {};
+             const checkConstraints = {};
+             const tableResponse = await getColumnsInfoQuery({ schema: tableSchema, table: tableName, db });
++            // Patched for Mediary: primary keys and unique constraints come from
++            // pg_constraint in key order, with NULLS NOT DISTINCT. information_schema
++            // has no column order and the flag was never read, so every composite
++            // constraint was misread and proposed again on each push.
+             const tableConstraints = await db.query(
+-              `SELECT c.column_name, c.data_type, constraint_type, constraint_name, constraint_schema
+-      FROM information_schema.table_constraints tc
+-      JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_name)
+-      JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema
+-        AND tc.table_name = c.table_name AND ccu.column_name = c.column_name
+-      WHERE tc.table_name = '${tableName}' and constraint_schema = '${tableSchema}';`
++              `SELECT att.attname AS column_name, format_type(att.atttypid, att.atttypmod) AS data_type,
++        CASE con.contype WHEN 'p' THEN 'PRIMARY KEY' ELSE 'UNIQUE' END AS constraint_type,
++        con.conname AS constraint_name, nsp.nspname AS constraint_schema,
++        COALESCE(idx.indnullsnotdistinct, false) AS nulls_not_distinct
++      FROM pg_catalog.pg_constraint con
++      JOIN pg_catalog.pg_class rel ON rel.oid = con.conrelid
++      JOIN pg_catalog.pg_namespace nsp ON nsp.oid = rel.relnamespace
++      CROSS JOIN LATERAL unnest(con.conkey) WITH ORDINALITY AS key(attnum, position)
++      JOIN pg_catalog.pg_attribute att ON att.attrelid = con.conrelid AND att.attnum = key.attnum
++      LEFT JOIN pg_catalog.pg_index idx ON idx.indexrelid = con.conindid
++      WHERE rel.relname = '${tableName}' AND nsp.nspname = '${tableSchema}' AND con.contype IN ('p', 'u')
++      ORDER BY con.conname, key.position;`
+             );
+             const tableChecks = await db.query(`SELECT 
+ 						tc.constraint_name,
+@@ -17846,7 +17856,7 @@ WHERE
+               } else {
+                 uniqueConstrains[constraintName] = {
+                   columns: [columnName],
+-                  nullsNotDistinct: false,
++                  nullsNotDistinct: unqs.nulls_not_distinct === true,
+                   name: constraintName
+                 };
+               }
