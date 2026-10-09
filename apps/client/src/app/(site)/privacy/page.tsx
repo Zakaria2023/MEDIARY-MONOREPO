@@ -4,7 +4,7 @@ import { LegalPage } from "@/components/shared/legal-page";
 import { pageMetadata } from "@/lib/seo";
 import { SUPPORT_EMAIL } from "@/lib/support-email";
 
-const UPDATED = "8 October 2026";
+const UPDATED = "9 October 2026";
 
 export const metadata: Metadata = pageMetadata({
   title: "Privacy policy",
