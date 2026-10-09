@@ -11,7 +11,7 @@ Mediary; nothing here needs more than the repo and the environment file.
 
 ## Schema changes
 
-- `db/schema/` is the only description of the database. Edit it, then `pnpm db:push` from a terminal (drizzle-kit asks a question only a TTY can answer; it may ask about `uq_media_external_refs_provider_id`, to which the answer is "No, add constraint without truncating").
+- `db/schema/` is the only description of the database. Edit it, then `pnpm db:push`. Against an up-to-date database it prints "No changes detected" and asks nothing; drizzle-kit is patched for that (`patches/drizzle-kit@0.31.11.patch`). If it ever proposes dropping and re-adding constraints nobody changed, the patch is gone (a drizzle-kit upgrade): restore it before pushing, and never answer yes to "truncate".
 - Never apply a statement around push; if push proposes something destructive, change the schema until it does not.
 - After a schema change, rebuild the test database with `pnpm test:db:setup` before running `pnpm test:integration`.
 - Postgres enums are widened in `db/enum.ts` and never narrowed.
@@ -38,6 +38,20 @@ Mediary; nothing here needs more than the repo and the environment file.
 - `pnpm test:e2e`: the public site in a real browser, against a running dev server on 3000 (started if none is running) or `E2E_BASE_URL`. First time: `npx playwright install chromium`.
 - `pnpm test:visual`: screenshots of the fixed parts of the site, against a production build on port 3190. After a deliberate design change, `pnpm test:visual:update`, then look at every changed image in the diff before committing it.
 - Type-check and lint: `pnpm type-check`, `pnpm lint`.
+
+## Going live: production identity
+
+The deployed site runs on the identity service's development keys (`pk_test_`, `sk_test_`) until this is done. A development instance sends every visitor without its cookie through a handshake on another domain first, and search engines get that redirect instead of the page, so nothing is indexed. A production instance needs a domain Mediary owns; it cannot run on a `vercel.app` address.
+
+1. Point the domain (`mediary.com`) at the client's Vercel project, and `admin.mediary.com` at the admin's.
+2. In the Clerk dashboard, create the production instance from the development one (settings are copied), with `mediary.com` as its domain. Add the DNS records it lists (`clerk`, `accounts`, the mail records) at the domain registrar and wait until every one shows verified.
+3. Google sign-in in production needs Mediary's own OAuth client: in Google Cloud, create an OAuth client (web), add the redirect URI the Clerk dashboard shows under the Google connection, and paste the client id and secret into that connection.
+4. Add `https://admin.mediary.com` to the production instance's allowed origins, so one account signs in to both apps.
+5. Create the webhook on the production instance (`https://mediary.com/api/webhooks/clerk`, user events) and copy its signing secret.
+6. In both Vercel projects, set the production values: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` (`pk_live_`), `CLERK_SECRET_KEY` (`sk_live_`), `CLERK_WEBHOOK_SIGNING_SECRET`, `NEXT_PUBLIC_SITE_URL=https://mediary.com`. Keep the development keys only in `.env.local` and on preview deployments.
+7. Redeploy both apps. The content security policy reads the instance's own host (`clerk.mediary.com`) from the publishable key, so nothing else changes.
+8. Check from a private window and from a phone on mobile data: the landing opens at once with no redirect, a title page and a public profile open signed out, sign-up with a code and with Google work, sign-out works, and the admin signs in with the same account. `curl -sI https://mediary.com/` answers 200, not 307.
+9. Accounts made on the development keys do not carry over: the production instance starts with none. Sign up again, then make that account the first admin (below).
 
 ## Identity
 
