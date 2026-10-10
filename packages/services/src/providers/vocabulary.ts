@@ -439,6 +439,9 @@ export const PLATFORM_ALIASES: Record<
   ps5: { slug: "ps5", name: "PlayStation 5", abbreviation: "PS5" },
   "ps4--1": { slug: "ps4", name: "PlayStation 4", abbreviation: "PS4" },
   ps3: { slug: "ps3", name: "PlayStation 3", abbreviation: "PS3" },
+  ps2: { slug: "ps2", name: "PlayStation 2", abbreviation: "PS2" },
+  // The game database calls the first PlayStation just "ps"; its address and badge say PS1.
+  ps: { slug: "ps1", name: "PlayStation", abbreviation: "PS1" },
   "series-x-s": { slug: "xbox-series", name: "Xbox Series X|S", abbreviation: "XSX" },
   xboxone: { slug: "xbox-one", name: "Xbox One", abbreviation: "XB1" },
   xbox360: { slug: "xbox-360", name: "Xbox 360", abbreviation: "X360" },
@@ -449,6 +452,29 @@ export const PLATFORM_ALIASES: Record<
   ios: { slug: "ios", name: "iOS", abbreviation: "iOS" },
   android: { slug: "android", name: "Android", abbreviation: "Android" },
 };
+
+/**
+ * THE ORDER PLATFORMS ARE SHOWN IN, by slug: PC, then the current consoles,
+ * then the ones before them, then the other computers and phones. A
+ * platform not named here follows, by name.
+ */
+export const PLATFORM_ORDER = [
+  "pc",
+  "ps5",
+  "xbox-series",
+  "switch-2",
+  "switch",
+  "ps4",
+  "xbox-one",
+  "ps3",
+  "xbox-360",
+  "ps2",
+  "ps1",
+  "mac",
+  "linux",
+  "ios",
+  "android",
+] as const satisfies readonly string[];
 
 /**
  * ONE POPULARITY SCALE ACROSS PROVIDERS, 0 to 100, so a cross-media rail can

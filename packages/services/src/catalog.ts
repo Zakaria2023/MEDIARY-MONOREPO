@@ -46,6 +46,7 @@ import { MediaImages } from "../../../db/schema/media-images";
 import { MediaTitles, SelectMediaTitles } from "../../../db/schema/media-titles";
 import { Media, SelectMedia } from "../../../db/schema/media";
 import { GamePlatforms, Platforms, SelectPlatforms } from "../../../db/schema/platforms";
+import { PLATFORM_ORDER } from "./providers/vocabulary";
 
 /** A title as a poster card shows it: everything a grid or a rail needs. */
 export type CatalogCard = Pick<
@@ -193,6 +194,9 @@ export type CatalogShowcaseParams = {
   withCover?: boolean;
 };
 
+/** Where a platform sits in PLATFORM_ORDER; null, and so last, for one it does not name. */
+const platformRank = sql`array_position(${sql.raw(`array[${PLATFORM_ORDER.map((slug) => `'${slug}'`).join(", ")}]::text[]`)}, ${Platforms.slug}::text)`;
+
 const CARD_COLUMNS = {
   uuid: Media.uuid,
   slug: Media.slug,
@@ -203,6 +207,9 @@ const CARD_COLUMNS = {
   dominantColor: Media.dominantColor,
   providerScore: Media.providerScore,
 };
+
+/** Platforms a game hub's filter offers, the most played on first; the row scrolls sideways. */
+const PLATFORM_CHIPS = 30;
 
 /** Shortest query worth running; a single letter matches half the catalog. */
 const MIN_QUERY_LENGTH = 2;
@@ -449,8 +456,8 @@ export const listHubFacetOptions = async (
         .innerJoin(Media, eq(Media.uuid, GamePlatforms.mediaUuid))
         .where(base)
         .groupBy(Platforms.id)
-        .orderBy(desc(titleCount), asc(Platforms.position))
-        .limit(12);
+        .orderBy(desc(titleCount), sql`${platformRank} nulls last`)
+        .limit(PLATFORM_CHIPS);
       return rows;
     }
     case "decade": {
@@ -637,7 +644,7 @@ const assembleTitle = async (media: SelectMedia): Promise<CatalogTitle> => {
       .from(GamePlatforms)
       .innerJoin(Platforms, eq(Platforms.id, GamePlatforms.platformId))
       .where(eq(GamePlatforms.mediaUuid, media.uuid))
-      .orderBy(asc(Platforms.position), asc(Platforms.name)),
+      .orderBy(sql`${platformRank} nulls last`, asc(Platforms.name)),
     db
       .select({ url: MediaImages.url })
       .from(MediaImages)
