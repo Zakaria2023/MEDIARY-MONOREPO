@@ -1,7 +1,7 @@
 import { TitleRail } from "@/components/catalog/title-rail";
 import { launchMediaTypes } from "@/db/enum";
 import { dealRows } from "@/lib/deal-rows";
-import { listCatalogShowcase } from "@/lib/server/catalog-cache";
+import { readLandingTop, readLandingTrending } from "@/lib/server/landing-catalog";
 
 const PER_MEDIUM = 4;
 
@@ -11,10 +11,7 @@ const PER_MEDIUM = 4;
  * row. Two rails, not a page of them: the hubs above are the way further in.
  */
 export const LandingRails = async () => {
-  const [trending, top] = await Promise.all([
-    listCatalogShowcase({ sort: "trending", perMedium: PER_MEDIUM }),
-    listCatalogShowcase({ sort: "top", perMedium: PER_MEDIUM }),
-  ]);
+  const [trending, top] = await Promise.all([readLandingTrending(), readLandingTop()]);
   const [trendingRow = []] = dealRows(launchMediaTypes.map((mediaType) => trending[mediaType] ?? []), 1, PER_MEDIUM);
   const [topRow = []] = dealRows(launchMediaTypes.map((mediaType) => top[mediaType] ?? []), 1, PER_MEDIUM);
 

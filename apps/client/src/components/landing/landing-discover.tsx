@@ -3,18 +3,18 @@ import { AskDemo } from "@/components/landing/ask-demo";
 import { LandingDiscoverCard } from "@/components/landing/landing-discover-card";
 import { LandingSectionHeading } from "@/components/landing/landing-section-heading";
 import { ListenDemo } from "@/components/landing/listen-demo";
-import { listCatalogShowcase } from "@/lib/server/catalog-cache";
+import { readLandingTop } from "@/lib/server/landing-catalog";
 
 const PICKS = 3;
 
 /**
  * FINDING WHAT'S NEXT: the guide and Name that song, side by side, each
- * with a still drawn from the catalog's best scored titles. One query for
- * both stills. Both features are for members; the links lead through
+ * with a still drawn from the catalog's best scored titles. One read for
+ * both stills, shared with the rest of the landing. Both features are for members; the links lead through
  * sign-in.
  */
 export const LandingDiscover = async () => {
-  const top = await listCatalogShowcase({ sort: "top", perMedium: PICKS, withCover: true });
+  const top = await readLandingTop();
 
   return (
     <section className="mx-auto flex w-full max-w-7xl flex-col gap-14 px-5 py-24 sm:px-8 sm:py-32">
@@ -39,7 +39,7 @@ export const LandingDiscover = async () => {
           ]}
           href="/ask"
           action="Ask the guide"
-          visual={<AskDemo picks={top.anime ?? []} />}
+          visual={<AskDemo picks={(top.anime ?? []).slice(0, PICKS)} />}
         />
         <LandingDiscoverCard
           className="lg:col-span-2"

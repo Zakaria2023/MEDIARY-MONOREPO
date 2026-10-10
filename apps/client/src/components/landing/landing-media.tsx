@@ -1,7 +1,7 @@
 import { launchMediaTypes } from "@/db/enum";
 import { LandingMediaCard } from "@/components/landing/landing-media-card";
 import { LandingSectionHeading } from "@/components/landing/landing-section-heading";
-import { countCatalogByType, listCatalogShowcase } from "@/lib/server/catalog-cache";
+import { readLandingCounts, readLandingTrending } from "@/lib/server/landing-catalog";
 
 /** The most covers any card fans: the full-width last one. */
 const MOST_COVERS = 5;
@@ -12,14 +12,14 @@ const MOST_COVERS = 5;
  * states as that medium says them, read from the same label map the app
  * uses, its unit and how much the catalog holds, and its most followed
  * covers fanned beside them. Two cards to a row; an odd last one spans the
- * row and fans five. Every cover comes from one query.
+ * row and fans five. Every cover comes from the landing's one read of the most followed.
  */
 export const LandingMedia = async () => {
   const [counts, showcase] = await Promise.all([
-    countCatalogByType(),
+    readLandingCounts(),
     // The most followed, not the best scored: the covers a visitor knows, and
     // never a little-seen title whose high score rests on a handful of votes.
-    listCatalogShowcase({ sort: "trending", perMedium: MOST_COVERS, withCover: true }),
+    readLandingTrending(),
   ]);
   const last = launchMediaTypes.length - 1;
   const oddOneOut = launchMediaTypes.length % 2 === 1;
@@ -39,7 +39,7 @@ export const LandingMedia = async () => {
               <LandingMediaCard
                 mediaType={mediaType}
                 total={counts[mediaType] ?? 0}
-                covers={showcase[mediaType] ?? []}
+                covers={(showcase[mediaType] ?? []).slice(0, MOST_COVERS)}
                 wide={wide}
               />
             </li>

@@ -1,12 +1,12 @@
 import { formatCount } from "utils";
-import { countCatalogByType } from "@/lib/server/catalog-cache";
+import { readLandingCounts } from "@/lib/server/landing-catalog";
 
 /**
  * The line under the hero's actions: how big the catalog really is, read
  * from it, so the claim is never stale. Nothing is said while it is empty.
  */
 export const CatalogProof = async () => {
-  const counts = await countCatalogByType();
+  const counts = await readLandingCounts();
   const total = Object.values(counts).reduce((sum, count) => sum + (count ?? 0), 0);
   if (total === 0) {
     return null;

@@ -6,7 +6,7 @@ import { MatchDemo } from "@/components/landing/match-demo";
 import { StatsDemo } from "@/components/landing/stats-demo";
 import { TrackDemo } from "@/components/landing/track-demo";
 import { firstWithCover } from "@/lib/first-with-cover";
-import { listCatalogShowcase } from "@/lib/server/catalog-cache";
+import { readLandingTop, readLandingTrending } from "@/lib/server/landing-catalog";
 
 /**
  * WHAT IT IS LIKE TO USE: four features, each beside a still of the
@@ -14,17 +14,14 @@ import { listCatalogShowcase } from "@/lib/server/catalog-cache";
  * thing it promises. The titles change with what is trending.
  */
 export const LandingFeatures = async () => {
-  const [trending, top] = await Promise.all([
-    listCatalogShowcase({ sort: "trending", perMedium: 2, withCover: true }),
-    listCatalogShowcase({ sort: "top", perMedium: 1, withCover: true }),
-  ]);
-  const anime = trending.anime ?? [];
-  const movies = trending.movie ?? [];
-  const books = trending.book ?? [];
-  const music = trending.music ?? [];
+  const [trending, top] = await Promise.all([readLandingTrending(), readLandingTop()]);
+  const anime = (trending.anime ?? []).slice(0, 2);
+  const movies = (trending.movie ?? []).slice(0, 2);
+  const books = (trending.book ?? []).slice(0, 2);
+  const music = (trending.music ?? []).slice(0, 2);
   const library = [...firstWithCover(anime), ...firstWithCover(movies), ...firstWithCover(books)];
   const week = [...firstWithCover(movies, 1), ...firstWithCover(books, 1), ...firstWithCover(music), ...firstWithCover(anime, 1)];
-  const shared = launchMediaTypes.flatMap((mediaType) => top[mediaType] ?? []);
+  const shared = launchMediaTypes.flatMap((mediaType) => (top[mediaType] ?? []).slice(0, 1));
 
   return (
     <section className="border-y border-hairline bg-surface/40">

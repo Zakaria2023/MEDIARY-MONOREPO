@@ -1,7 +1,7 @@
 import { Poster } from "ui";
 import { launchMediaTypes } from "@/db/enum";
 import { dealRows } from "@/lib/deal-rows";
-import { listCatalogShowcase } from "@/lib/server/catalog-cache";
+import { readLandingTrending } from "@/lib/server/landing-catalog";
 
 const PER_MEDIUM = 9;
 const ROWS = 3;
@@ -15,7 +15,7 @@ const ROW_ANIMATIONS = ["animate-marquee", "animate-marquee-reverse", "animate-m
  * Each row is drawn twice so the drift loops without a seam.
  */
 export const PosterWall = async () => {
-  const showcase = await listCatalogShowcase({ sort: "trending", perMedium: PER_MEDIUM, withCover: true });
+  const showcase = await readLandingTrending();
   const rows = dealRows(launchMediaTypes.map((mediaType) => showcase[mediaType] ?? []), ROWS, PER_MEDIUM);
   if (rows.every((row) => row.length === 0)) {
     return null;
