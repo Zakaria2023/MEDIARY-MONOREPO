@@ -54,7 +54,7 @@ export const Landing = () => (
     <LandingImports />
     <LandingPrinciples />
 
-    <section className="flex flex-col gap-12 border-t border-hairline py-24 sm:py-32">
+    <section className="flex flex-col gap-12 border-t border-hairline pt-24 pb-12 sm:pt-32 sm:pb-16">
       <div className="mx-auto w-full max-w-7xl px-5 sm:px-8">
         <LandingSectionHeading
           align="start"

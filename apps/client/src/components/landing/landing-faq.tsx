@@ -8,7 +8,7 @@ import { LANDING_FAQ } from "@/lib/landing-faq";
  * FAQPage structured data from the page.
  */
 export const LandingFaq = () => (
-  <section className="mx-auto flex w-full max-w-4xl flex-col gap-12 px-5 py-24 sm:px-8 sm:py-32">
+  <section className="mx-auto flex w-full max-w-4xl flex-col gap-12 px-5 pt-12 pb-24 sm:px-8 sm:pt-16 sm:pb-32">
     <LandingSectionHeading eyebrow="Questions" title="Good to know." body="The short answers. The rest is on the support page." />
     <div className="flex flex-col divide-y divide-hairline border-y border-hairline">
       {LANDING_FAQ.map((item) => (
