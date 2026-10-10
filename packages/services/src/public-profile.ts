@@ -5,7 +5,7 @@ import { Profiles, SelectProfiles } from "../../../db/schema/profiles";
 import { UserMedia } from "../../../db/schema/user-media";
 import { SelectUserSettings, UserSettings } from "../../../db/schema/user-settings";
 import { SelectUsers, Users } from "../../../db/schema/users";
-import { CatalogCard } from "./catalog";
+import { CatalogCard, PLATFORM_BADGES } from "./catalog";
 import { getFollowCounts, isBlockedEitherWay, isFollowing } from "./follows";
 import { trackedMinutes } from "./stats";
 import { ViewerParams, visibleEntries } from "./tracking";
@@ -165,6 +165,7 @@ export const listProfileFavorites = async (
       coverUrl: Media.coverUrl,
       dominantColor: Media.dominantColor,
       providerScore: Media.providerScore,
+      platformBadges: PLATFORM_BADGES,
       score: UserMedia.score,
     })
     .from(UserMedia)

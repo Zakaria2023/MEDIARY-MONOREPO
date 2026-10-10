@@ -4,7 +4,7 @@ import { launchMediaTypes, MediaType } from "../../../db/enum";
 import { Genres, MediaGenres } from "../../../db/schema/genres";
 import { Media } from "../../../db/schema/media";
 import { UserMedia } from "../../../db/schema/user-media";
-import { CatalogCard, CatalogGenre } from "./catalog";
+import { CatalogCard, CatalogGenre, PLATFORM_BADGES } from "./catalog";
 import { isFeatureOn } from "./flags";
 import { tasteEntries } from "./taste";
 import { computeTastePicks, TasteCandidate } from "./taste-rules";
@@ -38,6 +38,7 @@ const CARD_COLUMNS = {
   coverUrl: Media.coverUrl,
   dominantColor: Media.dominantColor,
   providerScore: Media.providerScore,
+  platformBadges: PLATFORM_BADGES,
 };
 
 /**

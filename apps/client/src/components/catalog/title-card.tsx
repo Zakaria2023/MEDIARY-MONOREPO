@@ -1,9 +1,10 @@
 import { Star } from "lucide-react";
 import Link from "next/link";
 import { CatalogCard } from "services";
-import { Poster } from "ui";
+import { Badge, Poster } from "ui";
 import { MEDIA_TYPE_LABELS } from "@/db/label";
 import { QuickTrack } from "@/components/tracking/quick-track";
+import { platformBadgeLabels } from "@/lib/platform-badges";
 import { titlePath } from "@/lib/title-path";
 
 type TitleCardProps = {
@@ -59,6 +60,15 @@ export const TitleCard = ({ title, showType = false, sizes, priority = false }: 
           </span>
         )}
       </div>
+      {title.platformBadges.length > 0 && (
+        <ul aria-label={`Platforms: ${title.platformBadges.join(", ")}`} className="mt-1 flex items-center gap-1 overflow-hidden">
+          {platformBadgeLabels(title.platformBadges).map((label) => (
+            <li key={label} aria-hidden className="shrink-0">
+              <Badge>{label}</Badge>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   </article>
 );

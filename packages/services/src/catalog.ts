@@ -59,7 +59,10 @@ export type CatalogCard = Pick<
   | "coverUrl"
   | "dominantColor"
   | "providerScore"
->;
+> & {
+  /** A game's platforms as badges ("PS5", "NSW"), in the picker's order; empty for every other medium. */
+  platformBadges: SelectPlatforms["abbreviation"][];
+};
 
 export type CatalogGenre = Pick<SelectGenres, "slug" | "name">;
 
@@ -197,7 +200,20 @@ export type CatalogShowcaseParams = {
 /** Where a platform sits in PLATFORM_ORDER; null, and so last, for one it does not name. */
 const platformRank = sql`array_position(${sql.raw(`array[${PLATFORM_ORDER.map((slug) => `'${slug}'`).join(", ")}]::text[]`)}, ${Platforms.slug}::text)`;
 
-const CARD_COLUMNS = {
+/**
+ * A CARD'S PLATFORM BADGES, selected beside the card's columns by every
+ * query that returns a CatalogCard: one correlated array read by the
+ * primary key of GamePlatforms, so a grid stays one query. Any medium but
+ * games gets `{}`.
+ */
+export const PLATFORM_BADGES = sql<SelectPlatforms["abbreviation"][]>`array(
+  select ${Platforms.abbreviation} from ${GamePlatforms}
+  inner join ${Platforms} on ${Platforms.id} = ${GamePlatforms.platformId}
+  where ${GamePlatforms.mediaUuid} = ${Media.uuid}
+  order by ${platformRank} nulls last, ${Platforms.name}
+)`.as("platform_badges");
+
+export const CARD_COLUMNS = {
   uuid: Media.uuid,
   slug: Media.slug,
   mediaType: Media.mediaType,
@@ -206,6 +222,7 @@ const CARD_COLUMNS = {
   coverUrl: Media.coverUrl,
   dominantColor: Media.dominantColor,
   providerScore: Media.providerScore,
+  platformBadges: PLATFORM_BADGES,
 };
 
 /** Platforms a game hub's filter offers, the most played on first; the row scrolls sideways. */
@@ -663,6 +680,7 @@ const assembleTitle = async (media: SelectMedia): Promise<CatalogTitle> => {
     coverUrl: media.coverUrl,
     dominantColor: media.dominantColor,
     providerScore: media.providerScore,
+    platformBadges: platforms.map((platform) => platform.abbreviation),
     description: media.description,
     releaseDate: media.releaseDate,
     endDate: media.endDate,

@@ -10,7 +10,7 @@ import { Genres, MediaGenres } from "../../../db/schema/genres";
 import { MediaTitles } from "../../../db/schema/media-titles";
 import { Media } from "../../../db/schema/media";
 import { UserMedia } from "../../../db/schema/user-media";
-import { CatalogCard } from "./catalog";
+import { CARD_COLUMNS, CatalogCard } from "./catalog";
 import { ValidationError } from "./errors";
 import { assertFeature, isFeatureOn } from "./flags";
 import { getTasteTraits } from "./taste";
@@ -108,17 +108,6 @@ const showInput = z.object({
     .min(1)
     .max(PICKS_MAX),
 });
-
-const CARD_COLUMNS = {
-  uuid: Media.uuid,
-  slug: Media.slug,
-  mediaType: Media.mediaType,
-  canonicalTitle: Media.canonicalTitle,
-  releaseYear: Media.releaseYear,
-  coverUrl: Media.coverUrl,
-  dominantColor: Media.dominantColor,
-  providerScore: Media.providerScore,
-};
 
 const INSTRUCTIONS = `You are the guide inside Mediary, a tracker where people keep everything they watch, play, read and listen to: anime, movies, TV, games, music, manga and books. A member tells you what they are in the mood for, and you find them something in Mediary's catalog.
 

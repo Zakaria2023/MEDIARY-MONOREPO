@@ -12,7 +12,7 @@ import { Users } from "../../../db/schema/users";
 import { recordActivity } from "./activities";
 import { PRODUCT_EVENTS, track } from "./analytics";
 import { reviewCommentCounts } from "./comments";
-import { CatalogCard } from "./catalog";
+import { CatalogCard, PLATFORM_BADGES } from "./catalog";
 import { NotFoundError } from "./errors";
 import { noReactions, ReactionSummary, reviewReactions } from "./reactions";
 import { hidesSpoilers } from "./settings";
@@ -204,6 +204,7 @@ const TITLE_COLUMNS = {
   coverUrl: Media.coverUrl,
   dominantColor: Media.dominantColor,
   providerScore: Media.providerScore,
+  platformBadges: PLATFORM_BADGES,
 };
 
 /** The review a profile features, when the viewer may read it. */

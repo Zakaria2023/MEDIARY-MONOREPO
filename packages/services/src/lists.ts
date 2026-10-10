@@ -13,7 +13,7 @@ import { Media } from "../../../db/schema/media";
 import { UserSettings } from "../../../db/schema/user-settings";
 import { Users } from "../../../db/schema/users";
 import { recordActivity } from "./activities";
-import { CatalogCard } from "./catalog";
+import { CARD_COLUMNS, CatalogCard } from "./catalog";
 import { isUniqueViolation } from "./db-result";
 import { NotFoundError, ValidationError } from "./errors";
 import { SocialUser, socialUserColumns } from "./social-user";
@@ -65,17 +65,6 @@ const SUMMARY_COLUMNS = {
   ranked: CustomLists.ranked,
   owner: socialUserColumns(Users),
   itemCount: sql<number>`(select count(*)::int from ${CustomListItems} where ${CustomListItems.listUuid} = ${CustomLists.uuid})`,
-};
-
-const CARD_COLUMNS = {
-  uuid: Media.uuid,
-  slug: Media.slug,
-  mediaType: Media.mediaType,
-  canonicalTitle: Media.canonicalTitle,
-  releaseYear: Media.releaseYear,
-  coverUrl: Media.coverUrl,
-  dominantColor: Media.dominantColor,
-  providerScore: Media.providerScore,
 };
 
 type SummaryRow = Omit<ListSummary, "previews">;

@@ -5,7 +5,7 @@ import { db } from "../../../db";
 import { Media } from "../../../db/schema/media";
 import { ProgressEvents, SelectProgressEvents } from "../../../db/schema/progress-events";
 import { UserMedia } from "../../../db/schema/user-media";
-import { CatalogCard } from "./catalog";
+import { CatalogCard, PLATFORM_BADGES } from "./catalog";
 import { diaryKind, DiaryKind } from "./diary-rules";
 import { NotFoundError } from "./errors";
 
@@ -44,6 +44,7 @@ const LINE_COLUMNS = {
     coverUrl: Media.coverUrl,
     dominantColor: Media.dominantColor,
     providerScore: Media.providerScore,
+    platformBadges: PLATFORM_BADGES,
   },
 };
 

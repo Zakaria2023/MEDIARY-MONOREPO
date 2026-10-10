@@ -5,7 +5,7 @@ import { db } from "../../../db";
 import { MusicDetails } from "../../../db/schema/media-details";
 import { MediaExternalRefs } from "../../../db/schema/media-external-refs";
 import { Media } from "../../../db/schema/media";
-import { CatalogCard, escapeLike } from "./catalog";
+import { CatalogCard, escapeLike, PLATFORM_BADGES } from "./catalog";
 import { importProviderTitle } from "./catalog-import";
 import { ValidationError } from "./errors";
 import { assertFeature, isFeatureOn } from "./flags";
@@ -77,6 +77,7 @@ const CARD_COLUMNS = {
   coverUrl: Media.coverUrl,
   dominantColor: Media.dominantColor,
   providerScore: Media.providerScore,
+  platformBadges: PLATFORM_BADGES,
 };
 
 /** Whether song matching can answer: switched on, and its key present on the server. */

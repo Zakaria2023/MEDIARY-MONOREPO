@@ -5,7 +5,7 @@ import { Media } from "../../../db/schema/media";
 import { UserMedia } from "../../../db/schema/user-media";
 import { UserSettings } from "../../../db/schema/user-settings";
 import { Users } from "../../../db/schema/users";
-import { CatalogCard } from "./catalog";
+import { CatalogCard, PLATFORM_BADGES } from "./catalog";
 import { NotFoundError } from "./errors";
 import { isFeatureOn } from "./flags";
 import { isBlockedEitherWay, isFollowing } from "./follows";
@@ -44,6 +44,7 @@ const CARD_COLUMNS = {
   coverUrl: Media.coverUrl,
   dominantColor: Media.dominantColor,
   providerScore: Media.providerScore,
+  platformBadges: PLATFORM_BADGES,
 };
 
 /** A library as the taste rules read it: every entry with its genre slugs. */

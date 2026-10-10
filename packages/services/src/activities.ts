@@ -13,7 +13,7 @@ import { Media } from "../../../db/schema/media";
 import { Reviews, SelectReviews } from "../../../db/schema/reviews";
 import { UserSettings } from "../../../db/schema/user-settings";
 import { Users } from "../../../db/schema/users";
-import { CatalogCard } from "./catalog";
+import { CatalogCard, PLATFORM_BADGES } from "./catalog";
 import { activityCommentCounts } from "./comments";
 import { activityReactions, noReactions, ReactionSummary } from "./reactions";
 import { hidesSpoilers } from "./settings";
@@ -140,6 +140,7 @@ export const listFeed = async (
           coverUrl: Media.coverUrl,
           dominantColor: Media.dominantColor,
           providerScore: Media.providerScore,
+          platformBadges: PLATFORM_BADGES,
         },
         review: { uuid: Reviews.uuid, headline: Reviews.headline, containsSpoilers: Reviews.containsSpoilers },
         list: { slug: CustomLists.slug, name: CustomLists.name },

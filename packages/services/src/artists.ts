@@ -5,7 +5,7 @@ import { Artists, SelectArtists } from "../../../db/schema/artists";
 import { Genres, MediaGenres } from "../../../db/schema/genres";
 import { MusicDetails, SelectMusicDetails } from "../../../db/schema/media-details";
 import { Media, SelectMedia } from "../../../db/schema/media";
-import { CatalogCard, CatalogGenre, escapeLike } from "./catalog";
+import { CatalogCard, CatalogGenre, escapeLike, PLATFORM_BADGES } from "./catalog";
 
 /** An artist as a card: their name, how many records Mediary holds, and their best known record's cover. */
 export type ArtistCard = Pick<SelectArtists, "uuid" | "slug" | "name"> & {
@@ -44,6 +44,7 @@ const RECORD_COLUMNS = {
   coverUrl: Media.coverUrl,
   dominantColor: Media.dominantColor,
   providerScore: Media.providerScore,
+  platformBadges: PLATFORM_BADGES,
   releaseType: MusicDetails.releaseType,
   trackCount: MusicDetails.trackCount,
 };
@@ -151,6 +152,7 @@ export const listMoreFromArtist = async (artistUuid: string, exceptMediaUuid: st
       coverUrl: Media.coverUrl,
       dominantColor: Media.dominantColor,
       providerScore: Media.providerScore,
+      platformBadges: PLATFORM_BADGES,
     })
     .from(MusicDetails)
     .innerJoin(Media, publicRecord)
