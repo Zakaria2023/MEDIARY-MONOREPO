@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { MediaStatus, MediaType } from "../../../../db/enum";
+import { PcRequirementLine, PcRequirements } from "../../../../db/types";
 import { createThrottle, providerFetch } from "./http";
 import {
   CatalogSeed,
@@ -76,6 +77,10 @@ const appSchema = z.object({
   genres: z.array(z.object({ description: z.string() })).nullish(),
   release_date: z.object({ coming_soon: z.boolean(), date: z.string() }).nullish(),
   content_descriptors: z.object({ ids: z.array(z.number()).nullish() }).nullish(),
+  // An object of two HTML lists when the store has them, an empty array when it has none.
+  pc_requirements: z
+    .union([z.object({ minimum: z.string().nullish(), recommended: z.string().nullish() }), z.array(z.unknown())])
+    .nullish(),
 });
 
 const detailsSchema = z.record(
@@ -169,6 +174,43 @@ const plainText = (value: string | null): string | null =>
         .trim() || null
     : null;
 
+/** Lines a requirements list keeps, and the length of one, so a pasted essay stays out of the page. */
+const MAX_REQUIREMENT_LINES = 12;
+const MAX_REQUIREMENT_LENGTH = 300;
+
+/**
+ * One of the store's requirement lists, HTML like
+ * `<strong>Minimum:</strong><br><ul><li><strong>Processor:</strong> Intel Core i5-4460<br></li>…</ul>`,
+ * as labelled plain lines. An older game's list is one run of text with no
+ * items; it becomes one unlabelled line. Exported for the unit tests.
+ */
+export const parseRequirements = (html: string | null | undefined): PcRequirementLine[] => {
+  if (!html) {
+    return [];
+  }
+  const spaced = html.replace(/&nbsp;/gi, " ");
+  const items = spaced.includes("<li")
+    ? spaced.split(/<li[^>]*>/i).slice(1)
+    : spaced.replace(/^\s*<strong>[^<]*<\/strong>/i, "").split(/<br\s*\/?>/i);
+  return items
+    .flatMap((item): PcRequirementLine[] => {
+      const labelled = /^\s*<strong>([^<]*)<\/strong>:?([\s\S]*)$/i.exec(item);
+      // "OS *:" carries the store's footnote mark; the label is "OS".
+      const label = plainText(labelled ? labelled[1] : null)?.replace(/[\s*:]+$/, "") ?? "";
+      const value = plainText((labelled ? labelled[2] : item).replace(/<br\s*\/?>/gi, " "))?.replace(/\s+/g, " ");
+      return value ? [{ label: label.slice(0, 40), value: value.slice(0, MAX_REQUIREMENT_LENGTH) }] : [];
+    })
+    .slice(0, MAX_REQUIREMENT_LINES);
+};
+
+/** Both lists, or null when the store gives neither. */
+const requirementsOf = (app: SteamApp): PcRequirements | null => {
+  const lists = Array.isArray(app.pc_requirements) ? null : app.pc_requirements;
+  const minimum = parseRequirements(lists?.minimum);
+  const recommended = parseRequirements(lists?.recommended);
+  return minimum.length > 0 || recommended.length > 0 ? { minimum, recommended } : null;
+};
+
 const platformsOf = (app: SteamApp, releaseDate: string | null): NormalizedPlatform[] => {
   const keys = [
     app.platforms?.windows ? "win" : null,
@@ -235,6 +277,7 @@ export const normalizeSteamApp = (app: SteamApp, stats: SpyStats | null, withCov
           ? false
           : null,
       franchise: null,
+      pcRequirements: app.platforms?.windows === false ? null : requirementsOf(app),
     },
   };
 };

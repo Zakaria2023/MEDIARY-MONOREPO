@@ -50,3 +50,16 @@ export type MusicTrack = {
   /** Seconds, when the catalog knows. */
   lengthSeconds: number | null;
 };
+
+/** One line of a PC game's requirements: "Processor", "Intel Core i5-4460". */
+export type PcRequirementLine = {
+  /** What the line is about; empty for a note the store gave without one. */
+  label: string;
+  value: string;
+};
+
+/** What a PC needs to run a game, at the least and as the publisher advises. */
+export type PcRequirements = {
+  minimum: PcRequirementLine[];
+  recommended: PcRequirementLine[];
+};

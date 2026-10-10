@@ -182,6 +182,7 @@ describe("IGDB normalization", () => {
       publisher: "Bandai Namco",
       multiplayer: true,
       franchise: "Souls",
+      pcRequirements: null,
     });
     expect(game.titles.map((title) => title.title)).toEqual(["Elden Ring", "ER"]);
     expect(game.images[0]?.url).toBe(

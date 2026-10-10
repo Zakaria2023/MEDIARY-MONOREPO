@@ -4,6 +4,7 @@ import { catalogFacts, getTitleTracking, listChoicesForTitle, PRODUCT_EVENTS, tr
 import { AsyncSection, Badge } from "ui";
 import { parseLaunchMediaType } from "validators";
 import { MEDIA_TYPE_LABELS } from "@/db/label";
+import { PcRequirements } from "@/components/catalog/pc-requirements";
 import { RelatedTitles } from "@/components/catalog/related-titles";
 import { AlbumArtist } from "@/components/music/album-artist";
 import { AlbumTracklist } from "@/components/music/album-tracklist";
@@ -71,6 +72,7 @@ const TitlePage = async ({ params }: Props) => {
   track(PRODUCT_EVENTS.mediaOpened, { mediaType: title.mediaType, member: viewer !== null, tracked: Boolean(tracking?.entry) });
   const facts = catalogFacts(title);
   const music = title.details?.kind === "music" ? title.details : null;
+  const pcRequirements = title.details?.kind === "game" ? title.details.pcRequirements : null;
   const launchType = parseLaunchMediaType(title.mediaType);
   const section = launchType ? EXPLORE_COPY[launchType].heading : MEDIA_TYPE_LABELS[title.mediaType];
 
@@ -126,6 +128,8 @@ const TitlePage = async ({ params }: Props) => {
               </div>
             </section>
           )}
+
+          {pcRequirements && <PcRequirements requirements={pcRequirements} />}
 
           {viewer && tracking?.entry && title.mediaType === "game" && (
             <AsyncSection reloadKey={`runs-${title.uuid}`} skeleton={<PlaythroughsSkeleton />}>

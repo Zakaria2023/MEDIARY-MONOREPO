@@ -318,6 +318,7 @@ export const normalizeIgdbGame = (raw: unknown): NormalizedMedia => {
         ? game.game_modes.some((mode) => MULTIPLAYER_MODES.has(mode.slug))
         : null,
       franchise: game.franchises?.[0]?.name ?? null,
+      pcRequirements: null,
     },
   };
 };

@@ -9,7 +9,7 @@ import {
   Season,
   TitleType,
 } from "../../../../db/enum";
-import { MusicTrack } from "../../../../db/types";
+import { MusicTrack, PcRequirements } from "../../../../db/types";
 
 /** One name a title goes by, as it lands in MediaTitles. */
 export type NormalizedTitle = {
@@ -74,6 +74,7 @@ export type NormalizedGameDetails = {
   publisher: string | null;
   multiplayer: boolean | null;
   franchise: string | null;
+  pcRequirements: PcRequirements | null;
 };
 
 export type NormalizedAnimeDetails = {

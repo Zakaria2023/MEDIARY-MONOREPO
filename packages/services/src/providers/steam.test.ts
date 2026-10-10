@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeSteamApp, parseStoreDate } from "./steam";
+import { normalizeSteamApp, parseRequirements, parseStoreDate } from "./steam";
 
 type AppOverrides = Partial<Parameters<typeof normalizeSteamApp>[0]>;
 
@@ -32,6 +32,31 @@ describe("parseStoreDate", () => {
   });
 });
 
+describe("parseRequirements", () => {
+  it("reads the store's list as labelled plain lines", () => {
+    const html =
+      '<strong>Minimum:</strong><br><ul class="bb_ul"><li>Requires a 64-bit processor and operating system<br></li>' +
+      "<li><strong>OS *:</strong> Windows 10 64-bit<br></li><li><strong>Processor:</strong> Intel Core i5-4460 &amp; AMD FX-6300<br></li>" +
+      "<li><strong>Memory:</strong> 8 GB RAM<br></li><li><strong>Graphics:</strong> NVIDIA GeForce GTX 960<br></li></ul>";
+    expect(parseRequirements(html)).toEqual([
+      { label: "", value: "Requires a 64-bit processor and operating system" },
+      { label: "OS", value: "Windows 10 64-bit" },
+      { label: "Processor", value: "Intel Core i5-4460 & AMD FX-6300" },
+      { label: "Memory", value: "8 GB RAM" },
+      { label: "Graphics", value: "NVIDIA GeForce GTX 960" },
+    ]);
+  });
+
+  it("splits an older game's run of text on its line breaks, and reads nothing as nothing", () => {
+    expect(parseRequirements("<strong>Minimum:</strong> 1.8 GHz Processor<br>1 GB&nbsp;RAM<br>")).toEqual([
+      { label: "", value: "1.8 GHz Processor" },
+      { label: "", value: "1 GB RAM" },
+    ]);
+    expect(parseRequirements("")).toEqual([]);
+    expect(parseRequirements(null)).toEqual([]);
+  });
+});
+
 describe("normalizeSteamApp", () => {
   it("shapes a game: refs, plain text, genres it knows, platforms, details", () => {
     const record = normalizeSteamApp(app(), { positive: 9500, negative: 500, ccu: 4000 }, true);
@@ -40,7 +65,7 @@ describe("normalizeSteamApp", () => {
     expect(record.description).toContain("insects & heroes");
     expect(record.genres.map((genre) => genre.slug)).toEqual(["action", "adventure", "indie"]);
     expect(record.platforms.map((platform) => platform.slug)).toEqual(["pc", "mac", "linux"]);
-    expect(record.details).toEqual({ kind: "game", developer: "Team Cherry", publisher: "Team Cherry", multiplayer: false, franchise: null });
+    expect(record.details).toEqual({ kind: "game", developer: "Team Cherry", publisher: "Team Cherry", multiplayer: false, franchise: null, pcRequirements: null });
     expect(record.releaseDate).toBe("2017-02-24");
     expect(record.status).toBe("released");
     expect(record.images[0]?.url).toContain("367520/library_600x900.jpg");
@@ -63,6 +88,17 @@ describe("normalizeSteamApp", () => {
     expect(
       normalizeSteamApp(app({ release_date: { coming_soon: true, date: "Coming soon" } }), null, true).status,
     ).toBe("upcoming");
+  });
+
+  it("keeps the PC requirements of a game on Windows, and none for one that is not", () => {
+    const pc_requirements = { minimum: "<ul><li><strong>Memory:</strong> 4 GB RAM</li></ul>", recommended: null };
+    expect(normalizeSteamApp(app({ pc_requirements }), null, true).details).toMatchObject({
+      pcRequirements: { minimum: [{ label: "Memory", value: "4 GB RAM" }], recommended: [] },
+    });
+    expect(normalizeSteamApp(app({ pc_requirements: [] }), null, true).details).toMatchObject({ pcRequirements: null });
+    expect(
+      normalizeSteamApp(app({ pc_requirements, platforms: { windows: false, mac: true } }), null, true).details,
+    ).toMatchObject({ pcRequirements: null });
   });
 
   it("calls a game with an online co-op or multi-player category multiplayer", () => {

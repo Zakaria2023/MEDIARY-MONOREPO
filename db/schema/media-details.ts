@@ -10,7 +10,7 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
-import { MusicTrack } from "../types";
+import { MusicTrack, PcRequirements } from "../types";
 import { Artists } from "./artists";
 import { animeFormatEnum, mangaFormatEnum, releaseTypeEnum, seasonEnum } from "./enums";
 import { Media } from "./media";
@@ -57,6 +57,9 @@ export const GameDetails = pgTable("GameDetails", {
   // "PEGI 18", "ESRB M" as the provider gives it.
   ageRating: varchar("age_rating", { length: 20 }),
   franchise: varchar("franchise", { length: 160 }),
+  // What a PC needs to run it, minimum and recommended, as the store lists
+  // them; null for a game not on PC or a source that does not say.
+  pcRequirements: jsonb("pc_requirements").$type<PcRequirements>(),
 });
 
 export const MovieDetails = pgTable("MovieDetails", {
