@@ -4,7 +4,7 @@ import { LibraryItem } from "services";
 import { Poster } from "ui";
 import { ProgressBar } from "@/components/shared/progress-bar";
 import { EntryStatusChip } from "@/components/tracking/entry-status-chip";
-import { formatProgress, progressCapFor } from "@/lib/format-progress";
+import { formatProgress, progressBarValue, progressGoalFor } from "@/lib/format-progress";
 import { titlePath } from "@/lib/title-path";
 
 type ProfileEntryCardProps = {
@@ -20,7 +20,7 @@ const CARD_SIZES = "(min-width: 1024px) 200px, (min-width: 640px) 25vw, 33vw";
  */
 export const ProfileEntryCard = ({ item }: ProfileEntryCardProps) => {
   const { title, entry } = item;
-  const total = progressCapFor(title, entry.progressUnit);
+  const total = progressGoalFor(title, entry.progressUnit);
   const finished = entry.status === "completed";
 
   return (
@@ -44,7 +44,7 @@ export const ProfileEntryCard = ({ item }: ProfileEntryCardProps) => {
             </span>
           )}
         </div>
-        <ProgressBar value={entry.progressValue} total={total} tone={finished ? "completed" : "progress"} />
+        <ProgressBar value={progressBarValue(entry.progressValue, total, finished)} total={total} tone={finished ? "completed" : "progress"} />
       </div>
     </article>
   );

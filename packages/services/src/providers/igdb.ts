@@ -25,6 +25,8 @@ type IgdbListItem = z.infer<typeof listItemSchema>;
 
 type IgdbGame = z.infer<typeof gameSchema>;
 
+type TimeToBeat = z.infer<typeof timeToBeatSchema>;
+
 const API = "https://api.igdb.com/v4";
 
 /** How this source is named in any message a person may read. Never the vendor's name. */
@@ -136,6 +138,26 @@ const MAIN_GAMES = "parent_game = null & version_parent = null";
 
 const PAGE_SIZE = 20;
 
+/** The most ids one Apicalypse `where … = (…)` list takes; IGDB returns at most 500 rows a query. */
+const LOOKUP_BATCH = 500;
+
+/** IGDB's external source id for the Steam store. */
+const STEAM_SOURCE = 1;
+
+const SECONDS_PER_HOUR = 3600;
+
+const timeToBeatSchema = z.object({
+  game_id: z.number(),
+  hastily: z.number().nullish(),
+  normally: z.number().nullish(),
+  completely: z.number().nullish(),
+});
+
+const externalGameSchema = z.object({
+  uid: z.string(),
+  game: z.number(),
+});
+
 /**
  * An app-access token from Twitch, cached until a minute before it expires
  * (about sixty days). A 401 later on clears it, so a revoked token is
@@ -246,8 +268,77 @@ const platformsOf = (platforms: IgdbGame["platforms"]): NormalizedPlatform[] => 
   return result;
 };
 
+/**
+ * The hours a typical playthrough takes: the main story and extras, else
+ * the main story alone, else everything, rounded to whole hours. Players
+ * submit these times; a game nobody timed has none. Exported for the unit tests.
+ */
+export const hoursToFinish = (time: TimeToBeat | undefined): number | null => {
+  const seconds = time ? (time.normally ?? time.hastily ?? time.completely ?? null) : null;
+  return seconds && seconds > 0 ? Math.max(1, Math.round(seconds / SECONDS_PER_HOUR)) : null;
+};
+
+/** Hours to finish for IGDB game ids, a batch at a time; a game with no time is left out. */
+const hoursByIgdbId = async (gameIds: number[]): Promise<Map<number, number>> => {
+  const hours = new Map<number, number>();
+  for (let start = 0; start < gameIds.length; start += LOOKUP_BATCH) {
+    const batch = gameIds.slice(start, start + LOOKUP_BATCH);
+    const times = z
+      .array(timeToBeatSchema)
+      .parse(
+        await igdbQuery(
+          "game_time_to_beats",
+          `fields game_id,hastily,normally,completely; where game_id = (${batch.join(",")}); limit ${LOOKUP_BATCH};`,
+        ),
+      );
+    for (const time of times) {
+      const value = hoursToFinish(time);
+      if (value !== null) {
+        hours.set(time.game_id, value);
+      }
+    }
+  }
+  return hours;
+};
+
+/**
+ * HOURS TO FINISH for games held under the PC store's app ids, matched
+ * through IGDB's own links to the store. The store says nothing about how
+ * long a game takes, so its adapter and the backfill ask here. Empty when
+ * this source is not configured.
+ */
+export const igdbHoursForSteamApps = async (appIds: number[]): Promise<Map<number, number>> => {
+  const hours = new Map<number, number>();
+  if (!igdbProvider.isConfigured() || appIds.length === 0) {
+    return hours;
+  }
+  for (let start = 0; start < appIds.length; start += LOOKUP_BATCH) {
+    const batch = appIds.slice(start, start + LOOKUP_BATCH);
+    const links = z
+      .array(externalGameSchema)
+      .parse(
+        await igdbQuery(
+          "external_games",
+          `fields uid,game; where external_game_source = ${STEAM_SOURCE} & uid = (${batch.map((id) => `"${id}"`).join(",")}); limit ${LOOKUP_BATCH};`,
+        ),
+      );
+    const byGame = await hoursByIgdbId([...new Set(links.map((link) => link.game))]);
+    for (const link of links) {
+      const value = byGame.get(link.game);
+      if (value !== undefined) {
+        hours.set(Number(link.uid), value);
+      }
+    }
+  }
+  return hours;
+};
+
+/** Hours to finish for games held under IGDB's own ids. Empty when not configured. */
+export const igdbHoursForGames = async (gameIds: number[]): Promise<Map<number, number>> =>
+  igdbProvider.isConfigured() && gameIds.length > 0 ? hoursByIgdbId(gameIds) : new Map<number, number>();
+
 /** An IGDB game record in Mediary's shape. Exported for the unit tests. */
-export const normalizeIgdbGame = (raw: unknown): NormalizedMedia => {
+export const normalizeIgdbGame = (raw: unknown, estimatedHours: number | null = null): NormalizedMedia => {
   const game = gameSchema.parse(raw);
   const releaseDate = isoDate(game.first_release_date);
   const today = new Date().toISOString().slice(0, 10);
@@ -319,6 +410,7 @@ export const normalizeIgdbGame = (raw: unknown): NormalizedMedia => {
         : null,
       franchise: game.franchises?.[0]?.name ?? null,
       pcRequirements: null,
+      estimatedHours,
     },
   };
 };
@@ -379,7 +471,8 @@ export const igdbProvider: MediaProvider = {
     if (!game) {
       throw new Error(`${SOURCE_LABEL} has no game ${externalId}`);
     }
-    return normalizeIgdbGame(game);
+    const hours = await hoursByIgdbId([parseIgdbId(externalId)]);
+    return normalizeIgdbGame(game, hours.get(parseIgdbId(externalId)) ?? null);
   },
   getList: async (mediaType, kind, page = 1) => {
     assertGame(mediaType);

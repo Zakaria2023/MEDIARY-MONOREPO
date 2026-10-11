@@ -6,7 +6,7 @@ import { TRACKING_STATUS_LABELS } from "@/db/label";
 import { EntrySheet } from "@/components/tracking/entry-sheet";
 import { ProgressTickButton } from "@/components/tracking/progress-tick-button";
 import { StatusDot } from "@/components/tracking/status-dot";
-import { formatProgress, progressCapFor } from "@/lib/format-progress";
+import { formatProgress, progressCapFor, progressGoalFor } from "@/lib/format-progress";
 import { useTrackedEntry } from "@/lib/use-tracked-entry";
 
 type TrackButtonProps = {
@@ -26,6 +26,7 @@ export const TrackButton = ({ target, initialEntry }: TrackButtonProps) => {
   const total = current ? progressCapFor(target, current.progressUnit) : null;
   const canTick =
     current !== null && current.status !== "completed" && (total === null || current.progressValue < total);
+  const goal = current ? progressGoalFor(target, current.progressUnit) : null;
 
   return (
     <div className="flex flex-col gap-2 pt-1">
@@ -42,7 +43,7 @@ export const TrackButton = ({ target, initialEntry }: TrackButtonProps) => {
                 {TRACKING_STATUS_LABELS[target.mediaType][current.status]}
               </span>
               <span className="tabular text-xs text-muted">
-                {formatProgress(current.progressValue, current.progressUnit, total)}
+                {formatProgress(current.progressValue, current.progressUnit, goal)}
                 {current.score !== null ? ` · ${current.score}/10` : ""}
               </span>
             </span>

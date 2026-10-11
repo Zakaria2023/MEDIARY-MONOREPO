@@ -10,11 +10,14 @@ export const titleStatusLabel = (mediaType: MediaType, status: MediaStatus): str
 /**
  * The one line under a title's name that says what state it is in and how
  * much of it exists: "Airing · 1,180 episodes so far · next 12 Oct",
- * "Finished · 26 episodes", "Coming soon". Null for a title with nothing
- * to say (a released film).
+ * "Finished · 26 episodes", "About 26 hours to finish", "Coming soon".
+ * Null for a title with nothing to say (a released film).
  */
 export const titleStatusLine = (
-  target: Pick<TrackingTarget, "mediaType" | "titleStatus" | "progressUnit" | "progressTotal" | "progressReleased" | "nextAt">,
+  target: Pick<
+    TrackingTarget,
+    "mediaType" | "titleStatus" | "progressUnit" | "progressTotal" | "progressReleased" | "nextAt" | "estimatedHours"
+  >,
 ): string | null => {
   const parts: string[] = [];
   const unit = PROGRESS_UNIT_LABELS[target.progressUnit];
@@ -30,6 +33,8 @@ export const titleStatusLine = (
     );
   } else if (counted && target.progressTotal !== null) {
     parts.push(`${formatCount(target.progressTotal)} ${unit}`);
+  } else if (target.progressUnit === "hours" && target.estimatedHours !== null) {
+    parts.push(`About ${formatCount(target.estimatedHours)} ${target.estimatedHours === 1 ? "hour" : "hours"} to finish`);
   }
   if (target.nextAt && target.titleStatus === "releasing") {
     parts.push(`next ${formatDate(target.nextAt)}`);

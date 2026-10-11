@@ -75,6 +75,8 @@ export type NormalizedGameDetails = {
   multiplayer: boolean | null;
   franchise: string | null;
   pcRequirements: PcRequirements | null;
+  /** Hours a typical playthrough takes, main story and extras; null when the source has no time. */
+  estimatedHours: number | null;
 };
 
 export type NormalizedAnimeDetails = {

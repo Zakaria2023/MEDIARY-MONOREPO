@@ -10,7 +10,7 @@ import { LibrarySelectOverlay } from "@/components/library/library-select-overla
 import { EntryStatusChip } from "@/components/tracking/entry-status-chip";
 import { ProgressTickButton } from "@/components/tracking/progress-tick-button";
 import { ProgressBar } from "@/components/shared/progress-bar";
-import { formatProgress, progressCapFor } from "@/lib/format-progress";
+import { formatProgress, progressBarValue, progressGoalFor } from "@/lib/format-progress";
 import { titlePath } from "@/lib/title-path";
 import { useTrackedEntry } from "@/lib/use-tracked-entry";
 
@@ -33,7 +33,7 @@ export const LibraryRow = ({ item, showType }: LibraryRowProps) => {
   if (!entry || removed) {
     return null;
   }
-  const total = progressCapFor(title, entry.progressUnit);
+  const total = progressGoalFor(title, entry.progressUnit);
   const finished = entry.status === "completed";
   const progress = formatProgress(entry.progressValue, entry.progressUnit, total);
   const meta = [showType ? MEDIA_TYPE_LABELS[title.mediaType] : null, title.releaseYear]
@@ -65,7 +65,7 @@ export const LibraryRow = ({ item, showType }: LibraryRowProps) => {
       <div className="hidden flex-col gap-1.5 sm:flex">
         <span className="tabular text-xs text-secondary">{progress}</span>
         <ProgressBar
-          value={entry.progressValue}
+          value={progressBarValue(entry.progressValue, total, finished)}
           total={total}
           tone={finished ? "completed" : "progress"}
         />

@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, like, or } from "drizzle-orm";
+import { and, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
 import { slugify } from "utils";
 import { db } from "../../../db";
 import { MediaType } from "../../../db/enum";
@@ -396,10 +396,15 @@ const writeDetails = async (tx: Tx, mediaUuid: string, record: NormalizedMedia) 
       .onConflictDoUpdate({ target: MusicDetails.mediaUuid, set: values });
   } else if (details.kind === "game") {
     const { kind: _kind, ...values } = details;
+    // The time to finish comes from a second source that may be unreachable
+    // or unconfigured on a refresh; a time once known stays until a new one comes.
     await tx
       .insert(GameDetails)
       .values({ mediaUuid, ...values })
-      .onConflictDoUpdate({ target: GameDetails.mediaUuid, set: values });
+      .onConflictDoUpdate({
+        target: GameDetails.mediaUuid,
+        set: { ...values, estimatedHours: sql`coalesce(excluded.estimated_hours, ${GameDetails.estimatedHours})` },
+      });
   } else if (details.kind === "manga") {
     const { kind: _kind, ...values } = details;
     await tx

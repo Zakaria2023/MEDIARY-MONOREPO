@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isUniqueViolation } from "../db-result";
-import { normalizeIgdbGame } from "./igdb";
+import { hoursToFinish, normalizeIgdbGame } from "./igdb";
 import { normalizeTmdbMovie, normalizeTmdbTv, parseTmdbExternalId } from "./tmdb";
 import { popularityScore, toGenres } from "./vocabulary";
 
@@ -183,11 +183,23 @@ describe("IGDB normalization", () => {
       multiplayer: true,
       franchise: "Souls",
       pcRequirements: null,
+      estimatedHours: null,
     });
+    expect(normalizeIgdbGame(IGDB_GAME, 59).details).toMatchObject({ estimatedHours: 59 });
     expect(game.titles.map((title) => title.title)).toEqual(["Elden Ring", "ER"]);
     expect(game.images[0]?.url).toBe(
       "https://images.igdb.com/igdb/image/upload/t_cover_big/co4jni.jpg",
     );
+  });
+
+  it("takes main story and extras as the hours to finish, else the story, else everything", () => {
+    expect(hoursToFinish({ game_id: 1, hastily: 36_000, normally: 90_000, completely: 360_000 })).toBe(25);
+    expect(hoursToFinish({ game_id: 1, hastily: 36_000, normally: null })).toBe(10);
+    expect(hoursToFinish({ game_id: 1, completely: 7_200 })).toBe(2);
+    // A short game is at least an hour, never "0h".
+    expect(hoursToFinish({ game_id: 1, normally: 900 })).toBe(1);
+    expect(hoursToFinish({ game_id: 1, normally: 0 })).toBeNull();
+    expect(hoursToFinish(undefined)).toBeNull();
   });
 
   it("calls a game with no date announced", () => {

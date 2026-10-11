@@ -15,6 +15,10 @@ const count = (value: number | null): string | null =>
 const yesNo = (value: boolean | null): string | null =>
   value === null ? null : value ? "Yes" : "No";
 
+/** "About 26 hours": a typical playthrough, from players' own times. */
+const hoursToFinish = (hours: number | null): string | null =>
+  hours === null ? null : `About ${count(hours)} ${hours === 1 ? "hour" : "hours"}`;
+
 /**
  * The facts a title page lists under Details, in reading order: when it
  * came out and where it stands, then what only its medium has. Facts the
@@ -50,6 +54,7 @@ export const catalogFacts = (title: CatalogTitle): CatalogFact[] => {
       { label: "Publisher", value: details.publisher },
       { label: "Franchise", value: details.franchise },
       { label: "Multiplayer", value: yesNo(details.multiplayer) },
+      { label: "Time to finish", value: hoursToFinish(details.estimatedHours) },
     );
   } else if (details?.kind === "anime") {
     facts.push(

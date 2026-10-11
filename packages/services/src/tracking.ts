@@ -4,7 +4,14 @@ import { ProgressTickInput, UpsertEntryInput } from "validators";
 import { db } from "../../../db";
 import { MediaType, ProgressUnit, TrackingStatus } from "../../../db/enum";
 import { DEFAULT_PROGRESS_UNIT } from "../../../db/label";
-import { AnimeDetails, BookDetails, MangaDetails, TvDetails } from "../../../db/schema/media-details";
+import {
+  AnimeDetails,
+  BookDetails,
+  GameDetails,
+  MangaDetails,
+  SelectGameDetails,
+  TvDetails,
+} from "../../../db/schema/media-details";
 import { Media, SelectMedia } from "../../../db/schema/media";
 import { MediaTitles } from "../../../db/schema/media-titles";
 import { GamePlatforms, Platforms, SelectPlatforms } from "../../../db/schema/platforms";
@@ -76,6 +83,12 @@ export type TrackingTarget = Pick<
   progressTotal: number | null;
   /** How much of it is out so far in the same unit: the episodes aired to date. Null when unknown. */
   progressReleased: number | null;
+  /**
+   * A game's hours to finish, from players' times. Shown beside the hours
+   * logged ("12h / 26h") but never a limit: a run can take longer, and
+   * reaching it finishes nothing. Null for every other medium.
+   */
+  estimatedHours: SelectGameDetails["estimatedHours"] | null;
   /** Where the title is in its own life: airing, finished, coming. */
   titleStatus: SelectMedia["status"];
   /** When the next episode is due, if the source knows. */
@@ -155,6 +168,9 @@ const PROGRESS_RELEASED = sql<number | null>`case ${Media.mediaType}
   when 'comic' then (select ${BookDetails.pageCount} from ${BookDetails} where ${BookDetails.mediaUuid} = ${Media.uuid})
   else null end`;
 
+/** A game's hours to finish; null for every other medium. */
+const ESTIMATED_HOURS = sql<number | null>`(select ${GameDetails.estimatedHours} from ${GameDetails} where ${GameDetails.mediaUuid} = ${Media.uuid})`;
+
 /** When the next episode is due, for a series whose source knows. */
 const NEXT_AT = sql<string | null>`case ${Media.mediaType}
   when 'anime' then (select ${AnimeDetails.nextEpisodeAt}::text from ${AnimeDetails} where ${AnimeDetails.mediaUuid} = ${Media.uuid})
@@ -178,6 +194,7 @@ const TARGET_COLUMNS = {
   dominantColor: Media.dominantColor,
   progressTotal: PROGRESS_TOTAL,
   progressReleased: PROGRESS_RELEASED,
+  estimatedHours: ESTIMATED_HOURS,
   titleStatus: Media.status,
   nextAt: NEXT_AT,
   platforms: PLATFORMS,

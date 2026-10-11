@@ -2,6 +2,7 @@ import { z } from "zod";
 import { MediaStatus, MediaType } from "../../../../db/enum";
 import { PcRequirementLine, PcRequirements } from "../../../../db/types";
 import { createThrottle, providerFetch } from "./http";
+import { igdbHoursForSteamApps } from "./igdb";
 import {
   CatalogSeed,
   MediaProvider,
@@ -226,9 +227,15 @@ const platformsOf = (app: SteamApp, releaseDate: string | null): NormalizedPlatf
 /**
  * A store app in Mediary's shape. Exported for the unit tests. The review
  * counts come from SteamSpy: their share of positive reviews is the
- * community score, and how many there are is the popularity.
+ * community score, and how many there are is the popularity. The hours to
+ * finish come from the game database, when it is configured.
  */
-export const normalizeSteamApp = (app: SteamApp, stats: SpyStats | null, withCover: boolean): NormalizedMedia => {
+export const normalizeSteamApp = (
+  app: SteamApp,
+  stats: SpyStats | null,
+  withCover: boolean,
+  estimatedHours: number | null = null,
+): NormalizedMedia => {
   const releaseDate = app.release_date ? parseStoreDate(app.release_date.date) : null;
   const today = new Date().toISOString().slice(0, 10);
   const status: MediaStatus = app.release_date?.coming_soon || (releaseDate !== null && releaseDate > today)
@@ -278,6 +285,7 @@ export const normalizeSteamApp = (app: SteamApp, stats: SpyStats | null, withCov
           : null,
       franchise: null,
       pcRequirements: app.platforms?.windows === false ? null : requirementsOf(app),
+      estimatedHours,
     },
   };
 };
@@ -300,6 +308,15 @@ const spyPage = (index: number): Promise<SpyEntry[]> => {
   spyPages.set(index, pending);
   pending.catch(() => spyPages.delete(index));
   return pending;
+};
+
+/** A game's hours to finish from the game database; null when it has none, is not configured or does not answer. */
+const hoursFor = async (appId: number): Promise<number | null> => {
+  try {
+    return (await igdbHoursForSteamApps([appId])).get(appId) ?? null;
+  } catch {
+    return null;
+  }
 };
 
 /** A game's review counts: from the list the walk read, or asked for on their own. */
@@ -370,8 +387,8 @@ export const steamProvider: MediaProvider = {
     if (entry.data.type !== "game") {
       throw new Error(`${SOURCE_LABEL}'s ${appId} is not a game`);
     }
-    const [stats, cover] = await Promise.all([statsFor(appId), hasCover(appId)]);
-    return normalizeSteamApp(entry.data, stats, cover);
+    const [stats, cover, hours] = await Promise.all([statsFor(appId), hasCover(appId), hoursFor(appId)]);
+    return normalizeSteamApp(entry.data, stats, cover, hours);
   },
   getList: async (mediaType, kind) => {
     kindOf(mediaType);

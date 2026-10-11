@@ -22,7 +22,8 @@
     "db:push": "dotenv -e .env.local -- tsx scripts/ensure-extensions.ts && dotenv -e .env.local -- drizzle-kit push",
     "db:studio": "dotenv -e .env.local -- drizzle-kit studio",
     "catalog:seed": "dotenv -e .env.local -- tsx scripts/seed-catalog.ts",
-    "catalog:refresh": "dotenv -e .env.local -- tsx scripts/refresh-catalog.ts"
+    "catalog:refresh": "dotenv -e .env.local -- tsx scripts/refresh-catalog.ts",
+    "catalog:game-hours": "dotenv -e .env.local -- tsx scripts/fill-game-hours.ts"
   },
   "devDependencies": {
     "@clerk/testing": "2.2.44",

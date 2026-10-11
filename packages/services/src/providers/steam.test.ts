@@ -65,7 +65,8 @@ describe("normalizeSteamApp", () => {
     expect(record.description).toContain("insects & heroes");
     expect(record.genres.map((genre) => genre.slug)).toEqual(["action", "adventure", "indie"]);
     expect(record.platforms.map((platform) => platform.slug)).toEqual(["pc", "mac", "linux"]);
-    expect(record.details).toEqual({ kind: "game", developer: "Team Cherry", publisher: "Team Cherry", multiplayer: false, franchise: null, pcRequirements: null });
+    expect(record.details).toEqual({ kind: "game", developer: "Team Cherry", publisher: "Team Cherry", multiplayer: false, franchise: null, pcRequirements: null, estimatedHours: null });
+    expect(normalizeSteamApp(app(), null, true, 27).details).toMatchObject({ estimatedHours: 27 });
     expect(record.releaseDate).toBe("2017-02-24");
     expect(record.status).toBe("released");
     expect(record.images[0]?.url).toContain("367520/library_600x900.jpg");
