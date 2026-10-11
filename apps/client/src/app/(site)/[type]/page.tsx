@@ -9,14 +9,8 @@ import { HubFilterBar } from "@/components/hub/hub-filter-bar";
 import { HubFilterBarSkeleton } from "@/components/hub/hub-filter-bar-skeleton";
 import { HubGrid } from "@/components/hub/hub-grid";
 import { HubHero } from "@/components/hub/hub-hero";
-import { HubRails } from "@/components/hub/hub-rails";
-import { HubTracking } from "@/components/hub/hub-tracking";
-import { HubTrackingSkeleton } from "@/components/hub/hub-tracking-skeleton";
-import { RecommendationRail } from "@/components/recommendations/recommendation-rail";
 import { TitleGridSkeleton } from "@/components/catalog/title-grid-skeleton";
-import { TitleRailSkeleton } from "@/components/catalog/title-rail-skeleton";
 import { JsonLd } from "@/components/seo/json-ld";
-import { getCurrentUser } from "@/lib/auth";
 import { HUB_COPY } from "@/lib/hub-copy";
 import { hubPath, parseHubSlug } from "@/lib/hub-path";
 import { parseHubQuery } from "@/lib/hub-query";
@@ -48,11 +42,10 @@ export const generateMetadata = async ({ params, searchParams }: Props): Promise
 };
 
 /**
- * A MEDIUM'S HUB, /anime, /games, /movies, /tv, /music: its own hero, its
- * own two rails, its own filter beside genres, the grid, and, for a member,
- * their own titles in this medium with the statuses as filters. Every
- * filter is a link, so every view has a URL; the sections stream in behind
- * the hero.
+ * A MEDIUM'S HUB, /anime, /games, /movies, /tv, /music: its own hero, then
+ * every title in the medium at once, with its own filter beside genres
+ * (music has its artists first). Every filter is a link, so every view has
+ * a URL; the grid streams in behind the hero.
  */
 const HubPage = async ({ params, searchParams }: Props) => {
   const { type } = await params;
@@ -66,7 +59,6 @@ const HubPage = async ({ params, searchParams }: Props) => {
     notFound();
   }
   const query = parseHubQuery(mediaType, await searchParams);
-  const viewer = await getCurrentUser();
   const copy = HUB_COPY[mediaType];
   const path = hubPath(mediaType);
   const gridKey = [query.sort, query.genre, query.facet, query.score, query.year, query.artist, query.page].join("|");
@@ -83,25 +75,6 @@ const HubPage = async ({ params, searchParams }: Props) => {
       />
       <HubHero mediaType={mediaType} />
 
-      {viewer && (
-        <div className="mx-auto w-full max-w-7xl px-5 sm:px-8">
-          <AsyncSection reloadKey={`mine-${mediaType}-${query.mine ?? "all"}`} skeleton={<HubTrackingSkeleton />}>
-            <HubTracking userUuid={viewer.uuid} query={query} />
-          </AsyncSection>
-        </div>
-      )}
-
-      {viewer && (
-        <AsyncSection reloadKey={`for-you-${mediaType}-${viewer.uuid}`} skeleton={<TitleRailSkeleton />}>
-          <RecommendationRail
-            userUuid={viewer.uuid}
-            mediaType={mediaType}
-            heading={`${copy.heading} for you`}
-            reason={`Picked from the ${copy.noun} you loved.`}
-          />
-        </AsyncSection>
-      )}
-
       {mediaType === "music" && (
         <div className="mx-auto w-full max-w-7xl">
           <AsyncSection reloadKey="hub-artists" skeleton={<HubArtistsSkeleton />}>
@@ -109,10 +82,6 @@ const HubPage = async ({ params, searchParams }: Props) => {
           </AsyncSection>
         </div>
       )}
-
-      <AsyncSection reloadKey={`rails-${mediaType}`} skeleton={<TitleRailSkeleton />}>
-        <HubRails mediaType={mediaType} />
-      </AsyncSection>
 
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 sm:px-8">
         <div className="flex flex-col gap-0.5">

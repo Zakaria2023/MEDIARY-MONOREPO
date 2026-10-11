@@ -19,9 +19,8 @@ export type HubCopy = {
   noun: string;
   /** The medium's own filter beside genres. */
   facet: { kind: HubFacetKind; label: string };
+  /** The home's rail for this medium is the first. */
   rails: [HubRail, HubRail];
-  /** What a member's section is called: "Your anime". */
-  mine: string;
 };
 
 /**
@@ -43,7 +42,6 @@ export const HUB_COPY: Record<LaunchMediaType, HubCopy> = {
       { heading: "Airing and trending", reason: "What people are watching this week.", sort: "trending" },
       { heading: "New this season", reason: "The latest premieres, newest first.", sort: "new" },
     ],
-    mine: "Your anime",
   },
   game: {
     heading: "Games",
@@ -56,7 +54,6 @@ export const HUB_COPY: Record<LaunchMediaType, HubCopy> = {
       { heading: "Being played now", reason: "The most played this week.", sort: "trending" },
       { heading: "Coming soon", reason: "Release dates ahead, nearest first.", sort: "upcoming" },
     ],
-    mine: "Your games",
   },
   movie: {
     heading: "Movies",
@@ -69,7 +66,6 @@ export const HUB_COPY: Record<LaunchMediaType, HubCopy> = {
       { heading: "Most watched this week", reason: "What people are putting on.", sort: "trending" },
       { heading: "Highest rated", reason: "The best ever made, by community score.", sort: "top" },
     ],
-    mine: "Your movies",
   },
   tv: {
     heading: "TV shows",
@@ -82,7 +78,6 @@ export const HUB_COPY: Record<LaunchMediaType, HubCopy> = {
       { heading: "Airing now", reason: "The series people are keeping up with.", sort: "trending" },
       { heading: "New seasons", reason: "Latest premieres and returns.", sort: "new" },
     ],
-    mine: "Your shows",
   },
   music: {
     heading: "Music",
@@ -95,7 +90,6 @@ export const HUB_COPY: Record<LaunchMediaType, HubCopy> = {
       { heading: "New releases", reason: "Out in the last few weeks.", sort: "new" },
       { heading: "Most rated", reason: "The records people keep coming back to.", sort: "top" },
     ],
-    mine: "Your music",
   },
   manga: {
     heading: "Manga",
@@ -108,7 +102,6 @@ export const HUB_COPY: Record<LaunchMediaType, HubCopy> = {
       { heading: "Most read", reason: "What people are keeping up with.", sort: "trending" },
       { heading: "Highest rated", reason: "The best, by community score.", sort: "top" },
     ],
-    mine: "Your manga",
   },
   comic: {
     heading: "Comics",
@@ -121,7 +114,6 @@ export const HUB_COPY: Record<LaunchMediaType, HubCopy> = {
       { heading: "Most shelved", reason: "What readers are picking up.", sort: "trending" },
       { heading: "Highest rated", reason: "The best loved, by community score.", sort: "top" },
     ],
-    mine: "Your comics",
   },
   book: {
     heading: "Books",
@@ -134,6 +126,5 @@ export const HUB_COPY: Record<LaunchMediaType, HubCopy> = {
       { heading: "Most shelved", reason: "What readers are picking up.", sort: "trending" },
       { heading: "Highest rated", reason: "The best loved, by community score.", sort: "top" },
     ],
-    mine: "Your books",
   },
 };

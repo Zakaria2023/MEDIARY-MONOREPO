@@ -1,7 +1,7 @@
 import { CatalogSort, HubFacet, HubFacetKind, YearSpan } from "services";
 import { filterHref } from "utils";
-import { firstParam, parseCatalogSort, parseTrackingStatus } from "validators";
-import { LaunchMediaType, TrackingStatus } from "@/db/enum";
+import { firstParam, parseCatalogSort } from "validators";
+import { LaunchMediaType } from "@/db/enum";
 import { hubPath } from "@/lib/hub-path";
 
 /** Everything a hub's URL says about which view is on screen. */
@@ -18,8 +18,6 @@ export type HubQuery = {
   /** Music only: one artist's records, by the artist's slug. */
   artist: string | undefined;
   page: number;
-  /** The member's section, narrowed to one status. */
-  mine: TrackingStatus | undefined;
 };
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -34,7 +32,6 @@ export const parseHubQuery = (mediaType: LaunchMediaType, params: SearchParams):
   year: parseYearFilter(firstParam(params.year)),
   artist: mediaType === "music" ? firstParam(params.artist) || undefined : undefined,
   page: Number(firstParam(params.page)) || 1,
-  mine: parseTrackingStatus(firstParam(params.mine)),
 });
 
 /** The URL for a view of a hub, with the defaults left out. */
@@ -47,7 +44,6 @@ export const hubHref = (query: HubQuery): string =>
     year: query.year,
     artist: query.artist,
     page: query.page,
-    mine: query.mine,
   });
 
 /** The score floors a hub offers. */
