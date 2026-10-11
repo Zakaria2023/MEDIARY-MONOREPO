@@ -66,7 +66,21 @@ describe("normalizeSteamApp", () => {
     expect(record.genres.map((genre) => genre.slug)).toEqual(["action", "adventure", "indie"]);
     expect(record.platforms.map((platform) => platform.slug)).toEqual(["pc", "mac", "linux"]);
     expect(record.details).toEqual({ kind: "game", developer: "Team Cherry", publisher: "Team Cherry", multiplayer: false, franchise: null, pcRequirements: null, estimatedHours: null });
-    expect(normalizeSteamApp(app(), null, true, 27).details).toMatchObject({ estimatedHours: 27 });
+    const withExtra = normalizeSteamApp(app(), null, true, {
+      estimatedHours: 27,
+      platforms: [
+        { slug: "pc", name: "PC", abbreviation: "PC", releaseDate: null },
+        { slug: "ps5", name: "PlayStation 5", abbreviation: "PS5", releaseDate: null },
+      ],
+    });
+    expect(withExtra.details).toMatchObject({ estimatedHours: 27 });
+    // The store's PC keeps its date; the game database adds only what the store did not name.
+    expect(withExtra.platforms.map((platform) => [platform.slug, platform.releaseDate])).toEqual([
+      ["pc", "2017-02-24"],
+      ["mac", "2017-02-24"],
+      ["linux", "2017-02-24"],
+      ["ps5", null],
+    ]);
     expect(record.releaseDate).toBe("2017-02-24");
     expect(record.status).toBe("released");
     expect(record.images[0]?.url).toContain("367520/library_600x900.jpg");

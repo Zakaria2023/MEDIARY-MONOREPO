@@ -2,7 +2,7 @@ import { z } from "zod";
 import { MediaStatus, MediaType } from "../../../../db/enum";
 import { PcRequirementLine, PcRequirements } from "../../../../db/types";
 import { createThrottle, providerFetch } from "./http";
-import { igdbHoursForSteamApps } from "./igdb";
+import { GameDatabaseFacts, igdbFactsForSteamApps } from "./igdb";
 import {
   CatalogSeed,
   MediaProvider,
@@ -212,6 +212,12 @@ const requirementsOf = (app: SteamApp): PcRequirements | null => {
   return minimum.length > 0 || recommended.length > 0 ? { minimum, recommended } : null;
 };
 
+/** The store's platforms, then each one the game database adds that the store did not name. */
+const withConsoles = (store: NormalizedPlatform[], more: NormalizedPlatform[]): NormalizedPlatform[] => {
+  const held = new Set(store.map((platform) => platform.slug));
+  return [...store, ...more.filter((platform) => !held.has(platform.slug))];
+};
+
 const platformsOf = (app: SteamApp, releaseDate: string | null): NormalizedPlatform[] => {
   const keys = [
     app.platforms?.windows ? "win" : null,
@@ -228,13 +234,14 @@ const platformsOf = (app: SteamApp, releaseDate: string | null): NormalizedPlatf
  * A store app in Mediary's shape. Exported for the unit tests. The review
  * counts come from SteamSpy: their share of positive reviews is the
  * community score, and how many there are is the popularity. The hours to
- * finish come from the game database, when it is configured.
+ * finish and the consoles come from the game database, when it is
+ * configured; the store's own platforms come first and keep their dates.
  */
 export const normalizeSteamApp = (
   app: SteamApp,
   stats: SpyStats | null,
   withCover: boolean,
-  estimatedHours: number | null = null,
+  extra: GameDatabaseFacts | null = null,
 ): NormalizedMedia => {
   const releaseDate = app.release_date ? parseStoreDate(app.release_date.date) : null;
   const today = new Date().toISOString().slice(0, 10);
@@ -273,7 +280,7 @@ export const normalizeSteamApp = (
     titles: [{ title: app.name.trim(), titleType: "canonical", language: "en" }],
     images,
     genres: toGenres((app.genres ?? []).flatMap((genre) => STEAM_GENRES[genre.description.toLowerCase()] ?? [])),
-    platforms: platformsOf(app, releaseDate),
+    platforms: withConsoles(platformsOf(app, releaseDate), extra?.platforms ?? []),
     details: {
       kind: "game",
       developer: app.developers?.[0]?.slice(0, 200) ?? null,
@@ -285,7 +292,7 @@ export const normalizeSteamApp = (
           : null,
       franchise: null,
       pcRequirements: app.platforms?.windows === false ? null : requirementsOf(app),
-      estimatedHours,
+      estimatedHours: extra?.estimatedHours ?? null,
     },
   };
 };
@@ -310,14 +317,13 @@ const spyPage = (index: number): Promise<SpyEntry[]> => {
   return pending;
 };
 
-/** A game's hours to finish from the game database; null when it has none, is not configured or does not answer. */
-const hoursFor = async (appId: number): Promise<number | null> => {
-  try {
-    return (await igdbHoursForSteamApps([appId])).get(appId) ?? null;
-  } catch {
-    return null;
-  }
-};
+/**
+ * What the game database adds to one game; null when it does not link the
+ * game or is not configured. A failure is not swallowed: a refresh that
+ * carried on without it would write the game back without its consoles.
+ */
+const factsFor = async (appId: number): Promise<GameDatabaseFacts | null> =>
+  (await igdbFactsForSteamApps([appId])).get(appId) ?? null;
 
 /** A game's review counts: from the list the walk read, or asked for on their own. */
 const statsFor = async (appId: number): Promise<SpyStats | null> => {
@@ -387,8 +393,8 @@ export const steamProvider: MediaProvider = {
     if (entry.data.type !== "game") {
       throw new Error(`${SOURCE_LABEL}'s ${appId} is not a game`);
     }
-    const [stats, cover, hours] = await Promise.all([statsFor(appId), hasCover(appId), hoursFor(appId)]);
-    return normalizeSteamApp(entry.data, stats, cover, hours);
+    const [stats, cover, extra] = await Promise.all([statsFor(appId), hasCover(appId), factsFor(appId)]);
+    return normalizeSteamApp(entry.data, stats, cover, extra);
   },
   getList: async (mediaType, kind) => {
     kindOf(mediaType);

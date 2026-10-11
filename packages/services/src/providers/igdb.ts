@@ -27,6 +27,13 @@ type IgdbGame = z.infer<typeof gameSchema>;
 
 type TimeToBeat = z.infer<typeof timeToBeatSchema>;
 
+/** What the game database adds to a game held under the PC store's id: what the store does not know. */
+export type GameDatabaseFacts = {
+  estimatedHours: number | null;
+  /** The consoles and other machines it runs on, only those the vocabulary names. */
+  platforms: NormalizedPlatform[];
+};
+
 const API = "https://api.igdb.com/v4";
 
 /** How this source is named in any message a person may read. Never the vendor's name. */
@@ -72,6 +79,16 @@ const listItemSchema = z.object({
   cover: imageRef.nullish(),
 });
 
+const platformListSchema = z
+  .array(
+    z.object({
+      slug: z.string(),
+      name: z.string(),
+      abbreviation: z.string().nullish(),
+    }),
+  )
+  .nullish();
+
 const gameSchema = listItemSchema.extend({
   url: z.string().nullish(),
   artworks: z.array(imageRef).nullish(),
@@ -79,15 +96,7 @@ const gameSchema = listItemSchema.extend({
   genres: z.array(slugged).nullish(),
   themes: z.array(slugged).nullish(),
   game_modes: z.array(slugged).nullish(),
-  platforms: z
-    .array(
-      z.object({
-        slug: z.string(),
-        name: z.string(),
-        abbreviation: z.string().nullish(),
-      }),
-    )
-    .nullish(),
+  platforms: platformListSchema,
   involved_companies: z
     .array(
       z.object({
@@ -155,7 +164,7 @@ const timeToBeatSchema = z.object({
 
 const externalGameSchema = z.object({
   uid: z.string(),
-  game: z.number(),
+  game: z.object({ id: z.number(), platforms: platformListSchema }),
 });
 
 /**
@@ -250,6 +259,9 @@ const toCandidate = (item: IgdbListItem): ProviderCandidate => ({
   posterUrl: item.cover ? igdbImageUrl(item.cover.image_id, "cover_big") : null,
 });
 
+/** Every platform slug the vocabulary names. */
+const PLATFORM_SLUGS = new Set(Object.values(PLATFORM_ALIASES).map((alias) => alias.slug));
+
 const platformsOf = (platforms: IgdbGame["platforms"]): NormalizedPlatform[] => {
   const seen = new Set<string>();
   const result: NormalizedPlatform[] = [];
@@ -302,15 +314,17 @@ const hoursByIgdbId = async (gameIds: number[]): Promise<Map<number, number>> =>
 };
 
 /**
- * HOURS TO FINISH for games held under the PC store's app ids, matched
- * through IGDB's own links to the store. The store says nothing about how
- * long a game takes, so its adapter and the backfill ask here. Empty when
- * this source is not configured.
+ * WHAT THE STORE DOES NOT KNOW about games held under the PC store's app
+ * ids: the hours to finish and the consoles, matched through IGDB's own
+ * links to the store. Only platforms the vocabulary names are kept, so a
+ * PC game gains PlayStation, Xbox and Switch and nothing the filter cannot
+ * show. A game IGDB does not link is left out. Empty when this source is
+ * not configured.
  */
-export const igdbHoursForSteamApps = async (appIds: number[]): Promise<Map<number, number>> => {
-  const hours = new Map<number, number>();
+export const igdbFactsForSteamApps = async (appIds: number[]): Promise<Map<number, GameDatabaseFacts>> => {
+  const facts = new Map<number, GameDatabaseFacts>();
   if (!igdbProvider.isConfigured() || appIds.length === 0) {
-    return hours;
+    return facts;
   }
   for (let start = 0; start < appIds.length; start += LOOKUP_BATCH) {
     const batch = appIds.slice(start, start + LOOKUP_BATCH);
@@ -319,18 +333,22 @@ export const igdbHoursForSteamApps = async (appIds: number[]): Promise<Map<numbe
       .parse(
         await igdbQuery(
           "external_games",
-          `fields uid,game; where external_game_source = ${STEAM_SOURCE} & uid = (${batch.map((id) => `"${id}"`).join(",")}); limit ${LOOKUP_BATCH};`,
+          `fields uid,game.id,game.platforms.slug,game.platforms.name,game.platforms.abbreviation; where external_game_source = ${STEAM_SOURCE} & uid = (${batch.map((id) => `"${id}"`).join(",")}); limit ${LOOKUP_BATCH};`,
         ),
       );
-    const byGame = await hoursByIgdbId([...new Set(links.map((link) => link.game))]);
+    const hours = await hoursByIgdbId([...new Set(links.map((link) => link.game.id))]);
     for (const link of links) {
-      const value = byGame.get(link.game);
-      if (value !== undefined) {
-        hours.set(Number(link.uid), value);
+      const appId = Number(link.uid);
+      // One store app now and then links to more than one record (a remaster); the first stands.
+      if (!facts.has(appId)) {
+        facts.set(appId, {
+          estimatedHours: hours.get(link.game.id) ?? null,
+          platforms: platformsOf(link.game.platforms).filter((platform) => PLATFORM_SLUGS.has(platform.slug)),
+        });
       }
     }
   }
-  return hours;
+  return facts;
 };
 
 /** Hours to finish for games held under IGDB's own ids. Empty when not configured. */

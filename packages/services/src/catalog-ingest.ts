@@ -43,6 +43,12 @@ export type BatchIngestOutcome =
   | { record: NormalizedMedia; result: IngestResult; error?: undefined }
   | { record: NormalizedMedia; result?: undefined; error: unknown };
 
+/** Platforms to add to one game already held. */
+export type GamePlatformAddition = {
+  mediaUuid: string;
+  platforms: NormalizedPlatform[];
+};
+
 /** A new record and the title row it was created as. */
 type WrittenRecord = {
   record: NormalizedMedia;
@@ -369,6 +375,31 @@ const writePlatforms = async (tx: Tx, mediaUuid: string, record: NormalizedMedia
   if (links.length > 0) {
     await tx.insert(GamePlatforms).values(links);
   }
+};
+
+/**
+ * ADDS PLATFORMS to games already held, without touching the ones they
+ * have: a console the game database knows for a game the PC store brought
+ * in. One transaction for the lot; a link already there is left as it is.
+ * The caller leaves out a game whose platforms a person locked.
+ */
+export const addGamePlatforms = async (games: GamePlatformAddition[]): Promise<void> => {
+  const platforms = [...new Map(games.flatMap((game) => game.platforms).map((platform) => [platform.slug, platform])).values()];
+  if (platforms.length === 0) {
+    return;
+  }
+  await db.transaction(async (tx) => {
+    const idBySlug = await platformIds(tx, platforms);
+    const links = games.flatMap(({ mediaUuid, platforms: own }) =>
+      own.flatMap((platform) => {
+        const platformId = idBySlug.get(platform.slug);
+        return platformId ? [{ mediaUuid, platformId, releaseDate: platform.releaseDate }] : [];
+      }),
+    );
+    if (links.length > 0) {
+      await tx.insert(GamePlatforms).values(links).onConflictDoNothing();
+    }
+  });
 };
 
 /** The medium's own detail row, one-to-one with the title. */

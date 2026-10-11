@@ -16,7 +16,7 @@ export * from "./errors";
 export * from "./export";
 export * from "./flags";
 export * from "./follows";
-export * from "./game-hours";
+export * from "./game-database-fill";
 export * from "./import-parsers";
 export * from "./imports";
 export * from "./lists";
