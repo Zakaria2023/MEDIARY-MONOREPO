@@ -12,5 +12,8 @@ export const PUBLIC_SITE_URL = (
 export const publicTitleUrl = (mediaType: MediaType, slug: string): string =>
   `${PUBLIC_SITE_URL}/${mediaType}/${slug}`;
 
+/** A list's public page. */
+export const publicListUrl = (slug: string): string => `${PUBLIC_SITE_URL}/lists/${slug}`;
+
 /** A member's public profile. */
 export const publicProfileUrl = (username: string): string => `${PUBLIC_SITE_URL}/@${username}`;
