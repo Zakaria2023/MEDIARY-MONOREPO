@@ -56,3 +56,4 @@ export { PRODUCT_EVENTS, track } from "./analytics";
 export type { EventProperties, ProductEvent } from "./analytics";
 export * from "./title-community";
 export * from "./metrics";
+export * from "./commerce-rules";

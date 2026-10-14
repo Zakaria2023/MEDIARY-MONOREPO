@@ -1,5 +1,14 @@
 import {
   ActivityKind,
+  CreatorCampaignStatus,
+  CreatorCategory,
+  CreatorStatus,
+  DeviceKind,
+  InvoiceStatus,
+  SponsorCampaignStatus,
+  SponsorSurface,
+  Store,
+  StoreLinkKind,
   NotificationKind,
   AnimeFormat,
   ImageType,
@@ -287,6 +296,7 @@ export const REPORT_REASON_LABELS: Record<ReportReason, string> = {
   abuse: "Harassment or hate",
   spoilers: "Unmarked spoilers",
   other: "Something else",
+  impersonation: "Pretending to be someone else",
 };
 
 export const REPORT_KIND_LABELS: Record<ReportKind, string> = {
@@ -354,4 +364,96 @@ export const MEDIA_STATUS_WORDS: Partial<Record<MediaType, Partial<Record<MediaS
   manga: { releasing: "Ongoing", finished: "Completed", hiatus: "On hiatus" },
   music: { releasing: "Out", released: "Out" },
   game: { releasing: "Early access" },
+};
+
+// ---------------------------------------------------------------------------
+// Commerce, sponsorship and creators
+// ---------------------------------------------------------------------------
+
+/**
+ * A store by its own name. This is the second place a company is named on
+ * screen, beside "Continue with Google": a store is where the person goes
+ * to buy or watch, not a service Mediary runs on (the owner's call of
+ * 2026-10-14). Catalog sources stay unnamed.
+ */
+export const STORE_LABELS: Record<Store, string> = {
+  steam: "Steam",
+  gog: "GOG",
+  epic_games: "Epic Games Store",
+  playstation_store: "PlayStation Store",
+  microsoft_store: "Xbox Store",
+  nintendo_eshop: "Nintendo eShop",
+  amazon: "Amazon",
+  bookshop: "Bookshop.org",
+  apple_books: "Apple Books",
+  kobo: "Kobo",
+  netflix: "Netflix",
+  prime_video: "Prime Video",
+  disney_plus: "Disney+",
+  max: "Max",
+  hulu: "Hulu",
+  apple_tv: "Apple TV",
+  crunchyroll: "Crunchyroll",
+  spotify: "Spotify",
+  apple_music: "Apple Music",
+  youtube_music: "YouTube Music",
+  bandcamp: "Bandcamp",
+};
+
+/** The verb on a store link's button. */
+export const STORE_LINK_KIND_LABELS: Record<StoreLinkKind, string> = {
+  buy: "Buy",
+  preorder: "Pre-order",
+  stream: "Watch",
+  rent: "Rent",
+  listen: "Listen",
+  wishlist: "Wishlist",
+};
+
+export const DEVICE_KIND_LABELS: Record<DeviceKind, string> = {
+  phone: "Phone",
+  desktop: "Desktop",
+};
+
+export const SPONSOR_CAMPAIGN_STATUS_LABELS: Record<SponsorCampaignStatus, string> = {
+  draft: "Draft",
+  pending: "Waiting for approval",
+  approved: "Approved",
+  paused: "Paused",
+  ended: "Ended",
+};
+
+export const SPONSOR_SURFACE_LABELS: Record<SponsorSurface, string> = {
+  explore: "Explore",
+  home: "Member home",
+  feed: "Feed",
+};
+
+export const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {
+  draft: "Draft",
+  issued: "Issued",
+  paid: "Paid",
+  void: "Void",
+};
+
+export const CREATOR_CATEGORY_LABELS: Record<CreatorCategory, string> = {
+  video: "Video creator",
+  streaming: "Streamer",
+  critic: "Critic",
+  writer: "Writer",
+  podcast: "Podcaster",
+  other: "Creator",
+};
+
+export const CREATOR_STATUS_LABELS: Record<CreatorStatus, string> = {
+  pending: "Waiting for review",
+  verified: "Verified",
+  rejected: "Not verified",
+  revoked: "Verification removed",
+};
+
+export const CREATOR_CAMPAIGN_STATUS_LABELS: Record<CreatorCampaignStatus, string> = {
+  invited: "Invited",
+  accepted: "Accepted",
+  declined: "Declined",
 };

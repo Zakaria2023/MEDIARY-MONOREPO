@@ -248,6 +248,14 @@ export const clampScore = (value: number | null | undefined): number | null => {
 /** A count with thousands separators, the same on the server and in the browser. */
 export const formatCount = (value: number): string => value.toLocaleString("en-US");
 
+/** An amount kept in its minor unit, as money reads: "$1,250.00", "€90.50". */
+export const formatMoney = (minor: number, currency: string): string =>
+  (minor / 100).toLocaleString("en-US", { style: "currency", currency });
+
+/** A share as a percent with one decimal, or a dash when there is nothing to divide by: "2.4%". */
+export const formatRate = (part: number, whole: number): string =>
+  whole > 0 ? `${((part / whole) * 100).toFixed(1)}%` : EMPTY_VALUE;
+
 /**
  * Minutes as a total reads on a stat tile: "45 min" under an hour, then
  * whole hours, "1,204h". A total is a size, not a runtime, so it never
