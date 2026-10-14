@@ -29,6 +29,7 @@ const EXPLORE_COLUMN: FooterColumn = {
       label: MEDIA_TYPE_PLURAL_LABELS[type],
       href: hubPath(type),
     })),
+    { label: "Creators", href: "/creators" },
   ],
 };
 

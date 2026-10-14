@@ -1,5 +1,6 @@
-import { ArtistPage, CatalogCard, CatalogTitle, ProfileCounts, PublicProfile, RatingSummary, TitleReview } from "services";
+import { ArtistPage, CatalogCard, CatalogTitle, DirectoryCreator, ProfileCounts, PublicProfile, RatingSummary, TitleReview } from "services";
 import { catalogImageUrl } from "utils";
+import { CREATOR_CATEGORY_LABELS } from "@/db/label";
 import { artistPath } from "@/lib/artist-path";
 import { absoluteUrl, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { isoTrackLength } from "@/lib/track-length";
@@ -248,6 +249,20 @@ export const itemListNode = (path: string, name: string, cards: CatalogCard[]): 
   })),
 });
 
+/** The creators directory, as an ordered list of links to their profiles. */
+export const creatorListNode = (path: string, creators: DirectoryCreator[]): JsonLdNode => ({
+  "@type": "ItemList",
+  "@id": `${absoluteUrl(path)}#list`,
+  name: "Creators on Mediary",
+  numberOfItems: creators.length,
+  itemListElement: creators.map((creator, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    url: absoluteUrl(profilePath(creator.username)),
+    name: creator.displayName,
+  })),
+});
+
 /** A public profile: the page, and the person it is about. */
 export const profileNodes = (profile: PublicProfile, counts: ProfileCounts): JsonLdNode[] => {
   const url = absoluteUrl(profilePath(profile.username));
@@ -272,6 +287,7 @@ export const profileNodes = (profile: PublicProfile, counts: ProfileCounts): Jso
       ...(profile.bio && { description: profile.bio }),
       ...(profile.imageUrl && { image: profile.imageUrl }),
       ...(profile.links.length > 0 && { sameAs: profile.links.map((link) => link.url) }),
+      ...(profile.creator && { jobTitle: CREATOR_CATEGORY_LABELS[profile.creator] }),
       interactionStatistic: [
         {
           "@type": "InteractionCounter",

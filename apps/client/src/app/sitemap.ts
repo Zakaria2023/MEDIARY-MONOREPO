@@ -39,6 +39,7 @@ const sitemap = async (): Promise<MetadataRoute.Sitemap> => {
       priority: 0.8,
     })),
     { url: absoluteUrl("/artists"), changeFrequency: "daily" as const, priority: 0.7 },
+    { url: absoluteUrl("/creators"), changeFrequency: "daily" as const, priority: 0.6 },
     ...artists.map((artist) => ({
       url: absoluteUrl(artistPath(artist.slug)),
       lastModified: artist.updatedAt,

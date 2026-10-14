@@ -3,8 +3,11 @@ import Link from "next/link";
 import { ReactNode } from "react";
 import { AuthUser, isFeatureOn, PublicProfile, SocialStanding } from "services";
 import { formatDate } from "utils";
+import { CreatorBadge } from "@/components/creators/creator-badge";
+import { CreatorViewBeacon } from "@/components/creators/creator-view-beacon";
 import { FollowButton } from "@/components/profile/follow-button";
 import { ProfileControls } from "@/components/profile/profile-controls";
+import { ProfileLink } from "@/components/profile/profile-link";
 import { UserAvatar } from "@/components/profile/user-avatar";
 
 type ProfileHeaderProps = {
@@ -21,12 +24,15 @@ type ProfileHeaderProps = {
  * the page's h1, the handle, the bio, the facts and the counts. The owner
  * gets a way to their settings; a signed-in visitor gets Follow and
  * Compare taste, the gradient on Compare because it is the growth loop.
+ * A verified creator carries the mark beside the name, and a visit to their
+ * profile and a press on their links count on their dashboard.
  */
 export const ProfileHeader = ({ profile, viewer, standing, children }: ProfileHeaderProps) => {
   const isOwner = viewer?.uuid === profile.uuid;
 
   return (
     <section>
+      {profile.creator && !isOwner && <CreatorViewBeacon userUuid={profile.uuid} kind="profile" />}
       <div className="h-28 w-full border-b border-hairline bg-surface sm:h-40" />
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 sm:px-8">
         <div className="-mt-12 flex items-end justify-between gap-4">
@@ -61,9 +67,12 @@ export const ProfileHeader = ({ profile, viewer, standing, children }: ProfileHe
         </div>
 
         <div className="flex flex-col gap-1">
-          <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
-            {profile.displayName}
-          </h1>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
+              {profile.displayName}
+            </h1>
+            {profile.creator && <CreatorBadge category={profile.creator} />}
+          </div>
           <p className="text-sm text-muted">@{profile.username}</p>
           {profile.bio && <p className="max-w-xl pt-1 text-sm text-secondary">{profile.bio}</p>}
         </div>
@@ -82,14 +91,7 @@ export const ProfileHeader = ({ profile, viewer, standing, children }: ProfileHe
           {profile.links.map((link) => (
             <li key={link.url} className="flex items-center gap-1.5">
               <Link2 size={14} />
-              <a
-                href={link.url}
-                rel="me noopener noreferrer nofollow"
-                target="_blank"
-                className="text-secondary transition-colors hover:text-ink"
-              >
-                {link.label}
-              </a>
+              <ProfileLink link={link} userUuid={profile.uuid} isCreator={profile.creator !== null} />
             </li>
           ))}
         </ul>

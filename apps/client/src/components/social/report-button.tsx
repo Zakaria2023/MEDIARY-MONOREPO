@@ -83,7 +83,10 @@ export const ReportButton = ({ subject, what, compact = false, icon = false }: R
                 <Dropdown
                   value={field.value}
                   onChange={field.onChange}
-                  options={reportReasons.map((value) => ({ value, label: REPORT_REASON_LABELS[value] }))}
+                  options={reportReasons
+                    // Pretending to be someone else is about an account, not about what it wrote.
+                    .filter((value) => value !== "impersonation" || subject.kind === "profile")
+                    .map((value) => ({ value, label: REPORT_REASON_LABELS[value] }))}
                 />
               )}
             />

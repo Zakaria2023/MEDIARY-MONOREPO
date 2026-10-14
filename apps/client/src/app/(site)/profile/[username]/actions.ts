@@ -2,11 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { blockUser, followUser, muteUser, PRODUCT_EVENTS, track, unfollowUser, unmuteUser } from "services";
+import { blockUser, followUser, muteUser, PRODUCT_EVENTS, recordCreatorStat, track, unfollowUser, unmuteUser } from "services";
 import { ActionResult, fail } from "utils";
-import { followSchema, FollowInput, userTargetSchema, UserTargetInput } from "validators";
-import { requireOnboardedUser } from "@/lib/auth";
+import { creatorViewSchema, CreatorViewInput, followSchema, FollowInput, userTargetSchema, UserTargetInput } from "validators";
+import { getCurrentUser, requireOnboardedUser } from "@/lib/auth";
 import { overActionLimit } from "@/lib/server/action-limit";
+import { currentVisitor, shouldCount } from "@/lib/server/visitor";
 
 /** The profile and the feed both change with a follow. */
 const revalidateFollows = () => {
@@ -100,5 +101,35 @@ export const unmuteAction = async (input: UserTargetInput): Promise<ActionResult
     return { success: true };
   } catch (error) {
     return fail(error, "Could not unmute this account");
+  }
+};
+
+const VIEW_WINDOW_MS = 30 * 60 * 1000;
+
+/**
+ * The browser saying a creator's profile, one of their lists or a taste
+ * comparison with them was opened, or one of their links pressed: a number
+ * on their dashboard, never a name. Once per visitor per kind per half
+ * hour, never the creator themselves, never a program; the service counts
+ * only verified creators.
+ */
+export const recordCreatorViewAction = async (input: CreatorViewInput): Promise<void> => {
+  const parsed = creatorViewSchema.safeParse(input);
+  if (!parsed.success) {
+    return;
+  }
+  const viewer = await getCurrentUser();
+  if (viewer?.uuid === parsed.data.userUuid) {
+    return;
+  }
+  const visitor = await currentVisitor(viewer?.uuid ?? null);
+  const bucket = `creator-${parsed.data.kind}-${parsed.data.userUuid}`;
+  if (!(await shouldCount(visitor, bucket, 1, VIEW_WINDOW_MS))) {
+    return;
+  }
+  try {
+    await recordCreatorStat(parsed.data.userUuid, parsed.data.kind);
+  } catch {
+    // A view not counted is never an error on someone's screen.
   }
 };

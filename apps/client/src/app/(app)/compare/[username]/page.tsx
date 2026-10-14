@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getTasteMatch, PRODUCT_EVENTS, track } from "services";
 import { CompareHero } from "@/components/compare/compare-hero";
 import { CompareRefused } from "@/components/compare/compare-refused";
+import { CreatorViewBeacon } from "@/components/creators/creator-view-beacon";
 import { MediumMatches } from "@/components/compare/medium-matches";
 import { TasteRecommendations } from "@/components/compare/taste-recommendations";
 import { getCurrentUser } from "@/lib/auth";
@@ -47,6 +48,8 @@ const ComparePage = async ({ params }: Props) => {
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-5 py-8 sm:px-8 sm:py-10">
+      {/* Counted for the other person's dashboard only when they are a verified creator. */}
+      <CreatorViewBeacon userUuid={page.other.uuid} kind="compare" />
       <CompareHero viewer={viewer} page={page} />
       <MediumMatches byType={page.match.byType} />
       <TasteRecommendations viewerName="You" page={page} />
