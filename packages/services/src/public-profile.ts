@@ -1,11 +1,13 @@
 import { and, count, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { db } from "../../../db";
+import { Creators, SelectCreators } from "../../../db/schema/creators";
 import { Media } from "../../../db/schema/media";
 import { Profiles, SelectProfiles } from "../../../db/schema/profiles";
 import { UserMedia } from "../../../db/schema/user-media";
 import { SelectUserSettings, UserSettings } from "../../../db/schema/user-settings";
 import { SelectUsers, Users } from "../../../db/schema/users";
 import { CatalogCard, PLATFORM_BADGES } from "./catalog";
+import { isFeatureOn } from "./flags";
 import { getFollowCounts, isBlockedEitherWay, isFollowing } from "./follows";
 import { trackedMinutes } from "./stats";
 import { ViewerParams, visibleEntries } from "./tracking";
@@ -22,6 +24,8 @@ export type PublicProfile = {
   location: SelectProfiles["location"];
   links: SelectProfiles["links"];
   tasteStatement: SelectProfiles["tasteStatement"];
+  /** The creator badge's category when the owner is a verified creator, else null. */
+  creator: SelectCreators["category"] | null;
   /** The viewer's standing with this profile. */
   relation: ViewerRelation;
   /** Which parts the viewer may see, from the owner's settings. */
@@ -92,10 +96,12 @@ export const getPublicProfile = async (
       profileVisibility: UserSettings.profileVisibility,
       libraryVisibility: UserSettings.libraryVisibility,
       activityVisibility: UserSettings.activityVisibility,
+      creator: Creators.category,
     })
     .from(Users)
     .innerJoin(Profiles, eq(Profiles.userUuid, Users.uuid))
     .innerJoin(UserSettings, eq(UserSettings.userUuid, Users.uuid))
+    .leftJoin(Creators, and(eq(Creators.userUuid, Users.uuid), eq(Creators.status, "verified")))
     .where(sql`lower(${Users.username}) = ${username.toLowerCase()}`);
   if (!row || !row.username || row.status !== "active") {
     return null;
@@ -104,10 +110,11 @@ export const getPublicProfile = async (
   if (relation === null) {
     return null;
   }
-  const { status: _status, profileVisibility, libraryVisibility, activityVisibility, ...profile } = row;
+  const { status: _status, profileVisibility, libraryVisibility, activityVisibility, creator, ...profile } = row;
 
   return {
     ...profile,
+    creator: isFeatureOn("creators") ? creator : null,
     username: row.username,
     relation,
     access: accessFor({ profileVisibility, libraryVisibility, activityVisibility }, relation),

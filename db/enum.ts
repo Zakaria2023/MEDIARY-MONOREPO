@@ -314,6 +314,8 @@ export const reportReasons = [
   "abuse",
   "spoilers",
   "other",
+  // A profile pretending to be a creator, a studio or a person it is not.
+  "impersonation",
 ] as const satisfies readonly string[];
 
 export type ReportReason = (typeof reportReasons)[number];
@@ -355,6 +357,136 @@ export const featureFlags = [
   "listen",
   // Searching the catalog's sources live for what Mediary does not hold yet.
   "look_further",
+  // "Where to get it" on a title page, and the /go/store redirect behind it.
+  "store_links",
+  // Clearly labelled sponsored titles on explore, the home and the feed.
+  "sponsored",
+  // Verified creator profiles, the creators directory and the creator dashboard.
+  "creators",
 ] as const satisfies readonly string[];
 
 export type FeatureFlag = (typeof featureFlags)[number];
+
+// ---------------------------------------------------------------------------
+// Commerce, sponsorship and creators
+// ---------------------------------------------------------------------------
+
+/**
+ * The stores a title can be bought, streamed or played at. A store is named
+ * on screen (STORE_LABELS): it is where the person is going, not a service
+ * Mediary runs on. Widened as stores are added, never narrowed.
+ */
+export const stores = [
+  "steam",
+  "gog",
+  "epic_games",
+  "playstation_store",
+  "microsoft_store",
+  "nintendo_eshop",
+  "amazon",
+  "bookshop",
+  "apple_books",
+  "kobo",
+  "netflix",
+  "prime_video",
+  "disney_plus",
+  "max",
+  "hulu",
+  "apple_tv",
+  "crunchyroll",
+  "spotify",
+  "apple_music",
+  "youtube_music",
+  "bandcamp",
+] as const satisfies readonly string[];
+
+export type Store = (typeof stores)[number];
+
+/** What a store link does: the verb on its button. */
+export const storeLinkKinds = [
+  "buy",
+  "preorder",
+  "stream",
+  "rent",
+  "listen",
+  // A game not out yet: the store's own word for following it.
+  "wishlist",
+] as const satisfies readonly string[];
+
+export type StoreLinkKind = (typeof storeLinkKinds)[number];
+
+/** The kind of screen a click or a view came from, read from the User-Agent. */
+export const deviceKinds = [
+  "phone",
+  "desktop",
+] as const satisfies readonly string[];
+
+export type DeviceKind = (typeof deviceKinds)[number];
+
+/**
+ * A sponsor campaign's life: written, sent for approval, approved (live
+ * between its dates), paused, or ended. Only an approved campaign inside
+ * its dates is ever shown.
+ */
+export const sponsorCampaignStatuses = [
+  "draft",
+  "pending",
+  "approved",
+  "paused",
+  "ended",
+] as const satisfies readonly string[];
+
+export type SponsorCampaignStatus = (typeof sponsorCampaignStatuses)[number];
+
+/** The screens a sponsored title may appear on, one slot each. */
+export const sponsorSurfaces = [
+  "explore",
+  "home",
+  "feed",
+] as const satisfies readonly string[];
+
+export type SponsorSurface = (typeof sponsorSurfaces)[number];
+
+/** An invoice's life. */
+export const invoiceStatuses = [
+  "draft",
+  "issued",
+  "paid",
+  "void",
+] as const satisfies readonly string[];
+
+export type InvoiceStatus = (typeof invoiceStatuses)[number];
+
+/** What kind of creator a verified profile belongs to. */
+export const creatorCategories = [
+  "video",
+  "streaming",
+  "critic",
+  "writer",
+  "podcast",
+  "other",
+] as const satisfies readonly string[];
+
+export type CreatorCategory = (typeof creatorCategories)[number];
+
+/**
+ * A creator request's life: waiting for staff, verified, refused, or a
+ * verification staff took back. Verification is never bought.
+ */
+export const creatorStatuses = [
+  "pending",
+  "verified",
+  "rejected",
+  "revoked",
+] as const satisfies readonly string[];
+
+export type CreatorStatus = (typeof creatorStatuses)[number];
+
+/** A creator's answer to a brand campaign staff invited them to. */
+export const creatorCampaignStatuses = [
+  "invited",
+  "accepted",
+  "declined",
+] as const satisfies readonly string[];
+
+export type CreatorCampaignStatus = (typeof creatorCampaignStatuses)[number];

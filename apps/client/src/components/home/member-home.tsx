@@ -11,6 +11,7 @@ import { HomeBrowse } from "@/components/home/home-browse";
 import { HomeRails } from "@/components/home/home-rails";
 import { WeeklySnapshot } from "@/components/home/weekly-snapshot";
 import { RecommendationRail } from "@/components/recommendations/recommendation-rail";
+import { SponsoredSlot } from "@/components/sponsored/sponsored-slot";
 
 type MemberHomeProps = {
   user: AuthUser;
@@ -56,6 +57,9 @@ export const MemberHome = ({ user }: MemberHomeProps) => (
         <RecommendationRail userUuid={user.uuid} heading="For you" reason="Picked from what you loved, across every medium." />
       </AsyncSection>
     </div>
+    <AsyncSection reloadKey={`sponsored-home-${user.uuid}`} skeleton={null}>
+      <SponsoredSlot surface="home" viewerUuid={user.uuid} className="mx-auto w-full max-w-7xl px-5 sm:px-8" />
+    </AsyncSection>
     <div className="mx-auto w-full max-w-7xl">
       <AsyncSection reloadKey="home-browse" skeleton={<TitleRailSkeleton />}>
         <HomeBrowse />

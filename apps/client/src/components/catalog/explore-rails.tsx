@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import { launchMediaTypes } from "@/db/enum";
 import { CatalogEmptyState } from "@/components/catalog/catalog-empty-state";
 import { TitleGrid } from "@/components/catalog/title-grid";
@@ -8,6 +9,11 @@ import { hubPath } from "@/lib/hub-path";
 import { graph, itemListNode } from "@/lib/structured-data";
 import { listCatalog } from "@/lib/server/catalog-cache";
 
+type ExploreRailsProps = {
+  /** The sponsored slot, after the first organic rail and apart from every rail. */
+  sponsored?: ReactNode;
+};
+
 const RAIL_SIZE = 16;
 
 /**
@@ -16,7 +22,7 @@ const RAIL_SIZE = 16;
  * grid. Every query runs at once; a medium with no titles yet simply has no
  * rail.
  */
-export const ExploreRails = async () => {
+export const ExploreRails = async ({ sponsored }: ExploreRailsProps) => {
   const [trending, upcoming, top, ...byType] = await Promise.all([
     listCatalog({ sort: "trending", pageSize: RAIL_SIZE }),
     listCatalog({ sort: "upcoming", pageSize: RAIL_SIZE }),
@@ -46,6 +52,7 @@ export const ExploreRails = async () => {
         titles={trending.items}
         showType
       />
+      {sponsored}
       {launchMediaTypes.map((mediaType, index) => (
         <TitleRail
           key={mediaType}

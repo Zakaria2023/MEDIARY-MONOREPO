@@ -4,7 +4,7 @@ import { LegalPage } from "@/components/shared/legal-page";
 import { pageMetadata } from "@/lib/seo";
 import { SUPPORT_EMAIL } from "@/lib/support-email";
 
-const UPDATED = "9 October 2026";
+const UPDATED = "14 October 2026";
 
 export const metadata: Metadata = pageMetadata({
   title: "Privacy policy",
@@ -14,7 +14,8 @@ export const metadata: Metadata = pageMetadata({
 
 /**
  * The privacy policy, in plain words. Every line was checked against what
- * the code does on 7 October 2026; a change to what is stored, shared or
+ * the code does on 7 October 2026, and the store links, sponsored titles
+ * and creator profiles against theirs on 14 October 2026; a change to what is stored, shared or
  * kept changes this page in the same commit. Still a draft until the owner
  * has had it read for the places Mediary is offered.
  */
@@ -42,6 +43,17 @@ const PrivacyPage = () => (
           scores, progress and dates) so you can review the matches. The file itself is not kept.
         </li>
         <li>
+          <strong>Creator verification.</strong> If you ask to be a verified creator, Mediary keeps the kind of creator you are, the channel
+          links you give and your note until staff decide, then deletes the links. The decision, its date and who made it are kept. For a
+          verified creator Mediary counts, per day, how often their profile, lists and taste comparison were opened and their links pressed:
+          numbers only, never who looked.
+        </li>
+        <li>
+          <strong>Sponsored titles you see.</strong> When you are signed in and a sponsored title is on your screen, or you press it,
+          Mediary notes that against your account, so the same one is not shown to you too often and so the campaign&apos;s totals can count
+          how many people added the title afterwards. If you hide one, Mediary remembers that and your note.
+        </li>
+        <li>
           <strong>Reports.</strong> When you report something, Mediary keeps the report, who it was about, and a short excerpt of the thing
           reported, so staff can decide on it.
         </li>
@@ -52,8 +64,19 @@ const PrivacyPage = () => (
       <h2>Why</h2>
       <p>
         To show you your own history, stats and recommendations; to show other members what your settings let them see; and to keep the
-        service safe, working and free of abuse. Mediary does not sell your data, does not show advertising, and does not use what you track to
-        profile you for anyone else.
+        service safe, working and free of abuse. Mediary does not sell your data and does not use what you track to profile you for anyone
+        else.
+      </p>
+      <p>
+        Mediary shows a few sponsored titles, each labelled &ldquo;Sponsored&rdquo; with the name of the company that paid. Which one you see
+        depends only on the screen you are on, the titles already in your library (a sponsored title you have is not shown again) and how
+        often you have seen that campaign today. No campaign can buy a score, a ranking, a review or a recommendation. A company that pays
+        for one is told totals, such as how many people saw it, pressed it, or added the title within a week; never who.
+      </p>
+      <p>
+        &ldquo;Where to get it&rdquo; on a title&apos;s page links to stores. A press passes through Mediary on its way, which counts the
+        title, the store, whether the screen was a phone or a computer and whether someone was signed in, but not who. No store pays Mediary
+        for these links today; if one ever does, the link will say so.
       </p>
       <p>
         Mediary sends you no email of its own. The only mail you get is the sign-in and verification codes the identity service sends when

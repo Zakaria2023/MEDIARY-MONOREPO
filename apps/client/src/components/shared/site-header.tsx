@@ -1,5 +1,5 @@
 import { UserMenu } from "auth";
-import { AudioLines, BarChart3, Bell, BookMarked, ListChecks, NotebookPen, Settings, Sparkles, UserRound } from "lucide-react";
+import { AudioLines, BadgeCheck, BarChart3, Bell, BookMarked, ListChecks, NotebookPen, Settings, Sparkles, UserRound } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AuthUser } from "services";
@@ -98,6 +98,7 @@ export const SiteHeader = ({ user }: SiteHeaderProps) => (
               { label: "Lists", href: "/lists", icon: <ListChecks size={16} /> },
               { label: "Diary", href: "/diary", icon: <NotebookPen size={16} /> },
               { label: "Stats", href: "/stats", icon: <BarChart3 size={16} /> },
+              { label: "Creator studio", href: "/studio", icon: <BadgeCheck size={16} /> },
               { label: "Settings", href: "/settings/profile", icon: <Settings size={16} /> },
             ]}
           />

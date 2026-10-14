@@ -4,7 +4,7 @@ import { LegalPage } from "@/components/shared/legal-page";
 import { pageMetadata } from "@/lib/seo";
 import { SUPPORT_EMAIL } from "@/lib/support-email";
 
-const UPDATED = "9 October 2026";
+const UPDATED = "14 October 2026";
 
 export const metadata: Metadata = pageMetadata({
   title: "Terms of use",
@@ -70,6 +70,12 @@ const TermsPage = () => (
         A place to keep your entertainment history and share it. The catalog comes from public sources named on the{" "}
         <Link href="/credits">credits page</Link>, and its titles, artwork and descriptions belong to their owners. Mediary does not host,
         stream or sell any of the works it lists, and a title&apos;s details may be incomplete or wrong.
+      </p>
+      <p>
+        Some titles are shown as sponsored, always labelled with the company that paid, and kept apart from scores, rankings, reviews
+        and recommendations, which no one can buy. Store links lead to sites Mediary does not run; what you buy there is between you and
+        that store. A verified creator badge means staff checked that the creator&apos;s channels are theirs; it is not for sale, and staff
+        may remove it. A creator&apos;s paid work for a brand says so on the work itself.
       </p>
       <p>
         Mediary is free and is offered as it is, without a promise that it will always be available, keep every feature, or be free of

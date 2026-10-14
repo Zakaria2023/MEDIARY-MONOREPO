@@ -1,6 +1,15 @@
 import { pgEnum } from "drizzle-orm/pg-core";
 import {
   activityKinds,
+  creatorCampaignStatuses,
+  creatorCategories,
+  creatorStatuses,
+  deviceKinds,
+  invoiceStatuses,
+  sponsorCampaignStatuses,
+  sponsorSurfaces,
+  storeLinkKinds,
+  stores,
   animeFormats,
   favoriteKinds,
   imageTypes,
@@ -71,3 +80,13 @@ export const importOutcomeEnum = pgEnum("import_outcome", importOutcomes);
 export const reportKindEnum = pgEnum("report_kind", reportKinds);
 export const reportReasonEnum = pgEnum("report_reason", reportReasons);
 export const reportStatusEnum = pgEnum("report_status", reportStatuses);
+
+export const storeEnum = pgEnum("store", stores);
+export const storeLinkKindEnum = pgEnum("store_link_kind", storeLinkKinds);
+export const deviceKindEnum = pgEnum("device_kind", deviceKinds);
+export const sponsorCampaignStatusEnum = pgEnum("sponsor_campaign_status", sponsorCampaignStatuses);
+export const sponsorSurfaceEnum = pgEnum("sponsor_surface", sponsorSurfaces);
+export const invoiceStatusEnum = pgEnum("invoice_status", invoiceStatuses);
+export const creatorCategoryEnum = pgEnum("creator_category", creatorCategories);
+export const creatorStatusEnum = pgEnum("creator_status", creatorStatuses);
+export const creatorCampaignStatusEnum = pgEnum("creator_campaign_status", creatorCampaignStatuses);

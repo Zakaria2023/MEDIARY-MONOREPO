@@ -1,11 +1,12 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { catalogFacts, getTitleTracking, listChoicesForTitle, PRODUCT_EVENTS, track } from "services";
+import { catalogFacts, getTitleTracking, ListChoice, listChoicesForTitle, listStoreLinks, PRODUCT_EVENTS, track } from "services";
 import { AsyncSection, Badge } from "ui";
 import { parseLaunchMediaType } from "validators";
 import { MEDIA_TYPE_LABELS } from "@/db/label";
 import { PcRequirements } from "@/components/catalog/pc-requirements";
 import { RelatedTitles } from "@/components/catalog/related-titles";
+import { StoreLinks } from "@/components/catalog/store-links";
 import { AlbumArtist } from "@/components/music/album-artist";
 import { AlbumTracklist } from "@/components/music/album-tracklist";
 import { MoreFromArtist } from "@/components/music/more-from-artist";
@@ -66,9 +67,12 @@ const TitlePage = async ({ params }: Props) => {
   if (!title) {
     notFound();
   }
-  const [tracking, listChoices] = viewer
-    ? await Promise.all([getTitleTracking(viewer.uuid, title.uuid), listChoicesForTitle(viewer.uuid, title.uuid)])
-    : [null, []];
+  const [[tracking, listChoices], storeLinks] = await Promise.all([
+    viewer
+      ? Promise.all([getTitleTracking(viewer.uuid, title.uuid), listChoicesForTitle(viewer.uuid, title.uuid)])
+      : Promise.resolve<[null, ListChoice[]]>([null, []]),
+    listStoreLinks(title.uuid),
+  ]);
   track(PRODUCT_EVENTS.mediaOpened, { mediaType: title.mediaType, member: viewer !== null, tracked: Boolean(tracking?.entry) });
   const facts = catalogFacts(title);
   const music = title.details?.kind === "music" ? title.details : null;
@@ -130,6 +134,8 @@ const TitlePage = async ({ params }: Props) => {
           )}
 
           {pcRequirements && <PcRequirements requirements={pcRequirements} />}
+
+          {storeLinks.length > 0 && <StoreLinks mediaUuid={title.uuid} links={storeLinks} />}
 
           {viewer && tracking?.entry && title.mediaType === "game" && (
             <AsyncSection reloadKey={`runs-${title.uuid}`} skeleton={<PlaythroughsSkeleton />}>
