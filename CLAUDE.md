@@ -31,7 +31,7 @@ The schema and connection live in the repo-root `db/` folder, not in a package â
 **Calling convention**
 
 - Server Actions (`"use server"`) are the only way the app calls into services. They must stay thin: check the caller's identity, validate input, call exactly one `packages/services` function, return the result. No business logic inside an action.
-- Route Handlers exist only where a Server Action cannot do the job: a webhook that needs the raw body, an image endpoint, a file upload. Same rule: thin, and they call the same `packages/services` functions.
+- Route Handlers exist only where a Server Action cannot do the job: a webhook that needs the raw body, an image endpoint, a file upload, a counted redirect (`/go`). Same rule: thin, and they call the same `packages/services` functions.
 
 **Auth**
 
@@ -53,7 +53,7 @@ The schema and connection live in the repo-root `db/` folder, not in a package â
 
 ## No Vendor On Screen
 
-- **No third-party service is ever named on any screen, in either app**: not Clerk, not TMDB, IGDB, Twitch, Google Cloud, Aiven, Cloudflare or any other. Not in a page, a label, an empty state, an error message, a tooltip or an alt text. The one exception is the "Continue with Google" button, which names the person's own account choice, not a service Mediary uses.
+- **No third-party service is ever named on any screen, in either app**: not Clerk, not TMDB, IGDB, Twitch, Google Cloud, Aiven, Cloudflare or any other. Not in a page, a label, an empty state, an error message, a tooltip or an alt text. The exceptions name where the person is going or who paid, never a service Mediary runs on: the "Continue with Google" button (the person's own account choice); a store on a title's "Where to get it" links (`STORE_LABELS` in `db/label.ts`, the owner's call of 2026-10-14); and a sponsored placement's advertiser, by the display name staff gave it ("Sponsored Â· Bandai Namco"), because a paid placement has to say whose it is.
 - **No credential, key or environment variable name is ever shown**, not even to staff. A source that is not configured says its access keys are missing on the server, nothing more.
 - Catalog sources are named on screen by what they are, from `PROVIDER_LABELS` in `db/label.ts` ("Movie and TV database"), never by the vendor. Error messages a person may read use the same descriptive wording; an adapter's `SOURCE_LABEL` is the name its errors use.
 - An identity error is shown through `authErrorMessage`, never as the service sent it.
@@ -70,7 +70,7 @@ These come from the blueprint and settle arguments before they start.
 - **Progress events are the source of truth for history.** The diary, the stats and the yearly recap are built from `ProgressEvents`, written in the same transaction as the `UserMedia` change. History is never reconstructed from current state.
 - **Fast first, cinematic second.** Motion under 250ms except page transitions; reduced-motion is respected; no 3D or WebGL anywhere basic navigation depends on it.
 - **Social is opt-in.** A private library is a complete product. Every visibility defaults open at sign-up and every one is a setting.
-- **A finished feature can be switched off without a deploy** by naming it in `FEATURES_OFF` (`social`, `recommendations`, `taste_match`, `ask`, `listen`, `look_further`; `featureFlags` in `db/enum.ts`). The service that does the thing checks its flag (`assertFeature`, `isFeatureOn` in `services/flags.ts`), so a forgotten button still cannot write; screens read the flag only to hide what would be refused. Every flag is on unless named.
+- **A finished feature can be switched off without a deploy** by naming it in `FEATURES_OFF` (`social`, `recommendations`, `taste_match`, `ask`, `listen`, `look_further`, `store_links`, `sponsored`, `creators`; `featureFlags` in `db/enum.ts`). The service that does the thing checks its flag (`assertFeature`, `isFeatureOn` in `services/flags.ts`), so a forgotten button still cannot write; screens read the flag only to hide what would be refused. Every flag is on unless named.
 - **Do not add a table without saying why the existing normalized model cannot hold the data.** Do not add a heavy dependency without a bundle-size justification.
 
 ## SEO
@@ -492,6 +492,16 @@ SEO is a core of the product, with the design. Every public route pays for its p
 - On screen the two are "the guide" and "Name that song"; neither service is named, and a missing key reads as "not available right now".
 - The landing shows both in their own section after the features (`components/landing/landing-discover.tsx`), stills drawn from the catalog's best scored titles so every word in them is true, and the FAQ answers both.
 
+## Store Links, Sponsored Titles And Creators
+
+Built on 2026-10-14 from the owner's monetization guide, all three phases at once. No affiliate program is connected (the owner's call), so no link earns anything and no commission notice is shown. **Nothing paid ever touches anything organic**: no score, ranking, trending sort, review, recommendation, Taste Match or search reads a sponsorship table, and a sponsored title reaches a screen only through its own labelled slot.
+
+- **Where to get it** (`services/store-links.ts`, flag `store_links`): a title's store links are worked out when its page renders, not stored (`automaticStoreLinks` in `commerce-rules.ts`, pure: a PC game's store page from its `steam` ref, a book's or comic's bookshops from its ISBN, a record's streaming searches by artist and name; nothing for films, shows, anime or manga, where a guess would lead nowhere). `StoreLinks` holds only what staff set, one per (title, store) by UNIQUE: their own link, a replacement for the automatic one, or a hide. A saved address must be https on that store's own host (`isStoreUrl`, `STORE_HOSTS`). Staff manage them on the admin's catalog title screen; `/commerce` reports presses and runs the broken-link check (`checkStoreLinks`, twenty at a time; 0, 404 and 410 read as broken).
+- **Every press goes through a counted redirect**, a Route Handler because a Server Action cannot redirect a GET: `/go/store/[title]/[store]` and `/go/sponsored/[placement]` in `apps/client/src/app/go/`. They count (`StoreClicks`: title, store, device, signed in or not, never who), skip programs (`isAutomatedAgent`) and bursts (`shouldCount` in `lib/server/visitor.ts`), and never send anyone to an address staff did not save or the catalog did not work out; a missing link leads to the title. Links to them are plain `<a>`, never `Link`, because a prefetch would count a press nobody made. `/go/` is in `PRIVATE_PATHS`.
+- **Sponsored titles** (`services/sponsorships.ts`, flag `sponsored`): `Advertisers` book `SponsorCampaigns` (draft, pending, approved, paused, ended; `NEXT_CAMPAIGN_STATUSES` in `commerce-rules.ts` is the one rule the server and the buttons share), each with `SponsorPlacements`: one title in one slot (`explore` after the first rail, `home` after "For you", `feed` after the third line of page one), Mediary's own words and the title's own artwork. A campaign shows only while approved and inside its dates, so it starts and stops by itself. A page asks `pickSponsoredPlacement` for a slot, never a campaign; for a member it leaves out what they hold, what they hid (`SponsorReports`) and campaigns at their daily `frequencyCap`, then picks by weight. An impression is the browser's report of half the card on screen for a second (`useSponsorImpression`), never the server's render, and counts only for a live placement. `getCampaignReport` gives totals only, with adds to a library within seven days of a press; `SponsorInvoices` are the accounting record, apart from the report. Every commercial write is an admin's and is audited.
+- **Verified creators** (`services/creators.ts`, flag `creators`): a member asks at `/studio` with their channels and gets a code (`creatorCode`) to put in one channel's bio; staff look for it (`checkCreatorProof` reads the pages; deciding stays staff's), then verify or refuse on the admin's `/creators`, never their own request; only an admin revokes. The proof links are deleted with the decision. `Creators` is staff's record, not the profile: name, bio, links and library stay on the account, and losing the badge takes nothing else. Verification is never sold. The badge (`CreatorBadge`) is on the profile and in `/creators`, the public directory (verified, listed by choice, profile public). `CreatorDailyStats` counts profile, list and comparison opens and link presses per day, from the browser, once per visitor per half hour, never the creator's own and never who; the studio shows thirty days. The dashboard is `/studio`, not `/creator`, because robots rules match by prefix and `/creator` would hide `/creators`.
+- **A creator's paid work says so on itself**: staff invite a verified creator to a campaign (`CreatorCampaigns`) with the deliverables and a disclosure the CHECK will not let be blank; the creator accepts by naming one of their own public lists, and that list's page shows "Paid partnership with" the advertiser and the disclosure above everything else (`getListPartnership`).
+
 ## Moderation And Members
 
 - A member flags a review, a reply, a list or a profile through `reportSubject` into one `Reports` table (`kind` says which column is set); one report per (reporter, kind, target) by a UNIQUE declared NULLS NOT DISTINCT, never one's own. The report copies the author and an excerpt so the record outlives the thing. Staff handle the queue at the admin's `/reports`: dismissing needs `requireStaff`, removing needs `requireAdmin` and acts by kind (a review or reply deleted, a list deleted, an account suspended), closing every open report about that thing as actioned first. The one `ReportButton` (`components/social/`) serves every kind; its action is in `app/(app)/feed/actions.ts`.
@@ -542,6 +552,9 @@ One or two accents per screen. The spectrum belongs to the logo and the five gra
 | `/anime`, `/games`, `/movies`, `/tv`, `/music`, `/manga`, `/comics`, `/books` | One medium's hub: its own hero, then every title in it with the facet filter (`app/(site)/[type]/page.tsx`, slugs in `src/lib/hub-path.ts`) |
 | `/explore/[type]`       | Permanent redirect to the medium's hub      |
 | `/artists`, `/artists/[slug]` | Every music artist, then one artist's records by kind; each record's page lists its songs |
+| `/creators`             | Verified creators who chose to be listed, by kind, the most followed first |
+| `/studio`               | The creator studio: ask to be verified, wait, then thirty days of numbers, brand invitations and the badge's settings (noindex) |
+| `/go/store/[title]/[store]`, `/go/sponsored/[placement]` | Counted redirects to a store or a sponsored title; not pages |
 | `/search?q=`            | Universal search with type filters and the artists the words name; members can look further in the sources (noindex) |
 | `/[type]/[slug]`        | Canonical media detail page                 |
 | `/library`              | The signed-in user's library                |
@@ -572,6 +585,9 @@ The table above is `apps/client`. `apps/admin` has its own routes, added with th
 | `/imports`    | Provider status, search and import, bulk list imports      |
 | `/members`    | Every member: search, role (admin only), suspend           |
 | `/reports`    | Open reports on reviews, replies, lists and profiles: dismiss (staff) or remove (admin) |
+| `/creators`   | Creator requests and creators by status: look for the code, verify or refuse (staff), revoke (admin) |
+| `/sponsors`, `/sponsors/[uuid]` | Advertisers and campaigns; one campaign's status, report, placements, member notes, creators and invoices (writes are an admin's) |
+| `/commerce`   | Store link presses over thirty days, the links staff hold, the broken-link check |
 | `/audit`      | Every staff action, newest first, read only                |
 | `/sign-in`    | Staff sign-in (Clerk, no sign-up)                          |
 | `/no-access`  | Where a signed-in account without a staff role lands       |

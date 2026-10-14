@@ -4,7 +4,7 @@ import { LegalPage } from "@/components/shared/legal-page";
 import { pageMetadata } from "@/lib/seo";
 import { SUPPORT_EMAIL } from "@/lib/support-email";
 
-const UPDATED = "9 October 2026";
+const UPDATED = "14 October 2026";
 
 export const metadata: Metadata = pageMetadata({
   title: "Community guidelines",
@@ -54,7 +54,9 @@ const GuidelinesPage = () => (
       <h2>No spam</h2>
       <p>
         No advertising, links meant to mislead, copied reviews posted again and again, or lists made only to promote something. Reviews are for
-        what you watched, played, read or heard.
+        what you watched, played, read or heard. The one paid thing allowed is a verified creator&apos;s list made for a brand through
+        Mediary, and it says whose partnership it is at the top; being paid for anything else you post and not saying so is not allowed.
+        Pretending to be a creator, a studio or anyone else is reported under its own reason.
       </p>
     </section>
 
