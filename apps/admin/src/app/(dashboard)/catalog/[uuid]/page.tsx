@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { catalogFacts } from "services";
-import { Badge, Poster } from "ui";
+import { AsyncSection, Badge, Poster, Skeleton } from "ui";
 import { formatDate } from "utils";
 import {
   MEDIA_STATUS_LABELS,
@@ -13,7 +13,9 @@ import {
 } from "@/db/label";
 import { FactList } from "@/components/catalog/fact-list";
 import { RefreshButton } from "@/components/catalog/refresh-button";
+import { StoreLinksSection } from "@/components/catalog/store-links-section";
 import { SectionTitle } from "@/components/shared/section-title";
+import { getCurrentUser } from "@/lib/auth";
 import { loadCatalogTitle } from "@/lib/load-catalog-title";
 import { publicTitleUrl } from "@/lib/site";
 
@@ -33,7 +35,7 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
  */
 const CatalogTitlePage = async ({ params }: Props) => {
   const { uuid } = await params;
-  const title = await loadCatalogTitle(uuid);
+  const [title, viewer] = await Promise.all([loadCatalogTitle(uuid), getCurrentUser()]);
   if (!title) {
     notFound();
   }
@@ -109,6 +111,10 @@ const CatalogTitlePage = async ({ params }: Props) => {
               ))}
             </div>
           </section>
+
+          <AsyncSection reloadKey={`stores-${title.uuid}`} skeleton={<Skeleton className="h-32 rounded-card" />}>
+            <StoreLinksSection mediaUuid={title.uuid} canEdit={viewer?.role === "admin"} />
+          </AsyncSection>
 
           <section className="flex flex-col gap-4">
             <SectionTitle title="Names" description="Every name search matches this title by." />

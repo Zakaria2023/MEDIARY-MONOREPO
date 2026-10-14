@@ -24,6 +24,8 @@ const PRIVATE_PATHS = [
   "/feed",
   "/notifications",
   "/compare",
+  // The counted redirects to stores and sponsored titles: not pages, and a crawler's press is not a press.
+  "/go/",
   "/ask",
   "/listen",
   "/design",
