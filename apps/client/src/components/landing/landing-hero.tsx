@@ -20,7 +20,7 @@ const MEDIA_LINE = ["Anime", "Games", "Movies", "TV", "Music", "Manga", "Books"]
 export const LandingHero = ({ backdrop, proof }: LandingHeroProps) => (
   <section className="relative isolate overflow-hidden border-b border-hairline">
     <div className="absolute inset-0 -z-20">{backdrop}</div>
-    <div className="absolute inset-0 -z-10 bg-page/75" />
+    <div className="absolute inset-0 -z-10 bg-page/60" />
     <div className="absolute inset-x-0 bottom-0 -z-10 h-2/3 bg-backdrop-fade" />
     <div className="absolute inset-x-0 top-0 -z-10 h-32 rotate-180 bg-backdrop-fade" />
     <div aria-hidden className="absolute left-1/2 top-1/3 -z-10 h-96 w-full max-w-4xl -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-gradient-soft opacity-80 blur-3xl" />
