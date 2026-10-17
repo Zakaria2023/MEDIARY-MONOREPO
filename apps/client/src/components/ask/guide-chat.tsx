@@ -2,7 +2,7 @@
 
 import { RotateCcw } from "lucide-react";
 import { Button } from "ui";
-import { useGuideChat } from "@/app/(app)/ask/use-guide-chat";
+import { useGuideChat } from "@/app/(site)/ask/use-guide-chat";
 import { GuideComposer } from "@/components/ask/guide-composer";
 import { GuideIntro } from "@/components/ask/guide-intro";
 import { GuideMessage } from "@/components/ask/guide-message";

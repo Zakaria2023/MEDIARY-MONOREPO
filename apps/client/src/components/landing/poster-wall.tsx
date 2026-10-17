@@ -1,6 +1,8 @@
 import { Poster } from "ui";
 import { launchMediaTypes } from "@/db/enum";
 import { dealRows } from "@/lib/deal-rows";
+import { PosterScene } from "@/components/landing/poster-scene";
+import { ScenePoster } from "@/lib/scene-poster";
 import { readLandingTrending } from "@/lib/server/landing-catalog";
 
 const PER_MEDIUM = 9;
@@ -12,7 +14,9 @@ const ROW_ANIMATIONS = ["animate-marquee", "animate-marquee-reverse", "animate-m
  * read and heard titles of every medium, in three rows drifting slowly in
  * opposite directions, tilted a little. Decoration, hidden from assistive
  * technology; the titles themselves are linked further down the page.
- * Each row is drawn twice so the drift loops without a seam.
+ * Each row is drawn twice so the drift loops without a seam. Once the page
+ * is up, the same posters become a 3D carousel (`PosterScene`) and this
+ * wall fades out under it; it stays where motion or WebGL is not wanted.
  */
 export const PosterWall = async () => {
   const showcase = await readLandingTrending();
@@ -21,19 +25,23 @@ export const PosterWall = async () => {
     return null;
   }
 
+  const posters: ScenePoster[] = rows.flat().flatMap((card) => (card.coverUrl ? [{ src: card.coverUrl, color: card.dominantColor }] : []));
+
   return (
-    <div aria-hidden data-poster-wall className="mask-fade-x absolute inset-0 flex -rotate-6 scale-125 flex-col justify-center gap-4 opacity-60 sm:gap-5">
-      {rows.map((row, rowIndex) => (
-        <div key={rowIndex} className="flex w-max gap-4 sm:gap-5">
-          <div className={`flex w-max gap-4 sm:gap-5 ${ROW_ANIMATIONS[rowIndex] ?? ""}`}>
-            {[...row, ...row].map((card, index) => (
-              <div key={`${card.uuid}-${index}`} className="w-28 shrink-0 sm:w-36 lg:w-40">
-                <Poster src={card.coverUrl} alt="" sizes="160px" dominantColor={card.dominantColor} />
-              </div>
-            ))}
+    <PosterScene posters={posters}>
+      <div className="mask-fade-x absolute inset-0 flex -rotate-6 scale-125 flex-col justify-center gap-4 opacity-60 sm:gap-5">
+        {rows.map((row, rowIndex) => (
+          <div key={rowIndex} className="flex w-max gap-4 sm:gap-5">
+            <div className={`flex w-max gap-4 sm:gap-5 ${ROW_ANIMATIONS[rowIndex] ?? ""}`}>
+              {[...row, ...row].map((card, index) => (
+                <div key={`${card.uuid}-${index}`} className="w-28 shrink-0 sm:w-36 lg:w-40">
+                  <Poster src={card.coverUrl} alt="" sizes="160px" dominantColor={card.dominantColor} />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </PosterScene>
   );
 };
