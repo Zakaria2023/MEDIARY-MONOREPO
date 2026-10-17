@@ -17,7 +17,7 @@ export const GuideIntro = ({ onAsk, disabled }: GuideIntroProps) => (
       </h2>
       <p className="max-w-xl text-sm leading-relaxed text-muted sm:text-base">
         Tell the guide what you loved, how much time you have or the feeling you’re after. It looks across every
-        medium in Mediary and leaves out what’s already in your library.
+        medium in Mediary, and once you’re signed in it leaves out what’s already in your library.
       </p>
     </div>
     <ul className="grid w-full gap-2 sm:grid-cols-2">
