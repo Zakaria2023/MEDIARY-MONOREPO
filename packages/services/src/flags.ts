@@ -21,7 +21,7 @@ const switchedOff = (): Set<string> =>
   new Set(
     (process.env.FEATURES_OFF ?? "")
       .split(",")
-      .map((name) => name.trim())
+      .map((name: string) => name.trim())
       .filter(Boolean),
   );
 

@@ -23,7 +23,7 @@ import {
   socialSubjectSchema,
 } from "validators";
 import { requireOnboardedUser } from "@/lib/auth";
-import { overActionLimit } from "@/lib/server/action-limit";
+import { overActionLimit } from "rate-limit";
 
 export type ReactionActionResult = ActionResult & {
   reactions?: ReactionSummary;

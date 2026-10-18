@@ -26,8 +26,11 @@ const HERE = import.meta.dirname;
 const IMPORTS =
   /^\s*(?:import|export)\s+(?!type\b)[^;]*?from\s+["']([^"']+)["']/gm;
 
-// What must never appear anywhere in the graph.
-const FORBIDDEN = [/(^|\/)db(\/|$)/, /^storage$/, /^server-only$/];
+// What must never appear anywhere in the graph: the connection and the
+// schema. db/enum.ts and db/label.ts are plain constants with no connection
+// behind them (the validators already import them in the browser), so a
+// pure rule may read a label.
+const FORBIDDEN = [/(^|\/)db(\/(index|schema)(\/|$)|$)/, /^storage$/, /^server-only$/];
 
 const resolveLocal = (fromFile: string, specifier: string): string | null => {
   if (!specifier.startsWith(".")) {

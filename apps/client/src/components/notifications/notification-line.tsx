@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { NotificationItem } from "services";
 import { Poster } from "ui";
+import { notificationSentence } from "services/pure";
 import { formatRelativeTime } from "utils";
 import { UserAvatar } from "@/components/profile/user-avatar";
-import { notificationHref, notificationSentence } from "@/lib/notification-copy";
+import { notificationHref } from "@/lib/notification-copy";
 import { profilePath } from "@/lib/profile-path";
 
 type NotificationLineProps = {

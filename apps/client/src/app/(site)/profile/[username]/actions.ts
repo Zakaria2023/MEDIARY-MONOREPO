@@ -6,7 +6,7 @@ import { blockUser, followUser, muteUser, PRODUCT_EVENTS, recordCreatorStat, tra
 import { ActionResult, fail } from "utils";
 import { creatorViewSchema, CreatorViewInput, followSchema, FollowInput, userTargetSchema, UserTargetInput } from "validators";
 import { getCurrentUser, requireOnboardedUser } from "@/lib/auth";
-import { overActionLimit } from "@/lib/server/action-limit";
+import { overActionLimit } from "rate-limit";
 import { currentVisitor, shouldCount } from "@/lib/server/visitor";
 
 /** The profile and the feed both change with a follow. */

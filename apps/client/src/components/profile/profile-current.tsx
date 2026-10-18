@@ -4,7 +4,7 @@ import { Poster } from "ui";
 import { MEDIA_TYPE_LABELS } from "@/db/label";
 import { ProgressBar } from "@/components/shared/progress-bar";
 import { SectionHeading } from "@/components/shared/section-heading";
-import { formatProgress, progressGoalFor } from "@/lib/format-progress";
+import { formatProgress, progressGoalFor } from "services/pure";
 import { titlePath } from "@/lib/title-path";
 
 type ProfileCurrentProps = {

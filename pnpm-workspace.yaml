@@ -12,6 +12,8 @@ packages:
 # ones something genuinely cannot run without.
 allowBuilds:
   "@clerk/shared": false
+  browser-tabs-lock: false
+  core-js: false
   esbuild: true
   sharp: false
   unrs-resolver: false

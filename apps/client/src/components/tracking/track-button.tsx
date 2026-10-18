@@ -6,7 +6,7 @@ import { TRACKING_STATUS_LABELS } from "@/db/label";
 import { EntrySheet } from "@/components/tracking/entry-sheet";
 import { ProgressTickButton } from "@/components/tracking/progress-tick-button";
 import { StatusDot } from "@/components/tracking/status-dot";
-import { formatProgress, progressCapFor, progressGoalFor } from "@/lib/format-progress";
+import { formatProgress, progressCapFor, progressGoalFor } from "services/pure";
 import { useTrackedEntry } from "@/lib/use-tracked-entry";
 
 type TrackButtonProps = {

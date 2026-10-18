@@ -11,7 +11,7 @@ import {
   MAX_IMPORT_FILE_BYTES,
 } from "validators";
 import { requireOnboardedUser } from "@/lib/auth";
-import { overActionLimit } from "@/lib/server/action-limit";
+import { overActionLimit } from "rate-limit";
 
 export type ApplyImportResult = ActionResult & {
   summary?: LibraryImport;

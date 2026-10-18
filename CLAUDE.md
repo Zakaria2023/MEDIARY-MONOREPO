@@ -12,8 +12,9 @@ This is a pnpm + Turborepo monorepo built on Next.js 16.
 
 - `apps/client` — the member-facing Next.js app on `mediary.com`: the public site (landing, explore, title pages, public profiles), the signed-in product (library, diary, stats, settings), sign-in and sign-up, and the Clerk webhook. Everything SEO lives here. Port 3000 locally.
 - `apps/admin` — the staff Next.js app (`admin.mediary.com` in production, port 3001 locally): catalog imports from the providers, sync runs and their logs, title corrections and merges, genre and tag curation, members and roles, reports and moderation. It is behind Clerk with the same instance as the client, so one account signs in to both; the role on Mediary's `Users` row decides who enters. It has no sign-up and is `noindex` on every host, production included.
-- There is no `apps/api` yet; add it (Route Handlers only, versioned under `/api/v1`) when a mobile client exists, and not before.
-- A feature that both apps need is a `packages/services` function the two call, never code copied between apps. Each app runs its own `db` pool of 3, so two apps on two instances each stay well under Aiven's 20 connections.
+- `apps/api` — the versioned REST API the mobile app talks to (port 3002 locally), Route Handlers only under `/api/v1`, no pages. It is the mobile app's only door: the phone never touches services or the database. Bearer-authenticated, sets no cookie, `noindex` on every host.
+- `apps/mobile` — the phone app: Expo SDK 58 (React Native 0.88, React 19.3) with Expo Router. It reads and writes through `apps/api` only, and imports from the workspace nothing that touches the database (see Mobile App below). `pnpm dev:mobile`.
+- A feature that two apps need is a `packages/services` function they call, never code copied between apps. Each app runs its own `db` pool of 3; with three apps, keep a warm instance count in mind against Aiven's 20 connections.
 
 **Packages**
 
@@ -31,12 +32,21 @@ The schema and connection live in the repo-root `db/` folder, not in a package �
 **Calling convention**
 
 - Server Actions (`"use server"`) are the only way the app calls into services. They must stay thin: check the caller's identity, validate input, call exactly one `packages/services` function, return the result. No business logic inside an action.
-- Route Handlers exist only where a Server Action cannot do the job: a webhook that needs the raw body, an image endpoint, a file upload, a counted redirect (`/go`). Same rule: thin, and they call the same `packages/services` functions.
+- Route Handlers exist only where a Server Action cannot do the job: a webhook that needs the raw body, an image endpoint, a file upload, a counted redirect (`/go`), and every route of `apps/api`. Same rule: thin, and they call the same `packages/services` functions.
+
+**The mobile API (`apps/api`)**
+
+- One folder per resource under `src/app/api/v1/`, one `route.ts` each. A handler resolves the caller, validates with a `validators` schema (`safeParse`, then `invalid(error)`), calls exactly one service and returns its result as it is: no envelope, so the app's types are the services' own types. Creates answer 201.
+- Every error is `{ error }` in words a person may read, sometimes with `code` (for the app to branch on) or `fields`. `failure(error, fallback)` in `src/lib/server/respond.ts` picks the status from the error's name (ValidationError 400, NotFoundError 404, ProviderError 502, anything else 500 with the fallback, logged) and the message through `fail`, the Server Actions' rule.
+- The caller is `getUserFromRequest` (`src/lib/server/request-user.ts`): the identity service's session token from `Authorization: Bearer`, checked with `verifyToken` (networkless with `CLERK_JWT_KEY`), its subject mapped by `getUserByClerkId` and synced on demand like the web's `getCurrentUser`. A private route calls `requireMember` (401 signed out, 403 `code: "inactive"`, 403 `code: "onboarding"` without a username); the welcome screen's routes call `requireAccount`. A public route still reads the caller when there is one.
+- `src/proxy.ts` answers CORS (any origin: the token is the credential, no cookie is read) and enforces the request ceiling per address (bucket `mobile-api`). The security headers and noindex come from `next.config.ts`.
+- Lists are paginated with `?page=&pageSize=` and answer `PaginatedResult`, as the services already do.
 
 **Auth**
 
 - Clerk is the identity provider. Do not reintroduce a custom password/JWT/session system.
 - **Clerk is headless. Never render a component Clerk draws**: no `SignIn`, `SignUp`, `UserButton`, `UserProfile`, `SignOutButton`, `OrganizationSwitcher` or any other. Every auth screen comes from `packages/auth`. Credential changes and account deletion go through Server Actions calling Clerk's server API (`apps/client/src/lib/server/account.ts`), never Clerk's browser re-verification, which draws its own dialog.
+- **The phone signs in headless too**, with the identity service's Expo hooks (`@clerk/expo`) under screens of Mediary's own, the web's steps and the web's sentences (`auth/errors`), the session in the device's secure store. It sends the session token to `apps/api` as `Authorization: Bearer`; the API verifies it and maps it to the same `AuthUser` the web resolves.
 - **The admin is sign-in only.** No sign-up page, no create-account link, no Google button: a Google sign-in from an unknown address quietly creates an account, and the admin never creates accounts. A staff account is a member account promoted by role.
 - The `Users` table is **not** an identity store — it is a profile store. Clerk owns credentials, verification and sessions. Each `Users` row is linked to Clerk by `clerkUserId` and is kept in sync by the Clerk webhook. Username, display name, bio, avatar and every setting live on Mediary's rows, not in Clerk.
 - `clerkMiddleware` runs in `proxy.ts`; `<ClerkProvider nonce={nonce}>` wraps the root layout. `getCurrentUser` resolves the cookie session via Clerk's `auth()` then maps `userId → getUserByClerkId`, syncing the row on demand if the webhook has not landed. Pages decide what to show a signed-out visitor; they never redirect to sign-in for public content.
@@ -47,9 +57,21 @@ The schema and connection live in the repo-root `db/` folder, not in a package �
 **Hard rules**
 
 - No business logic inside a Server Action or Route Handler — only in `packages/services`.
-- No direct database access from client components or anywhere outside `packages/services`.
+- No direct database access from client components, the mobile app, or anywhere outside `packages/services`. The phone reaches data through the versioned API only.
 - Never modify `db/index.ts` (the database connection/pool setup). The Aiven service allows 20 connections in total; the pool is sized for that. Leave this file exactly as-is unless the user explicitly asks to change it. The owner asked on 2026-10-09 for `attachDatabasePool` (`@vercel/functions`): production runs on Vercel, whose frozen functions otherwise keep their idle connections open until the 20 slots fill and pages fail to render.
 - Never commit `.env.local`. Every secret the app reads is listed in `.env.example` with an empty value.
+
+## Mobile App
+
+`apps/mobile` is the web's product on a phone, built to this file's rules where they can hold and to these where a phone differs. `apps/mobile/README.md` says how to run it.
+
+- **Routes only in `src/app/`.** Expo Router makes every file there a screen, so a screen's hook lives in `src/hooks/<feature>/use-*.ts`, its pieces in `src/components/<feature>/`, and plumbing in `src/lib/`. A route file renders one component; a private one is `<RequireMember>` around a screen from `components/`, which sends a visitor to sign in and a new account to the welcome screen.
+- **One API client** (`src/lib/api.ts`): a function per endpoint, the token passed in, every refusal an `ApiError` with the API's own sentence and `code`. Answers are cached by TanStack Query under the keys in `src/lib/query-keys.ts`; a member's own reads sit under `["member"]`, dropped when the account changes, never when the session first loads.
+- **Typed by the services.** Response types are the services' own, as `Jsonify<…>` (`src/lib/api-types.ts`), imported with `import type` from `services`: the one place the modifier is required, because it is what keeps the server package out of the bundle. A new endpoint returns a service's result as it is, so the app gets its type for free.
+- **Nothing the site says is copied.** Labels from `db/label.ts`, schemas from `validators`, identity errors from `auth/errors`, and from `services/pure` the tracking rules the sheet settles its draft with, the progress format, and the diary, feed and notification sentences. A phrase both apps need moves into `services` behind `pure`; the guard in `pure.test.ts` keeps the database out.
+- **Every change shows at once** (the sheet's save, the "+1", follow), worked out with the server's rules, put back only on a refusal, whose sentence a toast shows (`showToast`).
+- **The same design.** `src/lib/theme.ts` mirrors the dark tokens in `globals.css` (a token changed there changes here in the same commit); the primary button is the action gradient; posters through `Poster` (the CDN's size for the slot, the title's color while loading, the outlined placeholder without art); `lucide-react-native` icons; skeletons of the content's shape and designed empty and error states on every list.
+- No vendor on screen applies to the phone as it does to the site.
 
 ## No Vendor On Screen
 
@@ -276,7 +298,7 @@ SEO is a core of the product, with the design. Every public route pays for its p
 - Server Actions are defined in `actions.ts` files within the route's own folder, with `"use server"` at the top of the file.
 - Always perform redirects on the server, inside the Server Action, using `redirect` from `next/navigation`. Never redirect on the client after checking `state.success`.
 - Every action ends in the same catch: `return fail(error, "Could not save this entry");` so a `ValidationError` naming the exact problem reaches the user instead of a generic message.
-- A write that reaches other members or the catalog (a review, reply, like, follow, report, list, list item, import) is capped per account by `overActionLimit` (`src/lib/server/action-limit.ts`, one table of limits), checked right after the identity check; the paid and source-bound actions keep their own daily buckets.
+- A write that reaches other members or the catalog (a review, reply, like, follow, report, list, list item, import) is capped per account by `overActionLimit` (`packages/rate-limit/src/action-limit.ts`, one table of limits, shared with `apps/api`), checked right after the identity check; the paid and source-bound actions keep their own daily buckets.
 
 ## Auth Checks
 
@@ -432,9 +454,9 @@ SEO is a core of the product, with the design. Every public route pays for its p
 ## Tracking
 
 - `saveEntry` and `tickEntryProgress` in `packages/services/src/tracking.ts` are the only writers of `UserMedia`. Each locks the entry row (`for update`), applies the rules, and writes the `ProgressEvents` row in the same transaction; a first save that loses an insert race retries against the row it lost to. Nothing else inserts a progress event.
-- The rules (auto-start, auto-complete at the total, clamped progress, what counts as history) live in `tracking-rules.ts`, pure and re-exported from `services/pure`, so the sheet settles its draft with the same code the server runs. That file's `db/enum` import is `import type` on purpose: the pure guard allows nothing else.
+- The rules (auto-start, auto-complete at the total, clamped progress, what counts as history) live in `tracking-rules.ts`, pure and re-exported from `services/pure`, so the sheet settles its draft with the same code the server runs. The pure guard (`pure.test.ts`) refuses the connection and the schema; `db/enum` and `db/label` are constants and may be read.
 - The total progress counts up to is a property of the medium (episodes, 100 for a film's percent, nothing for a game's hours) and is computed in the service as `progressTotal`; the sheet never guesses it.
-- **A game's hours are read against its hours to finish** (2026-10-11): `GameDetails.estimatedHours`, players' main-story-and-extras time from the game database (`hoursToFinish` in `providers/igdb.ts`), comes to every screen as `TrackingTarget.estimatedHours` and shows as "12h / 26h" (`progressGoalFor` in `src/lib/format-progress.ts`), "About 26 hours to finish" in the sheet and "Time to finish" on the title page. It is display only, never `progressTotal`: a run may take longer, so it caps nothing and finishes nothing. The PC store has no times (SteamSpy's playtimes read zero), so `steam.ts` asks the game database by app id (`igdbFactsForSteamApps`, which brings the consoles too); a refresh that gets no time keeps the one held. `pnpm catalog:game-database` (`fillFromGameDatabase`) gives the games already held their hours and consoles; both need the game database's keys, and a game nobody has timed shows its hours alone.
+- **A game's hours are read against its hours to finish** (2026-10-11): `GameDetails.estimatedHours`, players' main-story-and-extras time from the game database (`hoursToFinish` in `providers/igdb.ts`), comes to every screen as `TrackingTarget.estimatedHours` and shows as "12h / 26h" (`progressGoalFor` in `packages/services/src/progress-format.ts`, through `services/pure`, so the site and the phone read progress alike), "About 26 hours to finish" in the sheet and "Time to finish" on the title page. It is display only, never `progressTotal`: a run may take longer, so it caps nothing and finishes nothing. The PC store has no times (SteamSpy's playtimes read zero), so `steam.ts` asks the game database by app id (`igdbFactsForSteamApps`, which brings the consoles too); a refresh that gets no time keeps the one held. `pnpm catalog:game-database` (`fillFromGameDatabase`) gives the games already held their hours and consoles; both need the game database's keys, and a game nobody has timed shows its hours alone.
 - **A game's runs are `GamePlaythroughs`**, one row per run under the entry, because a run has its own platform, difficulty, dates, hours and score that one `UserMedia` row cannot hold twice; a rewatch of a film stays `repeatCount`. `savePlaythrough` locks the entry and takes the next number, unique per entry by `uq_game_playthroughs_entry_number`, and raises `repeatCount` to match; it is not history and writes no progress event. The panel is on a game's title page for a member who holds it; its actions are beside that page.
 - The sheet, the tick and the entry a screen holds are `src/lib/use-entry-sheet.ts` and `src/lib/use-tracked-entry.ts`, in `lib/` because they open from a title page, a library row and a home card alike. Their actions are `app/(app)/library/actions.ts`. Every change shows at once and reverts only on a refusal.
 
