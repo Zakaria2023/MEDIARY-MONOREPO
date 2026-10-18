@@ -4,7 +4,7 @@ import { LibraryItem } from "services";
 import { Poster } from "ui";
 import { ProgressBar } from "@/components/shared/progress-bar";
 import { EntryStatusChip } from "@/components/tracking/entry-status-chip";
-import { formatProgress, progressBarValue, progressGoalFor } from "@/lib/format-progress";
+import { formatProgress, progressBarValue, progressGoalFor } from "services/pure";
 import { titlePath } from "@/lib/title-path";
 
 type ProfileEntryCardProps = {

@@ -34,6 +34,8 @@ export {
 } from "./tracking-rules";
 export type { EntryChange, EntryState, ProgressLimits } from "./tracking-rules";
 
+export { formatProgress, progressBarValue, progressCapFor, progressGoalFor } from "./progress-format";
+
 export { canView } from "./visibility";
 export type { ViewerRelation } from "./visibility";
 

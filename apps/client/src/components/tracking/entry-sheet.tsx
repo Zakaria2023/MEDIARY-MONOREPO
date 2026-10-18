@@ -6,7 +6,7 @@ import { useWatch } from "react-hook-form";
 import { TrackedEntry, TrackingTarget } from "services";
 import { Button, ConfirmDialog, Dropdown, FormError, Input, Poster, Sheet, Textarea } from "ui";
 import { MEDIA_TYPE_LABELS, PROGRESS_UNIT_LABELS } from "@/db/label";
-import { progressCapFor } from "@/lib/format-progress";
+import { progressCapFor } from "services/pure";
 import { titleStatusLine } from "@/lib/title-status";
 import { ProgressStepper } from "@/components/tracking/progress-stepper";
 import { ScorePicker } from "@/components/tracking/score-picker";

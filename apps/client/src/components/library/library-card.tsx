@@ -9,7 +9,7 @@ import { LibrarySelectOverlay } from "@/components/library/library-select-overla
 import { EntryStatusChip } from "@/components/tracking/entry-status-chip";
 import { ProgressTickButton } from "@/components/tracking/progress-tick-button";
 import { ProgressBar } from "@/components/shared/progress-bar";
-import { formatProgress, progressBarValue, progressGoalFor } from "@/lib/format-progress";
+import { formatProgress, progressBarValue, progressGoalFor } from "services/pure";
 import { titlePath } from "@/lib/title-path";
 import { useTrackedEntry } from "@/lib/use-tracked-entry";
 

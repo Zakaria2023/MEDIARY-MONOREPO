@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatProgress, progressBarValue, progressGoalFor } from "./format-progress";
+import { formatProgress, progressBarValue, progressGoalFor } from "./progress-format";
 
 describe("formatProgress", () => {
   it("shows the total when there is one", () => {
