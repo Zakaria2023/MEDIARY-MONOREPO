@@ -16,9 +16,10 @@ type SiteHeaderProps = {
 /**
  * The header: the mark, Explore, search everywhere, and either the sign-in
  * links or the account menu. The viewer is passed in because the header is
- * a server component and knows who is looking from the request. A member
- * also sees Library, Feed and Ask; naming a song is in the account menu,
- * which phones reach too. Adding happens on a title's own page.
+ * a server component and knows who is looking from the request. Ask and
+ * Name that song are open to everyone, so everyone sees them (as icons on
+ * a phone); a member also sees Library and Feed. Adding happens on a
+ * title's own page.
  */
 export const SiteHeader = ({ user }: SiteHeaderProps) => (
   <header className="sticky top-0 z-40 border-b border-hairline bg-page/80 backdrop-blur-md">
@@ -54,15 +55,22 @@ export const SiteHeader = ({ user }: SiteHeaderProps) => (
             Feed
           </Link>
         )}
-        {user && (
-          <Link
-            href="/ask"
-            className="hidden h-9 items-center gap-1.5 rounded-control px-3 text-sm font-medium text-muted transition-colors hover:bg-hover hover:text-ink sm:flex"
-          >
-            <Sparkles size={14} className="text-accent" />
-            Ask
-          </Link>
-        )}
+        <Link
+          href="/ask"
+          aria-label="Ask the guide"
+          className="flex h-9 items-center gap-1.5 rounded-control px-2.5 text-sm font-medium text-muted transition-colors hover:bg-hover hover:text-ink sm:px-3"
+        >
+          <Sparkles size={14} className="text-accent" />
+          <span className="hidden sm:inline">Ask</span>
+        </Link>
+        <Link
+          href="/listen"
+          aria-label="Name that song"
+          className="flex h-9 items-center gap-1.5 rounded-control px-2.5 text-sm font-medium text-muted transition-colors hover:bg-hover hover:text-ink sm:px-3"
+        >
+          <AudioLines size={14} className="text-accent" />
+          <span className="hidden lg:inline">Name that song</span>
+        </Link>
       </nav>
       <div className="ms-auto flex items-center gap-2">
         <SearchPalette />

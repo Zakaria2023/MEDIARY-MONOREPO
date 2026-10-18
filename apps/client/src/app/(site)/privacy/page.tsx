@@ -4,7 +4,7 @@ import { LegalPage } from "@/components/shared/legal-page";
 import { pageMetadata } from "@/lib/seo";
 import { SUPPORT_EMAIL } from "@/lib/support-email";
 
-const UPDATED = "14 October 2026";
+const UPDATED = "17 October 2026";
 
 export const metadata: Metadata = pageMetadata({
   title: "Privacy policy",
@@ -109,9 +109,9 @@ const PrivacyPage = () => (
       <h2>The guide and Name that song</h2>
       <ul>
         <li>
-          <strong>The guide.</strong> When you ask the guide for a recommendation, what you write in that conversation, together with the
-          titles you loved or finished, your scores for them and the genres you lean toward, is sent to an AI service that writes the
-          answer. Mediary does not keep the conversation: it lives on the page and is gone when you leave or start over. The service handles
+          <strong>The guide.</strong> When you ask the guide for a recommendation, what you write in that conversation is sent to an AI
+          service that writes the answer. When you are signed in, the titles you loved or finished, your scores for them and the genres you
+          lean toward go with it; when you are not, only what you write does. Mediary does not keep the conversation: it lives on the page and is gone when you leave or start over. The service handles
           it only to answer you, under its own terms for business customers, and does not use it to train its models.
         </li>
         <li>
@@ -120,7 +120,11 @@ const PrivacyPage = () => (
           microphone at all.
         </li>
       </ul>
-      <p>Neither is used unless you open it, and Mediary counts how often you use each in a day only to keep the cost in check.</p>
+      <p>
+        Both are open without an account. Neither is used unless you open it, and Mediary counts how often you use each in a day only to
+        keep the cost in check: by your account when you are signed in, or by your address when you are not, held in memory for the day
+        and never written anywhere.
+      </p>
     </section>
 
     <section className="flex flex-col gap-2">

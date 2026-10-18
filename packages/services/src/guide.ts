@@ -166,16 +166,19 @@ const searchOrder = (sort: GuideSearch["sort"]): SQL[] => {
 /**
  * The search tool's query: public titles the member does not hold, by the
  * filters the guide chose, each with its genres and the start of its
- * description so the guide can judge the fit.
+ * description so the guide can judge the fit. A visitor who is not signed
+ * in holds nothing, so the whole public catalog is theirs to be offered.
  */
-export const searchGuideCatalog = async (userUuid: string, input: GuideSearch) => {
-  const held = db
-    .select({ one: sql`1` })
-    .from(UserMedia)
-    .where(and(eq(UserMedia.userUuid, userUuid), eq(UserMedia.mediaUuid, Media.uuid)));
+export const searchGuideCatalog = async (userUuid: string | null, input: GuideSearch) => {
+  const held = userUuid
+    ? db
+        .select({ one: sql`1` })
+        .from(UserMedia)
+        .where(and(eq(UserMedia.userUuid, userUuid), eq(UserMedia.mediaUuid, Media.uuid)))
+    : null;
   const conditions: (SQL | undefined)[] = [
     eq(Media.adult, false),
-    notExists(held),
+    held ? notExists(held) : undefined,
     input.media && input.media.length > 0 ? inArray(Media.mediaType, input.media) : undefined,
     input.year_from ? gte(Media.releaseYear, input.year_from) : undefined,
     input.year_to ? lte(Media.releaseYear, input.year_to) : undefined,
@@ -226,7 +229,10 @@ const cardsFor = async (ids: string[]): Promise<CatalogCard[]> => {
 };
 
 /** What the member's library says about their taste, as plain lines for the guide to read. */
-const libraryContext = async (userUuid: string): Promise<string> => {
+const libraryContext = async (userUuid: string | null): Promise<string> => {
+  if (!userUuid) {
+    return "(empty)";
+  }
   const [traits, loved] = await Promise.all([
     getTasteTraits(userUuid),
     db
@@ -276,9 +282,11 @@ const readableFailure = (error: unknown): ValidationError =>
  * read or listen to next. The guide searches Mediary's own catalog through
  * a tool (never what the member already holds), shows its picks as cards
  * through another, and answers in a few sentences. It is a recommendation
- * chat, nothing else; the conversation lives on the page, not here.
+ * chat, nothing else; the conversation lives on the page, not here. A
+ * visitor who is not signed in (`null`) is answered from what they write
+ * alone, with no library to lean on.
  */
-export const askGuide = async (userUuid: string, turns: GuideTurnInput[]): Promise<GuideReply> => {
+export const askGuide = async (userUuid: string | null, turns: GuideTurnInput[]): Promise<GuideReply> => {
   assertFeature("ask");
   if (!process.env.ANTHROPIC_API_KEY) {
     throw new ValidationError(NOT_READY);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useSongListener } from "@/app/(app)/listen/use-song-listener";
+import { useSongListener } from "@/app/(site)/listen/use-song-listener";
 import { ListenOrb } from "@/components/listen/listen-orb";
 import { SongNotFound } from "@/components/listen/song-not-found";
 import { SongResult } from "@/components/listen/song-result";
