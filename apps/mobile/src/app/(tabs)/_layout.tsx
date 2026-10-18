@@ -1,6 +1,6 @@
 import { useAuth } from "@clerk/expo";
 import { Redirect, Tabs } from "expo-router";
-import { Compass, House, LibraryBig, UserRound } from "lucide-react-native";
+import { Compass, House, LibraryBig, UserRound, Users } from "lucide-react-native";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { colors, fonts } from "@/lib/theme";
 import { useMe } from "@/lib/use-me";
@@ -40,6 +40,10 @@ const TabsLayout = () => {
       <Tabs.Screen
         name="library"
         options={{ title: "Library", tabBarIcon: ({ color, size }) => <LibraryBig color={color} size={size} /> }}
+      />
+      <Tabs.Screen
+        name="feed"
+        options={{ title: "Feed", tabBarIcon: ({ color, size }) => <Users color={color} size={size} /> }}
       />
       <Tabs.Screen
         name="you"

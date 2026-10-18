@@ -23,6 +23,10 @@ export const AppStack = () => {
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="welcome" options={{ headerShown: false }} />
       <Stack.Screen name="browse/[type]" options={{ title: "Browse" }} />
+      <Stack.Screen name="diary" options={{ title: "Diary" }} />
+      <Stack.Screen name="stats" options={{ title: "Stats" }} />
+      <Stack.Screen name="notifications" options={{ title: "Notifications" }} />
+      <Stack.Screen name="people/[username]" options={{ title: "" }} />
       <Stack.Screen
         name="entry/[mediaUuid]"
         options={{

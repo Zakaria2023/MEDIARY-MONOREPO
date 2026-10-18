@@ -41,10 +41,14 @@ export const useStatsScreen = () => {
         }))
       : [],
     media: (data?.byMedium ?? []).map((medium) => ({
-      mediaType: medium.mediaType,
+      key: medium.mediaType,
       label: MEDIA_TYPE_PLURAL_LABELS[medium.mediaType],
       detail: `${medium.tracked} tracked · ${medium.completed} finished · ${formatTrackedTime(medium.minutes)}`,
     })),
-    genres: (data?.topGenres ?? []).slice(0, 8),
+    genres: (data?.topGenres ?? []).slice(0, 8).map((genre) => ({
+      key: genre.name,
+      label: genre.name,
+      detail: `${genre.count} ${genre.count === 1 ? "title" : "titles"}`,
+    })),
   };
 };

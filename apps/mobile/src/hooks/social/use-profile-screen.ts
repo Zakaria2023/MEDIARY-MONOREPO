@@ -11,6 +11,7 @@ import {
   unfollowUser,
 } from "@/lib/api";
 import { PublicProfile } from "@/lib/api-types";
+import { deviceZone } from "@/lib/device-zone";
 import { queryKeys } from "@/lib/query-keys";
 import { showToast } from "@/lib/toast-store";
 
@@ -77,6 +78,7 @@ export const useProfileScreen = (username: string) => {
   return {
     profile,
     notFound: profile.error instanceof ApiError && profile.error.status === 404,
+    zone: deviceZone(),
     numbers: counts.data
       ? [
           { label: "Titles", value: formatCount(counts.data.titles) },
