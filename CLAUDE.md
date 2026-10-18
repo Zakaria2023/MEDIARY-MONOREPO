@@ -13,6 +13,7 @@ This is a pnpm + Turborepo monorepo built on Next.js 16.
 - `apps/client` — the member-facing Next.js app on `mediary.com`: the public site (landing, explore, title pages, public profiles), the signed-in product (library, diary, stats, settings), sign-in and sign-up, and the Clerk webhook. Everything SEO lives here. Port 3000 locally.
 - `apps/admin` — the staff Next.js app (`admin.mediary.com` in production, port 3001 locally): catalog imports from the providers, sync runs and their logs, title corrections and merges, genre and tag curation, members and roles, reports and moderation. It is behind Clerk with the same instance as the client, so one account signs in to both; the role on Mediary's `Users` row decides who enters. It has no sign-up and is `noindex` on every host, production included.
 - `apps/api` — the versioned REST API the mobile app talks to (port 3002 locally), Route Handlers only under `/api/v1`, no pages. It is the mobile app's only door: the phone never touches services or the database. Bearer-authenticated, sets no cookie, `noindex` on every host.
+- `apps/mobile` — the phone app: Expo SDK 58 (React Native 0.88, React 19.3) with Expo Router. It reads and writes through `apps/api` only, and imports from the workspace nothing that touches the database (see Mobile App below). `pnpm dev:mobile`.
 - A feature that two apps need is a `packages/services` function they call, never code copied between apps. Each app runs its own `db` pool of 3; with three apps, keep a warm instance count in mind against Aiven's 20 connections.
 
 **Packages**
@@ -45,6 +46,7 @@ The schema and connection live in the repo-root `db/` folder, not in a package �
 
 - Clerk is the identity provider. Do not reintroduce a custom password/JWT/session system.
 - **Clerk is headless. Never render a component Clerk draws**: no `SignIn`, `SignUp`, `UserButton`, `UserProfile`, `SignOutButton`, `OrganizationSwitcher` or any other. Every auth screen comes from `packages/auth`. Credential changes and account deletion go through Server Actions calling Clerk's server API (`apps/client/src/lib/server/account.ts`), never Clerk's browser re-verification, which draws its own dialog.
+- **The phone signs in headless too**, with the identity service's Expo hooks (`@clerk/expo`) under screens of Mediary's own, the web's steps and the web's sentences (`auth/errors`), the session in the device's secure store. It sends the session token to `apps/api` as `Authorization: Bearer`; the API verifies it and maps it to the same `AuthUser` the web resolves.
 - **The admin is sign-in only.** No sign-up page, no create-account link, no Google button: a Google sign-in from an unknown address quietly creates an account, and the admin never creates accounts. A staff account is a member account promoted by role.
 - The `Users` table is **not** an identity store — it is a profile store. Clerk owns credentials, verification and sessions. Each `Users` row is linked to Clerk by `clerkUserId` and is kept in sync by the Clerk webhook. Username, display name, bio, avatar and every setting live on Mediary's rows, not in Clerk.
 - `clerkMiddleware` runs in `proxy.ts`; `<ClerkProvider nonce={nonce}>` wraps the root layout. `getCurrentUser` resolves the cookie session via Clerk's `auth()` then maps `userId → getUserByClerkId`, syncing the row on demand if the webhook has not landed. Pages decide what to show a signed-out visitor; they never redirect to sign-in for public content.
@@ -55,9 +57,21 @@ The schema and connection live in the repo-root `db/` folder, not in a package �
 **Hard rules**
 
 - No business logic inside a Server Action or Route Handler — only in `packages/services`.
-- No direct database access from client components or anywhere outside `packages/services`.
+- No direct database access from client components, the mobile app, or anywhere outside `packages/services`. The phone reaches data through the versioned API only.
 - Never modify `db/index.ts` (the database connection/pool setup). The Aiven service allows 20 connections in total; the pool is sized for that. Leave this file exactly as-is unless the user explicitly asks to change it. The owner asked on 2026-10-09 for `attachDatabasePool` (`@vercel/functions`): production runs on Vercel, whose frozen functions otherwise keep their idle connections open until the 20 slots fill and pages fail to render.
 - Never commit `.env.local`. Every secret the app reads is listed in `.env.example` with an empty value.
+
+## Mobile App
+
+`apps/mobile` is the web's product on a phone, built to this file's rules where they can hold and to these where a phone differs. `apps/mobile/README.md` says how to run it.
+
+- **Routes only in `src/app/`.** Expo Router makes every file there a screen, so a screen's hook lives in `src/hooks/<feature>/use-*.ts`, its pieces in `src/components/<feature>/`, and plumbing in `src/lib/`. A route file renders one component; a private one is `<RequireMember>` around a screen from `components/`, which sends a visitor to sign in and a new account to the welcome screen.
+- **One API client** (`src/lib/api.ts`): a function per endpoint, the token passed in, every refusal an `ApiError` with the API's own sentence and `code`. Answers are cached by TanStack Query under the keys in `src/lib/query-keys.ts`; a member's own reads sit under `["member"]`, dropped when the account changes, never when the session first loads.
+- **Typed by the services.** Response types are the services' own, as `Jsonify<…>` (`src/lib/api-types.ts`), imported with `import type` from `services`: the one place the modifier is required, because it is what keeps the server package out of the bundle. A new endpoint returns a service's result as it is, so the app gets its type for free.
+- **Nothing the site says is copied.** Labels from `db/label.ts`, schemas from `validators`, identity errors from `auth/errors`, and from `services/pure` the tracking rules the sheet settles its draft with, the progress format, and the diary, feed and notification sentences. A phrase both apps need moves into `services` behind `pure`; the guard in `pure.test.ts` keeps the database out.
+- **Every change shows at once** (the sheet's save, the "+1", follow), worked out with the server's rules, put back only on a refusal, whose sentence a toast shows (`showToast`).
+- **The same design.** `src/lib/theme.ts` mirrors the dark tokens in `globals.css` (a token changed there changes here in the same commit); the primary button is the action gradient; posters through `Poster` (the CDN's size for the slot, the title's color while loading, the outlined placeholder without art); `lucide-react-native` icons; skeletons of the content's shape and designed empty and error states on every list.
+- No vendor on screen applies to the phone as it does to the site.
 
 ## No Vendor On Screen
 
