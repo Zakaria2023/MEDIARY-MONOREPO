@@ -6,6 +6,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AppStack } from "@/components/layout/app-stack";
 import { MissingConfig } from "@/components/layout/missing-config";
 import { LoadingScreen } from "@/components/ui/loading-screen";
+import { ToastHost } from "@/components/ui/toast-host";
 import { CLERK_PUBLISHABLE_KEY } from "@/lib/env";
 import { queryClient } from "@/lib/query-client";
 import { useAppFonts } from "@/lib/use-app-fonts";
@@ -27,6 +28,7 @@ const RootLayout = () => {
         <SafeAreaProvider>
           <StatusBar style="light" />
           {fontsReady ? <AppStack /> : <LoadingScreen />}
+          <ToastHost />
         </SafeAreaProvider>
       </QueryClientProvider>
     </ClerkProvider>

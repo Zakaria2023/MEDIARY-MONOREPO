@@ -8,6 +8,7 @@ import { TitleCommunity } from "@/components/title/title-community";
 import { TitleFacts } from "@/components/title/title-facts";
 import { TitleHero } from "@/components/title/title-hero";
 import { TitleSkeleton } from "@/components/title/title-skeleton";
+import { TrackButton } from "@/components/tracking/track-button";
 import { StateMessage } from "@/components/ui/state-message";
 import { useTitleScreen } from "@/hooks/catalog/use-title-screen";
 import { colors, space } from "@/lib/theme";
@@ -39,7 +40,7 @@ const TitleScreen = () => {
         )
       ) : (
         <>
-          <TitleHero title={title.data} />
+          <TitleHero title={title.data} action={<TrackButton mediaUuid={title.data.uuid} />} />
           <GenreChips mediaType={title.data.mediaType} genres={title.data.genres} />
           <TitleAbout description={title.data.description} />
           <TitleCommunity mediaType={title.data.mediaType} community={community.data} />

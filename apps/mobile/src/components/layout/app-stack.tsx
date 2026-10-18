@@ -24,6 +24,15 @@ export const AppStack = () => {
       <Stack.Screen name="welcome" options={{ headerShown: false }} />
       <Stack.Screen name="browse/[type]" options={{ title: "Browse" }} />
       <Stack.Screen
+        name="entry/[mediaUuid]"
+        options={{
+          presentation: "modal",
+          title: "Your entry",
+          headerStyle: { backgroundColor: colors.surface },
+          contentStyle: { backgroundColor: colors.surface },
+        }}
+      />
+      <Stack.Screen
         name="title/[type]/[slug]"
         options={{ title: "", headerTransparent: true, headerStyle: { backgroundColor: "transparent" } }}
       />

@@ -37,6 +37,8 @@ export const colors = {
   dangerTint: "rgba(255, 92, 108, 0.16)",
 
   white: "#ffffff",
+  /** Only for the shadow under something that floats: a toast, a sheet. */
+  shadow: "#000000",
 } as const;
 
 /** One color per tracking status, as the library's chips and the stats draw them. */
