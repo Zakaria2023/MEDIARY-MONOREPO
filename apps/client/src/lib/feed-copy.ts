@@ -1,5 +1,4 @@
 import { FeedItem } from "services";
-import { ACTIVITY_VERBS } from "@/db/label";
 import { profilePath } from "@/lib/profile-path";
 import { titlePath } from "@/lib/title-path";
 
@@ -24,15 +23,6 @@ export const feedObject = (item: FeedItem): FeedObject | null => {
     return { label: item.list.name, href: `/lists/${item.list.slug}` };
   }
   return null;
-};
-
-/** The verb, with the score folded in for a rating: "rated 9/10". */
-export const feedVerb = (item: FeedItem): string => {
-  const verb = ACTIVITY_VERBS[item.kind];
-  if ((item.kind === "rated" || item.kind === "completed") && item.score !== null) {
-    return item.kind === "rated" ? `rated ${item.score}/10` : `${verb}, ${item.score}/10`;
-  }
-  return verb;
 };
 
 /** What follows the object, if anything: the list a title went onto. */

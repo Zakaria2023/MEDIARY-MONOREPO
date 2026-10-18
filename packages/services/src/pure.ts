@@ -41,6 +41,7 @@ export type { ViewerRelation } from "./visibility";
 
 export { diaryKind } from "./diary-rules";
 export { diaryDay, diaryDayHeading, diaryDetail, diaryMoment } from "./diary-copy";
+export { feedVerb, notificationSentence } from "./social-copy";
 export type { DiaryKind, DiaryEventFields } from "./diary-rules";
 
 export { parseStatusWord, MAX_IMPORT_ITEMS } from "./import-parsers";

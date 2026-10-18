@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { applyTick, progressLimitsFor, todayIn } from "services/pure";
 import { tickEntry } from "@/lib/api";
 import { LibraryItem } from "@/lib/api-types";
+import { deviceZone } from "@/lib/device-zone";
 import { putEntry, refreshAfterEntryChange } from "@/lib/entry-cache";
 import { showToast } from "@/lib/toast-store";
 
@@ -23,7 +24,7 @@ export const useEntryTick = ({ title, entry }: LibraryItem) => {
         entry,
         delta,
         progressLimitsFor(title, entry.progressUnit),
-        todayIn(Intl.DateTimeFormat().resolvedOptions().timeZone),
+        todayIn(deviceZone()),
       );
       putEntry(queryClient, title.uuid, { ...entry, ...next, updatedAt: new Date().toISOString() });
       return { previous: entry };

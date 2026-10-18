@@ -8,12 +8,10 @@ import { UpsertEntryInput, upsertEntrySchema } from "validators";
 import { MEDIA_TYPE_LABELS } from "@/db/label";
 import { removeEntry, saveEntry } from "@/lib/api";
 import { TitleTracking, TrackedEntry, TrackingTarget } from "@/lib/api-types";
+import { deviceZone } from "@/lib/device-zone";
 import { putEntry, refreshAfterEntryChange } from "@/lib/entry-cache";
 import { queryKeys } from "@/lib/query-keys";
 import { showToast } from "@/lib/toast-store";
-
-/** The device's own zone, which is the member's: the day a save happens in. */
-const deviceZone = (): string => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 /** The form's starting values: the entry as stored, or a fresh one in the title's unit. */
 const defaultsFor = (target: TrackingTarget, entry: TrackedEntry | null): UpsertEntryInput =>

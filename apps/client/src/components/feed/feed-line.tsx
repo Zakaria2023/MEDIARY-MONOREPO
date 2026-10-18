@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { FeedItem, isFeatureOn } from "services";
+import { feedVerb } from "services/pure";
 import { Poster } from "ui";
 import { formatRelativeTime } from "utils";
 import { UserAvatar } from "@/components/profile/user-avatar";
 import { ResponseBar } from "@/components/social/response-bar";
-import { feedObject, feedSuffix, feedVerb } from "@/lib/feed-copy";
+import { feedObject, feedSuffix } from "@/lib/feed-copy";
 import { profilePath } from "@/lib/profile-path";
 
 type FeedLineProps = {
