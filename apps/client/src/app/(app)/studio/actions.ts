@@ -12,7 +12,7 @@ import {
   CreatorSettingsInput,
 } from "validators";
 import { requireOnboardedUser } from "@/lib/auth";
-import { overActionLimit } from "@/lib/server/action-limit";
+import { overActionLimit } from "rate-limit";
 
 /** Asking to be a verified creator. Counted as a report would be: it is a request staff read. */
 export const requestCreatorAction = async (_prevState: ActionResult, input: CreatorRequestInput): Promise<ActionResult> => {

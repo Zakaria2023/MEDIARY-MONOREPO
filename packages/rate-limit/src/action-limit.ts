@@ -1,4 +1,4 @@
-import { checkRateLimit } from "rate-limit";
+import { checkRateLimit } from "./limiter";
 
 /** How often one member may do one kind of write, and what they read past it. */
 type ActionLimit = {

@@ -32,7 +32,7 @@ import {
   PlaythroughTargetInput,
 } from "validators";
 import { requireOnboardedUser } from "@/lib/auth";
-import { overActionLimit } from "@/lib/server/action-limit";
+import { overActionLimit } from "rate-limit";
 
 export type ReviewActionResult = ActionResult & {
   review?: OwnReview;

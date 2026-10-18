@@ -6,7 +6,7 @@ import { createList, pinList } from "services";
 import { ActionResult, fail } from "utils";
 import { listSchema, ListInput, pinListSchema, PinListInput } from "validators";
 import { requireOnboardedUser } from "@/lib/auth";
-import { overActionLimit } from "@/lib/server/action-limit";
+import { overActionLimit } from "rate-limit";
 
 /** Makes a list and opens it. */
 export const createListAction = async (

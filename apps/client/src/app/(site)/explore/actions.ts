@@ -4,7 +4,7 @@ import { recordSponsorImpression, reportSponsoredPlacement } from "services";
 import { ActionResult, fail } from "utils";
 import { sponsorReportSchema, SponsorReportInput, sponsorSeenSchema, SponsorSeenInput } from "validators";
 import { getCurrentUser, requireOnboardedUser } from "@/lib/auth";
-import { overActionLimit } from "@/lib/server/action-limit";
+import { overActionLimit } from "rate-limit";
 import { currentVisitor, shouldCount } from "@/lib/server/visitor";
 
 const SEEN_WINDOW_MS = 10 * 60 * 1000;
