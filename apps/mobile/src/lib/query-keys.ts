@@ -1,5 +1,5 @@
-import type { MediaType } from "@/db/enum";
-import type { CatalogSortParam, LibraryQuery } from "./api";
+import { MediaType } from "@/db/enum";
+import { CatalogSortParam, LibraryQuery } from "./api";
 
 /*
  * EVERY CACHE KEY, BY WHAT IT HOLDS. A member's own data starts with "member",

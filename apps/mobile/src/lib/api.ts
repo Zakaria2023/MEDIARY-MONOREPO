@@ -1,7 +1,7 @@
-import type { MediaType, TrackingStatus } from "@/db/enum";
-import type { ProfileInput, UpsertEntryInput, WelcomeInput } from "validators";
+import { MediaType, TrackingStatus } from "@/db/enum";
+import { ProfileInput, UpsertEntryInput, WelcomeInput } from "validators";
 import { API_URL } from "./env";
-import type {
+import {
   AuthUser,
   CatalogCard,
   CatalogGenreCount,

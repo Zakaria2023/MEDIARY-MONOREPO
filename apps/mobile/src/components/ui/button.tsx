@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
-import type { LucideIcon } from "lucide-react-native";
-import type { ReactNode } from "react";
+import { LucideIcon } from "lucide-react-native";
+import { ReactNode } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { actionGradient, colors, fonts, radius, space, text } from "@/lib/theme";
 

@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react-native";
+import { LucideIcon } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
 import { colors, fonts, space, text } from "@/lib/theme";
 import { Button } from "./button";

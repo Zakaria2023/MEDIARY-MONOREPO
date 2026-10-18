@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { type Control, type FieldPath, type FieldValues, useController } from "react-hook-form";
-import { StyleSheet, Text, TextInput, type TextInputProps, View } from "react-native";
+import { Control, FieldPath, FieldValues, useController } from "react-hook-form";
+import { StyleSheet, Text, TextInput, TextInputProps, View } from "react-native";
 import { colors, fonts, radius, space, text } from "@/lib/theme";
 
 type FormFieldProps<Values extends FieldValues> = {

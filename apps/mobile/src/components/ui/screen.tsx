@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
+import { ReactNode } from "react";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
-import { type Edge, SafeAreaView } from "react-native-safe-area-context";
+import { Edge, SafeAreaView } from "react-native-safe-area-context";
 import { colors, space } from "@/lib/theme";
 
 type ScreenProps = {
