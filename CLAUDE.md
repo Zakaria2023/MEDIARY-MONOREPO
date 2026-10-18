@@ -12,8 +12,8 @@ This is a pnpm + Turborepo monorepo built on Next.js 16.
 
 - `apps/client` — the member-facing Next.js app on `mediary.com`: the public site (landing, explore, title pages, public profiles), the signed-in product (library, diary, stats, settings), sign-in and sign-up, and the Clerk webhook. Everything SEO lives here. Port 3000 locally.
 - `apps/admin` — the staff Next.js app (`admin.mediary.com` in production, port 3001 locally): catalog imports from the providers, sync runs and their logs, title corrections and merges, genre and tag curation, members and roles, reports and moderation. It is behind Clerk with the same instance as the client, so one account signs in to both; the role on Mediary's `Users` row decides who enters. It has no sign-up and is `noindex` on every host, production included.
-- There is no `apps/api` yet; add it (Route Handlers only, versioned under `/api/v1`) when a mobile client exists, and not before.
-- A feature that both apps need is a `packages/services` function the two call, never code copied between apps. Each app runs its own `db` pool of 3, so two apps on two instances each stay well under Aiven's 20 connections.
+- `apps/api` — the versioned REST API the mobile app talks to (port 3002 locally), Route Handlers only under `/api/v1`, no pages. It is the mobile app's only door: the phone never touches services or the database. Bearer-authenticated, sets no cookie, `noindex` on every host.
+- A feature that two apps need is a `packages/services` function they call, never code copied between apps. Each app runs its own `db` pool of 3; with three apps, keep a warm instance count in mind against Aiven's 20 connections.
 
 **Packages**
 
@@ -31,7 +31,15 @@ The schema and connection live in the repo-root `db/` folder, not in a package �
 **Calling convention**
 
 - Server Actions (`"use server"`) are the only way the app calls into services. They must stay thin: check the caller's identity, validate input, call exactly one `packages/services` function, return the result. No business logic inside an action.
-- Route Handlers exist only where a Server Action cannot do the job: a webhook that needs the raw body, an image endpoint, a file upload, a counted redirect (`/go`). Same rule: thin, and they call the same `packages/services` functions.
+- Route Handlers exist only where a Server Action cannot do the job: a webhook that needs the raw body, an image endpoint, a file upload, a counted redirect (`/go`), and every route of `apps/api`. Same rule: thin, and they call the same `packages/services` functions.
+
+**The mobile API (`apps/api`)**
+
+- One folder per resource under `src/app/api/v1/`, one `route.ts` each. A handler resolves the caller, validates with a `validators` schema (`safeParse`, then `invalid(error)`), calls exactly one service and returns its result as it is: no envelope, so the app's types are the services' own types. Creates answer 201.
+- Every error is `{ error }` in words a person may read, sometimes with `code` (for the app to branch on) or `fields`. `failure(error, fallback)` in `src/lib/server/respond.ts` picks the status from the error's name (ValidationError 400, NotFoundError 404, ProviderError 502, anything else 500 with the fallback, logged) and the message through `fail`, the Server Actions' rule.
+- The caller is `getUserFromRequest` (`src/lib/server/request-user.ts`): the identity service's session token from `Authorization: Bearer`, checked with `verifyToken` (networkless with `CLERK_JWT_KEY`), its subject mapped by `getUserByClerkId` and synced on demand like the web's `getCurrentUser`. A private route calls `requireMember` (401 signed out, 403 `code: "inactive"`, 403 `code: "onboarding"` without a username); the welcome screen's routes call `requireAccount`. A public route still reads the caller when there is one.
+- `src/proxy.ts` answers CORS (any origin: the token is the credential, no cookie is read) and enforces the request ceiling per address (bucket `mobile-api`). The security headers and noindex come from `next.config.ts`.
+- Lists are paginated with `?page=&pageSize=` and answer `PaginatedResult`, as the services already do.
 
 **Auth**
 
