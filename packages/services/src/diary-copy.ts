@@ -1,5 +1,14 @@
-import { DiaryLine } from "services";
-import { PROGRESS_UNIT_LABELS, TRACKING_STATUS_LABELS } from "@/db/label";
+import { PROGRESS_UNIT_LABELS, TRACKING_STATUS_LABELS } from "../../../db/label";
+import type { CatalogCard } from "./catalog";
+import type { DiaryLine } from "./diary";
+
+/** The fields a line's words are made from; a line as JSON carries them too. */
+type DiaryWords = Pick<DiaryLine, "kind" | "unit" | "delta" | "value" | "score" | "note"> & {
+  title: Pick<CatalogCard, "mediaType">;
+};
+
+// HOW A DIARY MOMENT READS, one definition for the site and the phone. Pure,
+// and re-exported from `services/pure`.
 
 /** A number with at most one decimal. */
 const compact = (value: number): string => String(Math.round(value * 10) / 10);
@@ -9,7 +18,7 @@ const compact = (value: number): string => String(Math.round(value * 10) / 10);
  * "Rated 8/10". The status words are the medium's own, from the one label
  * map. A note the person wrote follows the fact.
  */
-export const diaryDetail = (line: DiaryLine): string => {
+export const diaryDetail = (line: DiaryWords): string => {
   const unit = line.unit ? PROGRESS_UNIT_LABELS[line.unit] : "";
   let fact: string;
   switch (line.kind) {

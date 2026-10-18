@@ -1,6 +1,6 @@
 import { DiaryLine } from "services";
 import { DiaryLines } from "@/components/diary/diary-lines";
-import { diaryDay, diaryDayHeading } from "@/lib/diary-copy";
+import { diaryDay, diaryDayHeading } from "services/pure";
 
 type DiaryDaysProps = {
   lines: DiaryLine[];

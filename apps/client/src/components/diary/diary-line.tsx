@@ -5,7 +5,7 @@ import { DiaryKind, DiaryLine as DiaryLineData } from "services";
 import { Poster } from "ui";
 import { MEDIA_TYPE_LABELS } from "@/db/label";
 import { DiaryLineEditor } from "@/components/diary/diary-line-editor";
-import { diaryDetail, diaryMoment } from "@/lib/diary-copy";
+import { diaryDetail, diaryMoment } from "services/pure";
 import { titlePath } from "@/lib/title-path";
 
 type DiaryLineProps = {

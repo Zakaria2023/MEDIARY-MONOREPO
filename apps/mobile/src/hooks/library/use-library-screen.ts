@@ -1,9 +1,9 @@
 import { useAuth } from "@clerk/expo";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { formatCount } from "utils";
 import { launchMediaTypes, MediaType, TrackingStatus, trackingStatuses } from "@/db/enum";
 import { GENERIC_TRACKING_STATUS_LABELS, MEDIA_TYPE_PLURAL_LABELS, TRACKING_STATUS_LABELS } from "@/db/label";
-import { formatCount } from "utils";
 import { fetchLibrary, fetchLibraryCounts, LibraryQuery } from "@/lib/api";
 import { nextPageOf, rowsOf } from "@/lib/pages";
 import { queryKeys } from "@/lib/query-keys";
