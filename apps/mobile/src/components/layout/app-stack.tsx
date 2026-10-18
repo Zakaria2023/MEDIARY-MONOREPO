@@ -19,9 +19,14 @@ export const AppStack = () => {
         contentStyle: { backgroundColor: colors.page },
       }}
     >
-      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="welcome" options={{ headerShown: false }} />
+      <Stack.Screen name="browse/[type]" options={{ title: "Browse" }} />
+      <Stack.Screen
+        name="title/[type]/[slug]"
+        options={{ title: "", headerTransparent: true, headerStyle: { backgroundColor: "transparent" } }}
+      />
     </Stack>
   );
 };
