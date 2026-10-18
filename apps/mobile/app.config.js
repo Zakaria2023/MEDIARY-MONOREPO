@@ -63,9 +63,6 @@ module.exports = {
       output: "single",
     },
     plugins: ["expo-router", "expo-secure-store", "expo-web-browser"],
-    experiments: {
-      typedRoutes: true,
-    },
     extra: {
       // On a phone, localhost is the phone: point this at the machine's
       // address on the network (http://192.168.1.20:3002), or 10.0.2.2 from

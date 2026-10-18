@@ -1,22 +1,35 @@
-import { Manrope_400Regular } from "@expo-google-fonts/manrope/400Regular";
-import { Manrope_500Medium } from "@expo-google-fonts/manrope/500Medium";
-import { Sora_400Regular } from "@expo-google-fonts/sora/400Regular";
-import { Sora_600SemiBold } from "@expo-google-fonts/sora/600SemiBold";
-import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import { ClerkProvider } from "@clerk/expo";
+import { tokenCache } from "@clerk/expo/token-cache";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { StatusBar } from "expo-status-bar";
-import { colors } from "@/lib/theme";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { AppStack } from "@/components/layout/app-stack";
+import { MissingConfig } from "@/components/layout/missing-config";
+import { LoadingScreen } from "@/components/ui/loading-screen";
+import { CLERK_PUBLISHABLE_KEY } from "@/lib/env";
+import { queryClient } from "@/lib/query-client";
+import { useAppFonts } from "@/lib/use-app-fonts";
 
+/**
+ * The identity service, headless (the app draws every screen itself), with
+ * the session kept in the device's secure store; the API cache; the safe
+ * area. Nothing private renders here: each group's layout decides who may
+ * enter it.
+ */
 const RootLayout = () => {
-  const [fontsLoaded] = useFonts({ Manrope_400Regular, Manrope_500Medium, Sora_400Regular, Sora_600SemiBold });
-  if (!fontsLoaded) {
-    return null;
+  const fontsReady = useAppFonts();
+  if (!CLERK_PUBLISHABLE_KEY) {
+    return <MissingConfig />;
   }
   return (
-    <>
-      <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.page } }} />
-    </>
+    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY} tokenCache={tokenCache}>
+      <QueryClientProvider client={queryClient}>
+        <SafeAreaProvider>
+          <StatusBar style="light" />
+          {fontsReady ? <AppStack /> : <LoadingScreen />}
+        </SafeAreaProvider>
+      </QueryClientProvider>
+    </ClerkProvider>
   );
 };
 

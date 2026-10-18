@@ -1,20 +1,35 @@
-import { StyleSheet, Text, View } from "react-native";
-import { welcomeSchema } from "validators";
-import { MEDIA_TYPE_PLURAL_LABELS } from "@/db/label";
+import { useAuth } from "@clerk/expo";
+import { Redirect, router } from "expo-router";
+import { StyleSheet, Text } from "react-native";
+import { Button } from "@/components/ui/button";
+import { LoadingScreen } from "@/components/ui/loading-screen";
+import { Screen } from "@/components/ui/screen";
 import { colors, fonts, text } from "@/lib/theme";
+import { useMe } from "@/lib/use-me";
 
-const valid = welcomeSchema.safeParse({ username: "mediary", displayName: "Mediary" }).success;
-
-const Home = () => (
-  <View style={styles.page}>
-    <Text style={styles.title}>Mediary</Text>
-    <Text style={styles.body}>{Object.values(MEDIA_TYPE_PLURAL_LABELS).join(" · ")}</Text>
-    <Text style={styles.body}>{valid ? "Shared schemas load" : "Shared schemas failed"}</Text>
-  </View>
-);
+const Home = () => {
+  const { isLoaded, isSignedIn, signOut } = useAuth();
+  const me = useMe();
+  if (!isLoaded || (isSignedIn && me.isPending)) {
+    return <LoadingScreen />;
+  }
+  if (isSignedIn && me.data && !me.data.username) {
+    return <Redirect href="/welcome" />;
+  }
+  return (
+    <Screen>
+      <Text style={styles.title}>Mediary</Text>
+      <Text style={styles.body}>{me.data?.username ? `Signed in as @${me.data.username}` : "Not signed in"}</Text>
+      {isSignedIn ? (
+        <Button label="Sign out" onPress={() => void signOut()} />
+      ) : (
+        <Button label="Sign in" variant="primary" onPress={() => router.push("/sign-in")} />
+      )}
+    </Screen>
+  );
+};
 
 const styles = StyleSheet.create({
-  page: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: colors.page },
   title: { ...text["3xl"], fontFamily: fonts.display, color: colors.ink },
   body: { ...text.sm, fontFamily: fonts.body, color: colors.muted },
 });
